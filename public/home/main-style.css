@@ -56,6 +56,17 @@ main {
     margin-top: 10px;
 }
 
+footer {
+    color: grey;
+    bottom: 0px;
+    position: absolute;
+    width: 100%;
+    min-height: 3rem;
+    align-content: center;
+    border-top: 2px solid #393939;
+    font-size: medium;
+}
+
 /* 
  For specific screens.
  Basically u do @media [media type] (and) ... 
