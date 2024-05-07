@@ -19,5 +19,3 @@ app.get('/home', (req, res) => {
     openUrl("http://localhost:5123")
   console.log(`Example app listening on port ${port}`)
 })
-
-//

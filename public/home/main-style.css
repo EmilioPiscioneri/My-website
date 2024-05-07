@@ -1,18 +1,80 @@
+/* Custom variables */
+
+:root {
+    --main-background-colour: rgb(29 30 30);
+    --main-grey-colour: rgb(93 93 93 / 10%);
+    --a-nav-item-border-colour: #353535;
+    --a-nav-item-border-size: 7px;
+}
+
+/* General screens */
+
+
 html {
-    background-color: #e7f5ff;
-}
-
-nav #top-bar {
-    border: 1px;
-}
-
-main {
-    margin-left: 20px;
-    margin-right: 20px;
+    background-color: var(--main-background-colour);
 }
 
 body {
     margin: 0px;
     text-align: center;
     font-family: sans-serif;
+    font-size: large;
+    color: white;
 }
+
+nav.top-bar {
+    border: 1px;
+    min-height: 55px;
+    align-content: center;
+    background-color: var(--main-grey-colour);
+    
+}
+
+h2 {
+    margin: 0px;
+}
+
+a.nav-item {
+    color: #eeeeff;
+    text-decoration: none;
+    margin-right: 7px;
+    
+    /* Invisible border so it doesn't push out other items when hovering */
+    border: var(--a-nav-item-border-size) solid rgb(255 255 255 / 0%);
+    
+}
+
+/* On hover of nav items make it clear that it's the selected one */
+a.nav-item:hover {
+    background-color: var(--a-nav-item-border-colour);
+    border: var(--a-nav-item-border-size) solid var(--a-nav-item-border-colour);
+    border-radius: 0.75rem;
+}
+
+
+main {
+    margin-top: 10px;
+}
+
+/* 
+ For specific screens.
+ Basically u do @media [media type] (and) ... 
+ See https://www.w3.org/TR/CSS2/media.html 
+ I have no idea what "@media only ..." is used for*/
+
+/* Phone specific */
+@media screen and (max-width: 600px) {
+    main {
+        margin-left: 200px;
+        margin-right: 20px;
+    }
+}
+
+/* Desktop */
+@media screen and (min-width: 601px) {
+    main {
+        margin-left: 20px;
+        margin-right: 20px;
+    }
+}
+
