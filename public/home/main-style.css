@@ -1,0 +1,18 @@
+html {
+    background-color: #e7f5ff;
+}
+
+nav #top-bar {
+    border: 1px;
+}
+
+main {
+    margin-left: 20px;
+    margin-right: 20px;
+}
+
+body {
+    margin: 0px;
+    text-align: center;
+    font-family: sans-serif;
+}
