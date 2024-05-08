@@ -1,3 +1,5 @@
+/* THIS IS THE MAIN CSS THAT IS SHARED ACROSS ALL PAGES */
+
 /* Custom variables */
 
 :root {
@@ -27,7 +29,7 @@ nav.top-bar {
     min-height: 55px;
     align-content: center;
     background-color: var(--main-grey-colour);
-    
+
 }
 
 h2 {
@@ -38,10 +40,10 @@ a.nav-item {
     color: #eeeeff;
     text-decoration: none;
     margin-right: 7px;
-    
+
     /* Invisible border so it doesn't push out other items when hovering */
     border: var(--a-nav-item-border-size) solid rgb(255 255 255 / 0%);
-    
+
 }
 
 /* On hover of nav items make it clear that it's the selected one */
@@ -54,17 +56,38 @@ a.nav-item:hover {
 
 main {
     margin-top: 10px;
+    /* Make height minimum to 100% veiwport height so footer is at bottom of page */
+    min-height: 100vh;
 }
 
 footer {
     color: grey;
-    bottom: 0px;
-    position: absolute;
-    width: 100%;
+    /* bottom: 0px; */
+    /* position: absolute; */
+    /* width: 100%; */
     min-height: 3rem;
     align-content: center;
     border-top: 2px solid #393939;
     font-size: medium;
+}
+
+/* Hide scrollbars but keep functionality */
+
+/* Hide scrollbar for Chrome, Safari and Opera */
+.hide-scrollbar::-webkit-scrollbar {
+    display: none;
+}
+
+/* Hide scrollbar for IE, Edge and Firefox */
+.hide-scrollbar {
+    -ms-overflow-style: none;
+    /* IE and Edge */
+    /* scrollbar-width: none; */
+    /* Firefox */
+}
+
+a.no-link-colour {
+    color: inherit;
 }
 
 /* 
@@ -88,4 +111,3 @@ footer {
         margin-right: 20px;
     }
 }
-
