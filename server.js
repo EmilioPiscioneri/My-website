@@ -8,6 +8,7 @@ const path = require("path");
 
 // -- Constant simple types
 const port = 5123; // port for website
+const defaultHtmlName = "site.html"; // default name for html files under page directory
 
 // -- Directories
 const cacheDirectory = path.join(__dirname, "/cache/");
@@ -21,17 +22,17 @@ const sitemapCacheFile = path.join(cacheDirectory, "sitemap.json")
 const sitemapFilesBlacklist = {
   "main": {},
   // blacklist tests
-  "portfolio":{
-    "layer1-2" : {}
+  "portfolio": {
+    "layer1-2": {}
   },
-  "portfolio":{},
-  "folder1":{
-    "1-1":{}
+  "portfolio": {},
+  "folder1": {
+    "1-1": {}
   },
-  "folder1":{
-    "folder2":{
-      "2-2":{
-        "3":{}
+  "folder1": {
+    "folder2": {
+      "2-2": {
+        "3": {}
       }
     }
   }
@@ -84,12 +85,12 @@ function keyExistsInObject(key, object) {
 }
 
 // returns a cloned object. Normally they are just references
-function cloneObject(objectToClone){
+function cloneObject(objectToClone) {
   return Object.assign({}, objectToClone)
 }
 
 // returns a cloned array. Normally they are just references
-function cloneArray(arrayToClone){
+function cloneArray(arrayToClone) {
   // I'm not worried about optimization cos this runs fast enough still
   return JSON.parse(JSON.stringify(arrayToClone))
 }
@@ -129,6 +130,10 @@ function isDirectoryBlacklisted(pathArray, currentDirectoryName) {
   }
 
   return directoryIsBlacklisted;
+}
+
+function getPageNotFoundFilePath(){
+  return path.join(__dirname, "templates/errors/page-not-found/site.html")
 }
 
 // make public folder, static
@@ -190,9 +195,68 @@ app.get('/', (req, res) => {
   res.redirect("/home");
 })
 
-app.get('/home', (req, res) => {
-  res.sendFile(__dirname + '/public/home/site.html')
+// app.get('/home', (req, res) => {
+//   res.sendFile(__dirname + '/public/home/site.html')
+// })
+
+app.get('/*', (httpRequest, httpResponse) => {
+  // console.log(httpRequest.url)
+  // console.log(httpRequest)
+  
+  // -- Public sites handling
+
+  // Handle pages redirecting
+
+
+  let desiredPageDirectory = null; // Start as null, if is null after end of function then u got an issue
+
+  // remove first and last slash (don't include those indexes)
+  let rawUrl = httpRequest.url; // raw thang
+  let urlPath; // this is the rawUrl without first and last(if included) "/"
+  if (rawUrl.endsWith("/"))
+    urlPath = rawUrl.substring(1, rawUrl.length - 1); // don't include last /
+  else
+    urlPath = rawUrl.substring(1, rawUrl.length); // no last /
+
+
+  // The path of the url as an array of strings to each directory
+  let urlPathArray = urlPath.split("/"); // each directory is seperated by "/". Using .url omits the last "/"
+
+  // Check if desired page exists under public
+
+  let currentPageObject = sitemapObject; // start at public folder (top of sitemap object), keep going from there
+
+  for (let directoryIndex = 0; directoryIndex < urlPathArray.length; directoryIndex++) {
+    let directoryName = urlPathArray[directoryIndex]
+
+    // does directory exist under current one
+    // use the sitemap cos it will be faster than disk readings
+
+    if (keyExistsInObject(directoryName, currentPageObject)) {
+      // set the iterated directory object to be the current object 
+      currentPageObject = currentPageObject[directoryName];
+      // if reached end of loop, set the desired page directory as it was successfully found
+      if (directoryIndex == urlPathArray.length - 1) {
+        // just combine the public directory with path as they will be the same location
+        desiredPageDirectory = path.join(publicDirectory, urlPath);
+      }
+    }
+  }
+
+  // if the page was found in public directory
+  if (desiredPageDirectory != null) {
+    // get the page html file
+    let pageHtmlFile = path.join(desiredPageDirectory, defaultHtmlName);
+
+    httpResponse.sendFile(pageHtmlFile);
+  }else{
+    // page wasn't found, send oage not found html
+    httpResponse.sendFile(getPageNotFoundFilePath());
+  }
+
 })
+
+
 
 app.listen(port, () => {
   openUrl("http://localhost:5123")

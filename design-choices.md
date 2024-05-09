@@ -5,7 +5,7 @@ I chose to do this because there is no need for two seperate css stylesheets as 
 
 - The style of the website is a dark theme.  
 I like dark theme.  
-Maybe I'll make it optional later.
+Maybe I'll make it an optional later.
 
 - The /public/main/ directory contains files that are universal for all webpages. Each page will then have its own page specific css or js if needed
 
