@@ -13,16 +13,20 @@ const defaultHtmlName = "site.html"; // default name for html files under page d
 // -- Directories
 const cacheDirectory = path.join(__dirname, "/cache/");
 const publicDirectory = path.join(__dirname, "/public/")
+const templateDirectory = path.join(__dirname, "/templates/")
 
 // -- Files
+
 const sitemapCacheFile = path.join(cacheDirectory, "sitemap.json")
+// file that has a template information.json that should be in each site directory
+const templateSiteInfoFile = path.join(templateDirectory, "site/information.json");
 
 // Sitemap files not to include in sitemap
 // each blacklisted item must have no subdirectories in it
 const sitemapFilesBlacklist = {
   "main": {},
   // blacklist tests
-  "portfolio": {
+  /*"portfolio": {
     "layer1-2": {}
   },
   "portfolio": {},
@@ -35,7 +39,7 @@ const sitemapFilesBlacklist = {
         "3": {}
       }
     }
-  }
+  }*/
   /* e.g. 
   for portfoilio/layer1/directoryToIgnore/
   do
@@ -132,7 +136,7 @@ function isDirectoryBlacklisted(pathArray, currentDirectoryName) {
   return directoryIsBlacklisted;
 }
 
-function getPageNotFoundFilePath(){
+function getPageNotFoundFilePath() {
   return path.join(__dirname, "templates/errors/page-not-found/site.html")
 }
 
@@ -202,7 +206,7 @@ app.get('/', (req, res) => {
 app.get('/*', (httpRequest, httpResponse) => {
   // console.log(httpRequest.url)
   // console.log(httpRequest)
-  
+
   // -- Public sites handling
 
   // Handle pages redirecting
@@ -245,14 +249,58 @@ app.get('/*', (httpRequest, httpResponse) => {
 
   // if the page was found in public directory
   if (desiredPageDirectory != null) {
-    // get the page html file
-    let pageHtmlFile = path.join(desiredPageDirectory, defaultHtmlName);
+    let infoFile = path.join(desiredPageDirectory, "information.json")
+    // check if directorty has information.json file. This tells the server what the link should do
+    if (filesystem.existsSync(infoFile)) {
+      let fileContents; // the file's contents as object (parsed JSON)
+      if (!fileExists) {
+        let defaultInfoFileContents = filesystem.readFileSync(infoFile, { encoding: "utf8" }); // read contents as string
+        filesystem.writeFileSync(infoFile, defaultInfoFileContents); // write new stuff to file and create it
+        fileContents = JSON.parse(defaultInfoFileContents); // set contents to default that you just wrote
+      }
+      else
+        fileContents = JSON.parse(filesystem.readFileSync(infoFile, { encoding: "utf8" })); // parse existing content
 
-    httpResponse.sendFile(pageHtmlFile);
-  }else{
-    // page wasn't found, send oage not found html
-    httpResponse.sendFile(getPageNotFoundFilePath());
-  }
+      // tells the server what the page should do
+      let pageAction = fileContents.behaviour.action;
+
+      switch (pageAction) {
+        case "sendFile":
+          {
+            // the file to send as a path
+            let fileToSend = path.join(desiredPageDirectory, fileContents.behaviour.fileToSend);
+
+            httpResponse.sendFile(fileToSend);
+            break;
+          }
+        case "redirect":
+          {
+            let redirectLocation = fileContents.behaviour.location
+
+            httpResponse.redirect(redirectLocation);
+            break;
+          }
+
+
+
+        default:
+          break;
+      }
+
+
+
+
+    }
+
+
+// get the page html file
+let pageHtmlFile = path.join(desiredPageDirectory, defaultHtmlName);
+
+httpResponse.sendFile(pageHtmlFile);
+  }else {
+  // page wasn't found, send oage not found html
+  httpResponse.sendFile(getPageNotFoundFilePath());
+}
 
 })
 
