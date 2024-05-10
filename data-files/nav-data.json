@@ -1,0 +1,18 @@
+[
+    {
+        "name": "Homepage",
+        "link": "/home"
+    },
+    {
+        "name": "About me",
+        "link": "/about-me"
+    },
+    {
+        "name": "Portfolio",
+        "link": "/portfolio"
+    },
+    {
+        "name": "Gangsta playlist",
+        "link": "https://www.youtube.com/watch?v=Hgqp7l9s_9o&list=OLAK5uy_l98-V9f_VuC895QYk58lbFlwaE0QyMaro&index=2"
+    }
+]

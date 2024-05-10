@@ -11,3 +11,5 @@ Maybe I'll make it an optional later.
 
 - The /templates/ directory has templates for different things that start as a base and then can be added to.  
 E.g. I plan to add dynamic sites so I need a template one
+
+- Nav data is an array of objects.

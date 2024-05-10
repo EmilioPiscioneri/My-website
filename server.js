@@ -14,12 +14,16 @@ const defaultHtmlName = "site.html"; // default name for html files under page d
 const cacheDirectory = path.join(__dirname, "/cache/");
 const publicDirectory = path.join(__dirname, "/public/")
 const templateDirectory = path.join(__dirname, "/templates/")
+const dataFilesDirectory = path.join(__dirname, "/data-files/")
 
 // -- Files
 
 const sitemapCacheFile = path.join(cacheDirectory, "sitemap.json")
 // file that has a template information.json that should be in each site directory
 const templateSiteInfoFile = path.join(templateDirectory, "site/information.json");
+const pageNotFoundFile = path.join(templateDirectory, "errors/page-not-found/site.html")
+
+const navDataFile = path.join(dataFilesDirectory, "nav-data.json")
 
 // Sitemap files not to include in sitemap
 // each blacklisted item must have no subdirectories in it
@@ -136,8 +140,56 @@ function isDirectoryBlacklisted(pathArray, currentDirectoryName) {
   return directoryIsBlacklisted;
 }
 
-function getPageNotFoundFilePath() {
-  return path.join(__dirname, "templates/errors/page-not-found/site.html")
+// input response object and file path
+function sendHTMLFile(httpResponse, filePath) {
+  let finalDataToSend = filesystem.readFileSync(filePath, { encoding: "utf8" }); // string of html data
+
+  // Now do your manipulations of each html file
+
+  // - Dynamic nav stuff
+
+  /*
+    Demonstration code
+    let str = "abcdefghij<div id=\"fart\"></div>klmnopqrstuvwxyz";
+    let match = 'id="fart">'
+    let pos = str.indexOf(match)
+    let strStart = str.substring(0, pos+match.length);
+    let strMiddle = "<p>middle</p>"
+    let strEnd = str.substring(pos+match.length, str.length)
+    console.log(strStart+strMiddle+strEnd)
+   */
+
+  let navMatchStr = 'id="top-nav-bar">'; // end text of nav bar in html file
+
+  let matchPosition = finalDataToSend.indexOf(navMatchStr);
+
+  // left part of old string
+  let leftHtmlStr = finalDataToSend.substring(0, matchPosition+navMatchStr.length);
+
+  // new string to insert
+  let newStringToInsert = ""
+
+  // get different nav items to add.
+  // This data is an array of objects
+  let navData = JSON.parse(filesystem.readFileSync(navDataFile, {encoding: "utf8"}));
+
+  // loop thru the array of nav info objects
+  for (let navInfoObject of navData) {
+    let name = navInfoObject.name; // The text to display 
+    let href = navInfoObject.link; // link relative to site (not page)
+
+    // add a new tag for each nav item as string
+    newStringToInsert += '<a class="nav-item" href="' + href + '">' + name +'</a>\n'
+  }
+
+
+  // right part of old string
+  let rightHtmlStr = finalDataToSend.substring(matchPosition+navMatchStr.length, finalDataToSend.length);
+
+  // combine all of them
+  finalDataToSend = leftHtmlStr + newStringToInsert + rightHtmlStr
+
+  httpResponse.send(finalDataToSend);
 }
 
 // make public folder, static
@@ -268,10 +320,15 @@ app.get('/*', (httpRequest, httpResponse) => {
     switch (pageAction) {
       case "sendFile":
         {
+          let fileToSendStr = fileContents.behaviour.fileToSend;
           // the file to send as a path
-          let fileToSend = path.join(desiredPageDirectory, fileContents.behaviour.fileToSend);
+          let fileToSendPath = path.join(desiredPageDirectory, fileToSendStr);
 
-          httpResponse.sendFile(fileToSend);
+          // there are modifications done to html files
+          if (fileToSendStr.endsWith(".html"))
+            sendHTMLFile(httpResponse, fileToSendPath)
+          else
+            httpResponse.sendFile(fileToSendPath);
           break;
         }
       case "redirect":
@@ -298,7 +355,8 @@ app.get('/*', (httpRequest, httpResponse) => {
     // httpResponse.sendFile(pageHtmlFile);
   } else {
     // page wasn't found, send oage not found html
-    httpResponse.sendFile(getPageNotFoundFilePath());
+    sendHTMLFile(httpResponse, pageNotFoundFile);
+    // httpResponse.sendFile(pageNotFoundFile);
   }
 
 })
