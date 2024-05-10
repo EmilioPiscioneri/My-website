@@ -250,57 +250,56 @@ app.get('/*', (httpRequest, httpResponse) => {
   // if the page was found in public directory
   if (desiredPageDirectory != null) {
     let infoFile = path.join(desiredPageDirectory, "information.json")
+    let fileContents; // the file's contents as object (parsed JSON)
     // check if directorty has information.json file. This tells the server what the link should do
-    if (filesystem.existsSync(infoFile)) {
-      let fileContents; // the file's contents as object (parsed JSON)
-      if (!fileExists) {
-        let defaultInfoFileContents = filesystem.readFileSync(infoFile, { encoding: "utf8" }); // read contents as string
-        filesystem.writeFileSync(infoFile, defaultInfoFileContents); // write new stuff to file and create it
-        fileContents = JSON.parse(defaultInfoFileContents); // set contents to default that you just wrote
-      }
-      else
-        fileContents = JSON.parse(filesystem.readFileSync(infoFile, { encoding: "utf8" })); // parse existing content
-
-      // tells the server what the page should do
-      let pageAction = fileContents.behaviour.action;
-
-      switch (pageAction) {
-        case "sendFile":
-          {
-            // the file to send as a path
-            let fileToSend = path.join(desiredPageDirectory, fileContents.behaviour.fileToSend);
-
-            httpResponse.sendFile(fileToSend);
-            break;
-          }
-        case "redirect":
-          {
-            let redirectLocation = fileContents.behaviour.location
-
-            httpResponse.redirect(redirectLocation);
-            break;
-          }
+    if (!filesystem.existsSync(infoFile)) {
+      let defaultInfoFileContents = filesystem.readFileSync(templateSiteInfoFile, { encoding: "utf8" }); // get default contents as string
+      filesystem.writeFileSync(infoFile, defaultInfoFileContents); // write new stuff to file and create it
+      fileContents = JSON.parse(defaultInfoFileContents); // set contents to default that you just wrote
+    }
+    else
+      fileContents = JSON.parse(filesystem.readFileSync(infoFile, { encoding: "utf8" })); // parse existing content
 
 
 
-        default:
+    // tells the server what the page should do
+    let pageAction = fileContents.behaviour.action;
+
+    switch (pageAction) {
+      case "sendFile":
+        {
+          // the file to send as a path
+          let fileToSend = path.join(desiredPageDirectory, fileContents.behaviour.fileToSend);
+
+          httpResponse.sendFile(fileToSend);
           break;
-      }
+        }
+      case "redirect":
+        {
+          let redirectLocation = fileContents.behaviour.location
+
+          httpResponse.redirect(redirectLocation);
+          break;
+        }
 
 
 
-
+      default:
+        break;
     }
 
 
-// get the page html file
-let pageHtmlFile = path.join(desiredPageDirectory, defaultHtmlName);
 
-httpResponse.sendFile(pageHtmlFile);
-  }else {
-  // page wasn't found, send oage not found html
-  httpResponse.sendFile(getPageNotFoundFilePath());
-}
+
+
+    // get the page html file
+    // let pageHtmlFile = path.join(desiredPageDirectory, defaultHtmlName);
+
+    // httpResponse.sendFile(pageHtmlFile);
+  } else {
+    // page wasn't found, send oage not found html
+    httpResponse.sendFile(getPageNotFoundFilePath());
+  }
 
 })
 
