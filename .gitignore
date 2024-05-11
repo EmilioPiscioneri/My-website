@@ -3,3 +3,4 @@
 /.DS_store
 public/.DS_Store
 .env
+/cache/secret/

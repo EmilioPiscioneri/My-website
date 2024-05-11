@@ -1,4 +1,5 @@
 // -- Libraries
+const exp = require('constants');
 const express = require('express');
 const app = express();
 const filesystem = require('fs');
@@ -6,6 +7,8 @@ const { type } = require('os');
 const openUrl = require("openurl").open;
 const path = require("path");
 require('dotenv').config() // for reading in environment variables, easier than writing my own code for it
+const crypto = require("crypto");
+const cookieParser = require("cookie-parser")
 
 // -- Constant simple types
 const port = 5123; // port for website
@@ -26,6 +29,8 @@ const pageNotFoundFile = path.join(templateDirectory, "errors/page-not-found/sit
 
 const navDataFile = path.join(dataFilesDirectory, "nav-data.json")
 const footerHtmlFile = path.join(dataFilesDirectory, "footer.html"); // footer html that is shared across all sites
+
+const adminCookiesFile = path.join(cacheDirectory, "/secret/admin-cookies.json");
 
 
 // Sitemap files not to include in sitemap
@@ -167,14 +172,14 @@ function sendHTMLFile(httpResponse, filePath) {
   let matchPosition = finalDataToSend.indexOf(navMatchStr);
 
   // left part of old string
-  let leftHtmlStr = finalDataToSend.substring(0, matchPosition+navMatchStr.length);
+  let leftHtmlStr = finalDataToSend.substring(0, matchPosition + navMatchStr.length);
 
   // new string to insert
   let newStringToInsert = ""
 
   // get different nav items to add.
   // This data is an array of objects
-  let navData = JSON.parse(filesystem.readFileSync(navDataFile, {encoding: "utf8"}));
+  let navData = JSON.parse(filesystem.readFileSync(navDataFile, { encoding: "utf8" }));
 
   // loop thru the array of nav info objects
   for (let navInfoObject of navData) {
@@ -182,12 +187,12 @@ function sendHTMLFile(httpResponse, filePath) {
     let href = navInfoObject.link; // link relative to site (not page)
 
     // add a new tag for each nav item as string
-    newStringToInsert += '<a class="nav-item" href="' + href + '">' + name +'</a>\n'
+    newStringToInsert += '<a class="nav-item" href="' + href + '">' + name + '</a>\n'
   }
 
 
   // right part of old string
-  let rightHtmlStr = finalDataToSend.substring(matchPosition+navMatchStr.length, finalDataToSend.length);
+  let rightHtmlStr = finalDataToSend.substring(matchPosition + navMatchStr.length, finalDataToSend.length);
 
   // combine all of them
   finalDataToSend = leftHtmlStr + newStringToInsert + rightHtmlStr
@@ -200,22 +205,19 @@ function sendHTMLFile(httpResponse, filePath) {
 
   leftHtmlStr = finalDataToSend.substring(0, footerStartMatchPosition + footerStartMatchStr.length); // html until strart of footer
 
-  newStringToInsert = filesystem.readFileSync(footerHtmlFile, {encoding:"utf8"}); // get new footer html content to add
+  newStringToInsert = filesystem.readFileSync(footerHtmlFile, { encoding: "utf8" }); // get new footer html content to add
 
   let footerEndMatchStr = "</footer>";
 
   let footerEndMatchPosition = finalDataToSend.indexOf(footerEndMatchStr); // this is the end of the footer
 
-  rightHtmlStr = finalDataToSend.substring(footerEndMatchPosition +footerEndMatchStr.length, finalDataToSend.length); // html from end of footer to end of html
+  rightHtmlStr = finalDataToSend.substring(footerEndMatchPosition + footerEndMatchStr.length, finalDataToSend.length); // html from end of footer to end of html
 
   // combine all of them
   finalDataToSend = leftHtmlStr + newStringToInsert + rightHtmlStr
 
   httpResponse.send(finalDataToSend);
 }
-
-// make public folder, static
-app.use(express.static('public'))
 
 // - generate the sitemap cache
 
@@ -267,6 +269,16 @@ let sitemapObject = generateSitemapObject();
 // print the output sitemap
 console.log(sitemapObject)
 
+// - different middleware cos I'm lazy
+
+// make public folder, static
+app.use(express.static('public'))
+
+// parse json requests
+app.use(express.json())
+
+app.use(cookieParser());
+
 
 // redirect to home
 app.get('/', (req, res) => {
@@ -276,6 +288,105 @@ app.get('/', (req, res) => {
 // app.get('/home', (req, res) => {
 //   res.sendFile(__dirname + '/public/home/site.html')
 // })
+// all of the admin stuff. Hanlde it seperately
+
+// this link will generate a cookie for user regardless of if they have one
+app.post("/secret/admin/login", (httpRequest, httpResponse) => {
+  let requestData = httpRequest.body;
+
+  // verify data is valid
+  if (!requestData || typeof (requestData) != "object" || !requestData["key"]) {
+    httpResponse.sendStatus(401); // error
+    return
+  }
+
+  // check if the right key was sent
+  let validKey = process.env.admin_key;
+
+  // key doesn't match
+  if (requestData.key != validKey) {
+    httpResponse.sendStatus(401); // error
+    return
+  }
+
+  // key does match, create an according cookie
+
+
+  let adminCookies = JSON.parse(filesystem.readFileSync(adminCookiesFile, { encoding: "utf8" })); // an array of existing cookies
+  let newCookie;
+  // keep creating a cookie until there isn't one. The chance of a cookie existing is so slim but just in case
+  while (adminCookies.indexOf(newCookie) != -1 || !newCookie) {
+    newCookie = crypto.randomBytes(128).toString("hex"); // creates a 256 character string in hex
+  }
+
+  // apply the new cookie
+  adminCookies.push(newCookie);
+
+  // save the updated array to file
+  filesystem.writeFileSync(adminCookiesFile, JSON.stringify(adminCookies));
+
+  // Cookie expiry length (duration) in seconds
+  const cookieLength = 60 * 60 * 24 * 365; // one year
+
+  // I would add Secure tag but that means I need to setup Https
+  httpResponse.setHeader("Set-Cookie", "admin_cookie=" + newCookie + "; Path=/; Max-Age=" + cookieLength + "; HttpOnly; SameSite=Strict")
+  httpResponse.sendStatus(200)
+})
+
+// this link will generate a cookie for user regardless of if they have one
+app.post("/secret/admin/logout", (httpRequest, httpResponse) => {
+  let requestCookie = httpRequest.cookies; // get client sent cookies
+
+
+
+  let clientAdminCookie;
+  // valid data check
+  if (requestCookie)
+    clientAdminCookie = requestCookie["admin_cookie"];
+
+  let existingAdminCookies = JSON.parse(filesystem.readFileSync(adminCookiesFile, { encoding: "utf8" })); // an array of existing cookies
+
+  let adminCookieIndex = existingAdminCookies.indexOf(clientAdminCookie)
+
+  // if cookie already exists
+  if (clientAdminCookie && adminCookieIndex != -1) {
+    // remove the signed out cookie
+    existingAdminCookies = existingAdminCookies.splice(adminCookieIndex, 1);
+
+    // write new data
+    filesystem.writeFileSync(adminCookiesFile, JSON.stringify(existingAdminCookies))
+  }
+
+  // remove the admin cookie, cookie
+  httpResponse.setHeader("Set-Cookie", "admin_cookie=; Path=/; Max-Age=-1; HttpOnly; SameSite=Strict")
+  httpResponse.sendStatus(200)
+})
+
+app.get("/secret/admin/isLoggedIn", (httpRequest, httpResponse) => {
+  let requestCookie = httpRequest.cookies; // get client sent cookies
+
+  // valid data check
+  if (!requestCookie || !requestCookie["admin_cookie"]) {
+    // failed
+    httpResponse.sendStatus(401); // error
+    return
+  }
+
+  let clientAdminCookie = requestCookie["admin_cookie"];
+
+  let existingAdminCookies = JSON.parse(filesystem.readFileSync(adminCookiesFile, { encoding: "utf8" })); // an array of existing cookies
+
+  if (existingAdminCookies.indexOf(clientAdminCookie) != -1)
+    httpResponse.sendStatus(200)
+  else
+    httpResponse.sendStatus(401)
+  
+    
+
+
+})
+
+// Handle all public stuff
 
 app.get('/*', (httpRequest, httpResponse) => {
   // console.log(httpRequest.url)
@@ -382,6 +493,7 @@ app.get('/*', (httpRequest, httpResponse) => {
   }
 
 })
+
 
 
 

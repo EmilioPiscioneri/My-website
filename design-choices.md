@@ -15,3 +15,5 @@ E.g. I plan to add dynamic sites so I need a template one
 - Nav data is an array of objects.
 
 - The .env file doesn't add security once my system is compromised but it does stop you all from seeing things I need hidden
+
+- I never have admin cookies expire because I create so little of them it wouldn't even make a difference if I created 10,000 of them

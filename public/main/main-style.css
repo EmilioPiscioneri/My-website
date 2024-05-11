@@ -122,6 +122,10 @@ a.no-link-colour {
     color: inherit;
 }
 
+.hidden-button {
+    cursor: pointer;
+}
+
 /* 
  For specific screens.
  Basically u do @media [media type] (and) ... 
