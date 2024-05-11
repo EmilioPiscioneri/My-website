@@ -25,6 +25,8 @@ const templateSiteInfoFile = path.join(templateDirectory, "site/information.json
 const pageNotFoundFile = path.join(templateDirectory, "errors/page-not-found/site.html")
 
 const navDataFile = path.join(dataFilesDirectory, "nav-data.json")
+const footerHtmlFile = path.join(dataFilesDirectory, "footer.html"); // footer html that is shared across all sites
+
 
 // Sitemap files not to include in sitemap
 // each blacklisted item must have no subdirectories in it
@@ -186,6 +188,25 @@ function sendHTMLFile(httpResponse, filePath) {
 
   // right part of old string
   let rightHtmlStr = finalDataToSend.substring(matchPosition+navMatchStr.length, finalDataToSend.length);
+
+  // combine all of them
+  finalDataToSend = leftHtmlStr + newStringToInsert + rightHtmlStr
+
+  // - Add the footer html
+
+  let footerStartMatchStr = "<footer>";
+
+  let footerStartMatchPosition = finalDataToSend.indexOf(footerStartMatchStr); // this is the start of the footer
+
+  leftHtmlStr = finalDataToSend.substring(0, footerStartMatchPosition + footerStartMatchStr.length); // html until strart of footer
+
+  newStringToInsert = filesystem.readFileSync(footerHtmlFile, {encoding:"utf8"}); // get new footer html content to add
+
+  let footerEndMatchStr = "</footer>";
+
+  let footerEndMatchPosition = finalDataToSend.indexOf(footerEndMatchStr); // this is the end of the footer
+
+  rightHtmlStr = finalDataToSend.substring(footerEndMatchPosition +footerEndMatchStr.length, finalDataToSend.length); // html from end of footer to end of html
 
   // combine all of them
   finalDataToSend = leftHtmlStr + newStringToInsert + rightHtmlStr

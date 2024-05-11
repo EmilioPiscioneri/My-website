@@ -5,6 +5,7 @@
 :root {
     --main-background-colour: rgb(29 30 30);
     --main-grey-colour: rgb(93 93 93 / 10%);
+    --main-light-grey-colour: #4f4f4f;
     --a-nav-item-border-colour: #353535;
     --a-nav-item-border-size: 7px;
 }
@@ -14,6 +15,7 @@
 
 html {
     background-color: var(--main-background-colour);
+    /* height: 100%; */
 }
 
 body {
@@ -69,6 +71,36 @@ footer {
     align-content: center;
     border-top: 2px solid #393939;
     font-size: medium;
+    padding: 10px;
+    /* Make all footer content align in a row */
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    /* Space between each element */
+    column-gap: 10px;
+}
+
+div.horizontal-container {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    column-gap: 10px;
+}
+
+div.vertical-container {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+div.small-vertical-divider{
+    width: 2px;
+    background-color: var(--main-light-grey-colour);
+    height: 50px;
+
 }
 
 /* Hide scrollbars but keep functionality */
