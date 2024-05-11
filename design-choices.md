@@ -13,3 +13,5 @@ Maybe I'll make it an optional later.
 E.g. I plan to add dynamic sites so I need a template one
 
 - Nav data is an array of objects.
+
+- The .env file doesn't add security once my system is compromised but it does stop you all from seeing things I need hidden

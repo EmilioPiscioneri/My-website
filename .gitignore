@@ -2,3 +2,4 @@
 /package-lock.json
 /.DS_store
 public/.DS_Store
+.env

@@ -5,6 +5,7 @@ const filesystem = require('fs');
 const { type } = require('os');
 const openUrl = require("openurl").open;
 const path = require("path");
+require('dotenv').config() // for reading in environment variables, easier than writing my own code for it
 
 // -- Constant simple types
 const port = 5123; // port for website
@@ -367,3 +368,6 @@ app.listen(port, () => {
   openUrl("http://localhost:5123")
   console.log(`Example app listening on port ${port}`)
 })
+
+// console.log(process.env);
+// console.log(process.env.secretAPIKey)
