@@ -142,10 +142,11 @@ function handleAdminLoginFail() {
     hideAdminMenu();
 }
 
-// do a check for logged into admin and then set the behaviour of login button accordingly
-isLoggedIntoAdmin()
-    .then(handleAdminLoginSuccess)
-    .catch(handleAdminLoginFail)
+if(!window.isErrorPage)
+    // do a check for logged into admin and then set the behaviour of login button accordingly
+    isLoggedIntoAdmin()
+        .then(handleAdminLoginSuccess)
+        .catch(handleAdminLoginFail)
 
 
 adminLogoutElement.onclick = function () {
@@ -199,8 +200,16 @@ function showAdminMenu() {
 
     addPageBtn.onclick = handleAddPage;
 
+    let removePageBtn = document.createElement("button");
+    removePageBtn.innerText = "Remove page"
+
+    removePageBtn.className = "admin-menu-item";
+
+    removePageBtn.onclick = handleRemovePage;
+
     // add elements to menu
     adminMenuDiv.appendChild(addPageBtn);
+    adminMenuDiv.appendChild(removePageBtn);
 
     // add the div to start of inner content. I hate this insert before function it be confusing ngl
     mainInnerContent.insertBefore(adminMenuDiv, mainInnerContent.firstChild)
@@ -214,7 +223,7 @@ function handleAddPage() {
     if (!isLoggedIntoAdmin)
         return
 
-    let sitePath = prompt("Enter site URL path e.g. /portfolio/cool-thing or /about-me")
+    let sitePath = prompt("Enter site URL path starting from root\ne.g. /portfolio/cool-thing or /about-me", window.location.pathname)
     if (sitePath == null)
         return
     // I can't be stuffed checking if path is valid. I would have to read up on the url documentation and learn regex or smthn
@@ -265,8 +274,76 @@ function handleAddPage() {
 
             } else {
                 // There has been an error with the request! 
-                alert("Failed")
-                console.log(xhr)
+                alert("Failed: "+xhr.responseText)
+                // console.log(xhr)
+            }
+        }
+    };
+
+    // send data to server
+    xhr.send(dataToSend)
+
+
+
+}
+
+function handleRemovePage() {
+    //admin only
+    if (!isLoggedIntoAdmin)
+        return
+
+    // get the current site path
+    let sitePath = window.location.pathname;
+
+    let confirmResponse = prompt("Are you sure you want to delete "+sitePath+"?\nEnter (y)es or (n)o")
+    if(!confirmResponse || !(confirmResponse.toLowerCase() == "y" || confirmResponse.toLowerCase() == "yes" ))
+        return; // nuh uh
+
+    
+
+    // let sitePath = prompt("Enter site URL path starting from root\ne.g. /portfolio/cool-thing or /about-me")
+    // if (sitePath == null)
+    //     return
+    // I can't be stuffed checking if path is valid. I would have to read up on the url documentation and learn regex or smthn
+
+    // here is my half assed fix
+    // sitePath = sitePath.replaceAll(" ", "").replaceAll("[","").replaceAll("]","").replaceAll("{","").replaceAll("}","")
+
+    // null means cancelled
+
+    // send the add page request to server
+
+    let dataToSend = {
+        sitePath: sitePath
+    }
+
+    dataToSend = JSON.stringify(dataToSend); // convert to string
+
+    let xhr = new XMLHttpRequest();
+
+    // DELETE method didn't work?
+    xhr.open("POST", adminEndpoint + "/deletePage", true);
+
+    xhr.setRequestHeader("Content-Type", "Application/json");
+
+    // listen to change
+    xhr.onreadystatechange = function () {
+        if (xhr.readyState === XMLHttpRequest.DONE) {
+            const status = xhr.status;
+            if (status >= 200 && status < 400) {
+                // The request has been completed successfully
+
+                alert("Successfully deleted website")
+
+                // just go to homepage
+                // window.open("/home",)
+
+
+
+            } else {
+                // There has been an error with the request! 
+                alert("Failed: "+xhr.responseText)
+                // console.log(xhr)
             }
         }
     };

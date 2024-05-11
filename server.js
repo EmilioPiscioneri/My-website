@@ -396,22 +396,22 @@ app.post("/secret/admin/addPage", (httpRequest, httpResponse) => {
   let requestData = httpRequest.body;
 
   // verify data is valid
-  if (!requestData || typeof (requestData) != "object" || !(requestData["sitePath"] && requestData["siteTitle"] && requestData["siteDescription"])) {
-    httpResponse.sendStatus(401); // error
+  if (!requestData || typeof (requestData) != "object" || !(requestData["sitePath"] != null && requestData["siteTitle"] != null && requestData["siteDescription"] != null)) {
+    httpResponse.status(401).send("Data provided was incomplete")
     return
   }
 
   // valid data check
   if (!requestCookie || !requestCookie["admin_cookie"]) {
     // failed
-    httpResponse.sendStatus(401); // error
+    httpResponse.status(401).send("Provided malformed (or no) cookie, log in again")
     return
   }
 
   let clientAdminCookie = requestCookie["admin_cookie"];
 
   if (!userAdminCookieExists(clientAdminCookie))
-    httpResponse.sendStatus(401)
+    httpResponse.status(401).send("Provided an invalid cookie, log in again")
 
   // client is an admin
 
@@ -498,6 +498,53 @@ app.post("/secret/admin/addPage", (httpRequest, httpResponse) => {
 
 })
 
+// for some reason app.delete doesn't work
+app.post("/secret/admin/deletePage", (httpRequest, httpResponse) => {
+  let requestCookie = httpRequest.cookies; // get client sent cookies
+  let requestData = httpRequest.body;
+
+  // verify data is valid
+  if (!requestData || typeof (requestData) != "object" || !requestData["sitePath"]) {
+    httpResponse.status(401).send("Data provided was incomplete")
+    return
+  }
+
+  // valid data check
+  if (!requestCookie || !requestCookie["admin_cookie"]) {
+    // failed
+    httpResponse.status(401).send("Provided malformed (or no) cookie, log in again")
+    return
+  }
+
+  let clientAdminCookie = requestCookie["admin_cookie"];
+
+  if (!userAdminCookieExists(clientAdminCookie))
+    httpResponse.status(401).send("Provided an invalid cookie, log in again")
+
+  // client is an admin
+
+  let sitePathStr = ("/public/" + requestData.sitePath).toLowerCase();
+
+  // actual path object
+  let sitePath = path.join(__dirname, sitePathStr);
+
+  // first check if it doesn't exist
+  if (!filesystem.existsSync(sitePath)) {
+    httpResponse.status(401).send("The site path doesn't exist on filesystem smh");
+    return;
+  }
+
+  filesystem.rmSync(sitePath, {recursive: true})
+
+  // regenerate the sitemap
+  // sitemapObject = generateSitemapObject();
+
+  httpResponse.sendStatus(201)
+
+
+
+})
+
 // Handle all public stuff
 
 app.get('/*', (httpRequest, httpResponse) => {
@@ -550,13 +597,13 @@ app.get('/*', (httpRequest, httpResponse) => {
 
 
   // if the page was found in public directory
-  if (desiredPageDirectory != null) {
+  if (desiredPageDirectory != null && filesystem.existsSync(desiredPageDirectory)) {
     let infoFile = path.join(desiredPageDirectory, "information.json")
     let fileContents; // the file's contents as object (parsed JSON)
     // check if directorty has information.json file. This tells the server what the link should do
     if (!filesystem.existsSync(infoFile)) {
       let defaultInfoFileContents = filesystem.readFileSync(templateSiteInfoFile, { encoding: "utf8" }); // get default contents as string
-      filesystem.writeFileSync(infoFile, defaultInfoFileContents); // write new stuff to file and create it
+      filesystem.writeFileSync(infoFile, defaultInfoFileContents, {flag: "w"}); // write new stuff to file and create it
       fileContents = JSON.parse(defaultInfoFileContents); // set contents to default that you just wrote
     }
     else
