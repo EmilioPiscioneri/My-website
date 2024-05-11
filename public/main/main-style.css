@@ -8,6 +8,7 @@
     --main-light-grey-colour: #4f4f4f;
     --a-nav-item-border-colour: #353535;
     --a-nav-item-border-size: 7px;
+    --inner-content-width: 25vw;
 }
 
 /* General screens */
@@ -96,7 +97,7 @@ div.vertical-container {
     align-items: center;
 }
 
-div.small-vertical-divider{
+div.small-vertical-divider {
     width: 2px;
     background-color: var(--main-light-grey-colour);
     height: 50px;
@@ -123,6 +124,40 @@ a.no-link-colour {
 }
 
 .hidden-button {
+    cursor: pointer;
+}
+
+div.inner-content {
+    /* Inner content is like squeezed in n that */
+    /* margin: 0px 30vw 0px 30vw;  */
+    margin: 0px auto 0px auto;
+    max-width: var(--inner-content-width);
+}
+
+.left-align {
+    text-align: left;
+
+}
+
+div.admin-menu-container{
+    min-height: 15vh;
+    background-color: var(--main-grey-colour);
+    border-radius: 20px;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: space-evenly;
+}
+
+button.admin-menu-item {
+    height: 10vh;
+    background-color: var(--main-light-grey-colour);
+    border-color: var(--main-background-colour);
+    border-style: solid;
+    border-radius: 15px;
+    color: white;
+    width: 12vh;
+    font-size: large;
     cursor: pointer;
 }
 

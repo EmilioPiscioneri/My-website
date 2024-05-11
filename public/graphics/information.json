@@ -1,0 +1,6 @@
+{
+    "behaviour":{
+        "action": "sendFile",
+        "fileToSend": "site.html"
+    }
+}

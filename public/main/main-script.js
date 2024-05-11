@@ -32,6 +32,7 @@ let adminLoginElement = document.getElementById("admin-login")
 let adminLogoutElement = document.getElementById("admin-logout");
 var userIsLoggedIntoAdmin = false; // whether or not the user is logged into admin perms
 const adminEndpoint = "/secret/admin"
+let adminMenuCreated = false;
 
 function adminLoginFromUserInput(event) {
     // give the user a popup
@@ -117,16 +118,28 @@ function isLoggedIntoAdmin() {
 // call this after logged in or if already logged in
 function handleAdminLoginSuccess() {
     userIsLoggedIntoAdmin = true;
+    showAdminMenu();
     // set button to just say already logged in
     adminLoginElement.onclick = function () {
         alert("Already logged in foo")
     };
 }
 
+let adminMenuDiv;
+
+
+
+function hideAdminMenu() {
+    if (adminMenuCreated)
+        adminMenuDiv.display = "none"
+
+}
+
 // call this after log in fail or if not logged in
 function handleAdminLoginFail() {
     userIsLoggedIntoAdmin = false;
     adminLoginElement.onclick = adminLoginFromUserInput; // set button to actually login
+    hideAdminMenu();
 }
 
 // do a check for logged into admin and then set the behaviour of login button accordingly
@@ -162,4 +175,105 @@ adminLogoutElement.onclick = function () {
     };
 
     xhr.send();
+}
+// shows admin menu, creates the admin menu if it doesn't exist
+function showAdminMenu() {
+    if (adminMenuCreated) {
+        adminMenuDiv.display = "flex"
+        return;
+    }
+
+    // create the admin menu
+    let mainInnerContent = document.getElementById("main-inner-content"); // grab the inner div
+
+    adminMenuDiv = document.createElement("div");
+
+    adminMenuDiv.id = "admin-menu-container"
+    adminMenuDiv.className = "admin-menu-container"
+
+    // items to add to menu
+    let addPageBtn = document.createElement("button");
+    addPageBtn.innerText = "Add page"
+
+    addPageBtn.className = "admin-menu-item";
+
+    addPageBtn.onclick = handleAddPage;
+
+    // add elements to menu
+    adminMenuDiv.appendChild(addPageBtn);
+
+    // add the div to start of inner content. I hate this insert before function it be confusing ngl
+    mainInnerContent.insertBefore(adminMenuDiv, mainInnerContent.firstChild)
+
+
+    adminMenuCreated = true;
+}
+
+function handleAddPage() {
+    //admin only
+    if (!isLoggedIntoAdmin)
+        return
+
+    let sitePath = prompt("Enter site URL path e.g. /portfolio/cool-thing or /about-me")
+    if (sitePath == null)
+        return
+    // I can't be stuffed checking if path is valid. I would have to read up on the url documentation and learn regex or smthn
+
+    // here is my half assed fix
+    sitePath = sitePath.replaceAll(" ", "").replaceAll("[","").replaceAll("]","").replaceAll("{","").replaceAll("}","")
+
+    let siteTitle = prompt("Enter site title")
+    if (siteTitle == null)
+        return
+    let siteDescription = prompt("Enter site description")
+    if (siteDescription == null)
+        return
+
+    // null means cancelled
+
+    // send the add page request to server
+
+    let dataToSend = {
+        sitePath: sitePath,
+        siteTitle: siteTitle,
+        siteDescription: siteDescription
+    }
+
+    dataToSend = JSON.stringify(dataToSend); // convert to string
+
+    let xhr = new XMLHttpRequest();
+
+    xhr.open("POST", adminEndpoint + "/addPage", true);
+
+    xhr.setRequestHeader("Content-Type", "Application/json");
+
+    // listen to change
+    xhr.onreadystatechange = function () {
+        if (xhr.readyState === XMLHttpRequest.DONE) {
+            const status = xhr.status;
+            if (status >= 200 && status < 400) {
+                // The request has been completed successfully
+
+                alert("Successfully created website")
+
+                if (!sitePath.startsWith("/"))
+                    window.open("/" + sitePath, "_blank")
+                else
+                    window.open(sitePath, "_blank")
+
+
+
+            } else {
+                // There has been an error with the request! 
+                alert("Failed")
+                console.log(xhr)
+            }
+        }
+    };
+
+    // send data to server
+    xhr.send(dataToSend)
+
+
+
 }

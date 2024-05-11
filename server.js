@@ -8,7 +8,8 @@ const openUrl = require("openurl").open;
 const path = require("path");
 require('dotenv').config() // for reading in environment variables, easier than writing my own code for it
 const crypto = require("crypto");
-const cookieParser = require("cookie-parser")
+const cookieParser = require("cookie-parser");
+const { match } = require('assert');
 
 // -- Constant simple types
 const port = 5123; // port for website
@@ -134,7 +135,9 @@ function isDirectoryBlacklisted(pathArray, currentDirectoryName) {
       else {
         objectToSearch = objectToSearch[directoryName]; // set the new object to search, it will be the iterated name as that is its content
       }*/
-    } // else, the directory isn't blacklisted
+    } else
+      break;
+    // else, the directory isn't blacklisted
     // else {
     //   directoryIsBlacklisted = false;
     // }
@@ -267,7 +270,7 @@ function generateSitemapObject() {
 let sitemapObject = generateSitemapObject();
 
 // print the output sitemap
-console.log(sitemapObject)
+// console.log(sitemapObject)
 
 // - different middleware cos I'm lazy
 
@@ -362,6 +365,12 @@ app.post("/secret/admin/logout", (httpRequest, httpResponse) => {
   httpResponse.sendStatus(200)
 })
 
+function userAdminCookieExists(userCookie) {
+  let existingAdminCookies = JSON.parse(filesystem.readFileSync(adminCookiesFile, { encoding: "utf8" })); // an array of existing cookies
+
+  return existingAdminCookies.indexOf(userCookie) != -1
+}
+
 app.get("/secret/admin/isLoggedIn", (httpRequest, httpResponse) => {
   let requestCookie = httpRequest.cookies; // get client sent cookies
 
@@ -374,14 +383,117 @@ app.get("/secret/admin/isLoggedIn", (httpRequest, httpResponse) => {
 
   let clientAdminCookie = requestCookie["admin_cookie"];
 
-  let existingAdminCookies = JSON.parse(filesystem.readFileSync(adminCookiesFile, { encoding: "utf8" })); // an array of existing cookies
 
-  if (existingAdminCookies.indexOf(clientAdminCookie) != -1)
+  if (userAdminCookieExists(clientAdminCookie))
     httpResponse.sendStatus(200)
   else
     httpResponse.sendStatus(401)
-  
-    
+
+})
+
+app.post("/secret/admin/addPage", (httpRequest, httpResponse) => {
+  let requestCookie = httpRequest.cookies; // get client sent cookies
+  let requestData = httpRequest.body;
+
+  // verify data is valid
+  if (!requestData || typeof (requestData) != "object" || !(requestData["sitePath"] && requestData["siteTitle"] && requestData["siteDescription"])) {
+    httpResponse.sendStatus(401); // error
+    return
+  }
+
+  // valid data check
+  if (!requestCookie || !requestCookie["admin_cookie"]) {
+    // failed
+    httpResponse.sendStatus(401); // error
+    return
+  }
+
+  let clientAdminCookie = requestCookie["admin_cookie"];
+
+  if (!userAdminCookieExists(clientAdminCookie))
+    httpResponse.sendStatus(401)
+
+  // client is an admin
+
+  let sitePathStr = ("/public/" + requestData.sitePath).toLowerCase();
+
+  // actual path object
+  let sitePath = path.join(__dirname, sitePathStr);
+
+  // first check if it already exists
+  if (filesystem.existsSync(sitePath)) {
+    httpResponse.status(401).send("The site path already exists on server filesystem smh");
+    return;
+  }
+
+  filesystem.mkdir(sitePath, { recursive: true }, (err) => {
+    if (err) {
+      httpResponse.status(401).send("Gave an invalid path");
+      return;
+    }
+
+    // ok so the directory is created
+    // clone contents of template site
+
+    for (let fileStr of filesystem.readdirSync(path.join(templateDirectory, "site"), { encoding: "utf8" })) {
+      let iteratedFilePath = path.join(templateDirectory, "/site/", fileStr);
+
+      // copy the file from template dir to new dir with same name
+      filesystem.copyFileSync(iteratedFilePath, path.join(sitePath, "/" + fileStr));
+    }
+
+    // Now edit certain files
+    let siteHTMLFile = path.join(sitePath, "/site.html");
+
+    let siteHtmlContents = filesystem.readFileSync(siteHTMLFile, { encoding: "utf8" })
+
+    // edit site meta description
+
+    let stringMatch = '<meta name="description" content="';
+
+    let matchPosition = siteHtmlContents.indexOf(stringMatch);
+
+    let htmlStart = siteHtmlContents.substring(0, matchPosition + stringMatch.length)
+
+    let stringToAdd = requestData.siteDescription;
+
+    let htmlEnd = siteHtmlContents.substring(matchPosition + stringMatch.length, siteHtmlContents.length)
+
+    // add all of it up
+    siteHtmlContents = htmlStart + stringToAdd + htmlEnd;
+
+    // do it again
+    stringMatch = '<title>';
+
+    matchPosition = siteHtmlContents.indexOf(stringMatch);
+
+    htmlStart = siteHtmlContents.substring(0, matchPosition + stringMatch.length)
+
+    stringToAdd = requestData.siteTitle;
+
+    htmlEnd = siteHtmlContents.substring(matchPosition + stringMatch.length, siteHtmlContents.length)
+
+
+    // add all of it up
+    siteHtmlContents = htmlStart + stringToAdd + htmlEnd;
+
+    // write new html contents
+    filesystem.writeFileSync(siteHTMLFile, siteHtmlContents);
+
+    // now that files are copied
+
+    // console.log("Old sitemap")
+    // console.log(sitemapObject)
+
+    // regenerate the sitemap
+    sitemapObject = generateSitemapObject();
+
+    // console.log("New sitemap")
+    // console.log(sitemapObject)
+
+    httpResponse.sendStatus(201)
+  })
+
 
 
 })
@@ -429,8 +541,13 @@ app.get('/*', (httpRequest, httpResponse) => {
         // just combine the public directory with path as they will be the same location
         desiredPageDirectory = path.join(publicDirectory, urlPath);
       }
+    } else {
+      // failed to find a match, a match must be found
+      break;
     }
   }
+
+
 
   // if the page was found in public directory
   if (desiredPageDirectory != null) {
