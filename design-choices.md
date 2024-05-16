@@ -17,3 +17,5 @@ E.g. I plan to add dynamic sites so I need a template one
 - The .env file doesn't add security once my system is compromised but it does stop you all from seeing things I need hidden
 
 - I never have admin cookies expire because I create so little of them it wouldn't even make a difference if I created 10,000 of them
+
+- graphics/primitive-playgound: I am writing the game.js file on tight time because I am doing this after work. Therefore I have decided not to include things like scenes to the Game object as I don't have a lot of time to play with.
