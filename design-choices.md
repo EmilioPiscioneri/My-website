@@ -18,4 +18,5 @@ E.g. I plan to add dynamic sites so I need a template one
 
 - I never have admin cookies expire because I create so little of them it wouldn't even make a difference if I created 10,000 of them
 
-- graphics/primitive-playgound: I am writing the game.js file on tight time because I am doing this after work. Therefore I have decided not to include things like scenes to the Game object as I don't have a lot of time to play with.
+- graphics/primitive-playgound: I decided to use the existing graphics objects and the pixi stage container because there isn't a need in js to add a seperate class when I can just add to the existing classes. This also isn't supposed to be a robust system, may need to rework this part
+

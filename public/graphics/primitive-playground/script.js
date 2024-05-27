@@ -139,6 +139,10 @@ function main() {
 
     game.AddGraphicsObject(rect1);
 
+    console.log(rect1.gameData.physics)
+
+    rect1.gameData.physics.velocity = new PIXI.Point(100,100)
+
 
 
 
