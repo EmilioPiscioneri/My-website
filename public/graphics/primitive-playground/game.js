@@ -9,7 +9,7 @@ class Game {
     // gameObjects = []; // an array of game objects 
     ticker; // a PIXI ticker object that is for this game obvject
     globalPhysicsEnabled = true; // Maybe you don't want physics idk
-    gravity = 9.8; // gravitational acceleration in game units/second (only on y)
+    gravity = 9.8*5; // gravitational acceleration in game units/second (only on y)
     drag = 0.25; // opposing force on velocity of object in game units/sec 
     pixelsPerUnit = new PIXI.Point(50,50); // each game unit is a certain amount of pixels in x and y 
 
@@ -180,11 +180,43 @@ class Game {
 
             */
 
+            // TODO: see other projects where linear drag is implemented for inspiration
+
             let pixelVelocity = this.ConvertUnitsToPixels(physicsData.velocity); // convert from units to pixels
+            
+            // flip the y velocity as it is easier to work with when y is up. 
+
+            pixelVelocity.y *= -1
+
+            // calculate acceleration on each axis
+
+            let xDrag = this.drag;
+            let xAcceleration = -xDrag * pixelVelocity.x 
+
+            let yDrag = this.drag;
+            let yGravity = this.gravity*4
+            let yAcceleration =  -yDrag*pixelVelocity.y + yGravity
+
+            // let yAcceleration =  this.gravity*10
+            // let yAcceleration =  (-yDrag* pixelVelocity.y) //- this.gravity
+
+            // console.log(yAcceleration)
+            // console.log(xAcceleration)
+
+
+            pixelVelocity.x += xAcceleration*deltaSec
+            pixelVelocity.y += yAcceleration*deltaSec
+
+            console.log(pixelVelocity)
+ // unflip the y value
             
             graphicsObj.x += deltaSec * (pixelVelocity.x)
             graphicsObj.y += deltaSec * (pixelVelocity.y)
-            
+
+           pixelVelocity.y *= -1
+
+            // apply changed values
+            physicsData.velocity = this.ConvertPixelsToUnits(pixelVelocity)
 
         }
         

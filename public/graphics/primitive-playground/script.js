@@ -141,16 +141,19 @@ function main() {
 
     console.log(rect1.gameData.physics)
 
-
-    // every x seconds just re position the rect and launch it
-    setInterval(() => {
-        rect1.position = new PIXI.Point(10, 300)
-        rect1.gameData.physics.velocity = new PIXI.Point(1, -2)
+    function launch(){
+        rect1.position = new PIXI.Point(10, 150)
+        rect1.gameData.physics.velocity = new PIXI.Point(1, 3)
 
         // console.log(game.ConvertPixelsToUnits(game.ConvertUnitsToPixels(new PIXI.Point(1,-2))))
-    }, 3000);
+
+    }
 
 
+    // every x seconds just re position the rect and launch it
+    setInterval(launch, 10000);
+
+    launch()
 
 
     // // create a rectangle and display
