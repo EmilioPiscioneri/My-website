@@ -88,21 +88,21 @@ function getCanvasPosFromPointerPos(position) {
 let graphicsObjectToMoveToPointer = null;
 
 function mainTickerHandler() {
-        if (graphicsObjectToMoveToPointer) {
-            let clickPos = game.mousePos;
-            // console.log(clickPos)
+    if (graphicsObjectToMoveToPointer) {
+        let clickPos = game.mousePos;
+        // console.log(clickPos)
 
-            // move the graphic to pointer
-            graphicsObjectToMoveToPointer.x = clickPos.x;
-            graphicsObjectToMoveToPointer.y = clickPos.y;
-        }
+        // move the graphic to pointer
+        graphicsObjectToMoveToPointer.x = clickPos.x;
+        graphicsObjectToMoveToPointer.y = clickPos.y;
+    }
 }
 
 function main() {
     game.AddTickerListener(mainTickerHandler);
     // create a rectangle and display
     let rect1 = new Graphics()
-        .rect(10, 0, 250, 400)
+        .rect(10, 100, 100, 150)
         .fill("#FFFFFF")
 
     // make it interactive
@@ -141,7 +141,14 @@ function main() {
 
     console.log(rect1.gameData.physics)
 
-    rect1.gameData.physics.velocity = new PIXI.Point(100,100)
+
+    // every x seconds just re position the rect and launch it
+    setInterval(() => {
+        rect1.position = new PIXI.Point(10, 300)
+        rect1.gameData.physics.velocity = new PIXI.Point(1, -2)
+
+        // console.log(game.ConvertPixelsToUnits(game.ConvertUnitsToPixels(new PIXI.Point(1,-2))))
+    }, 3000);
 
 
 

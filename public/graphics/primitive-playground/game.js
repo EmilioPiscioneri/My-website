@@ -9,7 +9,9 @@ class Game {
     // gameObjects = []; // an array of game objects 
     ticker; // a PIXI ticker object that is for this game obvject
     globalPhysicsEnabled = true; // Maybe you don't want physics idk
-    gravity = 9.8; // gravitational acceleration in pixels/second (only on y)
+    gravity = 9.8; // gravitational acceleration in game units/second (only on y)
+    drag = 0.25; // opposing force on velocity of object in game units/sec 
+    pixelsPerUnit = new PIXI.Point(50,50); // each game unit is a certain amount of pixels in x and y 
 
     // I don't need to listen for multiple events so I'll just use the on... functions
     //onTick; //a function that fires whenever the game ticks (new frame)
@@ -61,6 +63,14 @@ class Game {
         this.ticker.add(listeningFunction)
     }
 
+    ConvertUnitsToPixels(unitPoint){
+        return new PIXI.Point(unitPoint.x*this.pixelsPerUnit.x, unitPoint.y*this.pixelsPerUnit.y);
+    }
+
+    ConvertPixelsToUnits(pixelPoint){
+        return new PIXI.Point(pixelPoint.x/this.pixelsPerUnit.x, pixelPoint.y/this.pixelsPerUnit.y);
+    }
+
 
     // need to be defined like this to keep "this" to the Game object under ticker listener
     onTick = () => {
@@ -77,7 +87,7 @@ class Game {
         let defaultGameData = {
             physics: {
                 enabled: true,
-                velocity: new PIXI.Point(0,0), // each one represents movement over axis in pixels over a second 
+                velocity: new PIXI.Point(0,0), // each one represents movement over axis in game units per second 
             }
         }
 
@@ -126,12 +136,54 @@ class Game {
 
             // apply physics
 
-            // seconds since last frame
+            // seconds since last frame, ik division is slower but it's insignificant
             let deltaSec = this.ticker.deltaMS/1000;
-            graphicsObj.x += deltaSec * physicsData.velocity.x
-            graphicsObj.y += deltaSec * physicsData.velocity.y
-            console.log()
 
+            // Linear drag https://www.youtube.com/watch?v=OBq07mCMXlc&t=292s
+            // Use the acceleration (double dot product of each axis) which is the rate of change of velocity and apply that to the current velocity.
+            // The amount that the change will be is determined by the time since last frame 
+
+            /*
+            
+
+            // let pixelVelocity = this.ConvertUnitsToPixels(physicsData.velocity); // convert from units to pixels
+            let unitVelocity = physicsData.velocity; // 
+
+            
+            // a=acceleration, v=velocity
+            // a.x = -k*v.x
+            let xAcceleration = (-1*this.drag)*unitVelocity.x;
+
+
+
+            // I can't think right now, another day
+            
+            // a=acceleration, v=velocity
+            // a.y = -g-k * v.y
+            // maybe inverse the velocity y (the formula is for positive cartesian stuff)
+
+            let yAcceleration =  (this.drag* (-unitVelocity.y)) +this.gravity 
+
+
+
+            // apply acceleration to velocity
+
+            let unitAcceleration = new PIXI.Point(xAcceleration,yAcceleration);
+
+            physicsData.velocity.x += xAcceleration
+
+            // apply velocity to position
+
+            graphicsObj.x += deltaSec * (unitVelocity.x)
+            graphicsObj.y += deltaSec * (unitVelocity.y) // -= because y is inversed (relative to cartesian + and -)
+            // graphicsObj.y += deltaSec * (pixelVelocity.y+yAcceleration) // -= because y is inversed (relative to cartesian + and -)
+
+            */
+
+            let pixelVelocity = this.ConvertUnitsToPixels(physicsData.velocity); // convert from units to pixels
+            
+            graphicsObj.x += deltaSec * (pixelVelocity.x)
+            graphicsObj.y += deltaSec * (pixelVelocity.y)
             
 
         }
