@@ -179,7 +179,7 @@ class Game {
             velocity.y -= yAcceleration * deltaSec // minus the acceleration because negative is up
             // pixelVelocity.y *= -1
 
-            console.log(velocity.y)
+            // console.log(velocity.y)
             // unflip the y value
 
             // times velocity by deltaSex (time) to get change since last frame and also convert units to pixels as object position is in pixels
