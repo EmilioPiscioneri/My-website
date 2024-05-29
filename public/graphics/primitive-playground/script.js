@@ -96,13 +96,14 @@ function mainTickerHandler() {
         graphicsObjectToMoveToPointer.x = clickPos.x;
         graphicsObjectToMoveToPointer.y = clickPos.y;
     }
+
 }
 
 function main() {
     game.AddTickerListener(mainTickerHandler);
     // create a rectangle and display
     let rect1 = new Graphics()
-        .rect(10, 100, 100, 150)
+        .rect(10, 0, 100, 150)
         .fill("#FFFFFF")
 
     // make it interactive
@@ -140,10 +141,15 @@ function main() {
     game.AddGraphicsObject(rect1);
 
     console.log(rect1.gameData.physics)
-
+    // rect1.gameData.physics.enabled = false
+    // game.gravityScale = 0.5;
+    game.drag = 0.1
     function launch(){
-        rect1.position = new PIXI.Point(10, 150)
-        rect1.gameData.physics.velocity = new PIXI.Point(4, -10)
+        // .x and .y aren't the same as .position?
+        rect1.x = 50
+        rect1.y = 150
+        // rect1.position = new PIXI.Point(10, 150)
+        rect1.gameData.physics.velocity = new PIXI.Point(20, -20)
         // rect1.gameData.physics.velocity = new PIXI.Point(1, -10)
         // rect1.gameData.physics.velocity = new PIXI.Point(1, -10)
 

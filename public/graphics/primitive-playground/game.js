@@ -118,6 +118,8 @@ class Game {
         let gameStage = this.pixiApplication.stage; // contains all the rendered children
         // loop through all the children and see if they're physics enabled
         for (const graphicsObj of gameStage.children) {
+            console.log(graphicsObj.y )
+
             // check valid
             if (!graphicsObj["gameData"]) {
                 console.log("Added graphics object doesn't have game data:", graphicsObj)
@@ -135,10 +137,12 @@ class Game {
                 continue;
 
 
-            // apply physics
+            // --- apply physics ---
 
             // seconds since last frame, ik division is slower but it's insignificant
             let deltaSec = this.ticker.deltaMS / 1000;            
+
+            // -- applying velocity --
 
             // in units/sec
             let velocity = physicsData.velocity;
@@ -185,6 +189,39 @@ class Game {
             // times velocity by deltaSex (time) to get change since last frame and also convert units to pixels as object position is in pixels
             graphicsObj.x += deltaSec * (velocity.x * this.pixelsPerUnit.x)
             graphicsObj.y += deltaSec * (velocity.y * this.pixelsPerUnit.y)
+
+            // -- Applying border collision --
+
+            // console.log(gameStage)
+            let screenWidth = this.pixiApplication.canvas.width 
+            let screenHeight = this.pixiApplication.canvas.height;
+
+
+            // if on left-side of border
+            if(graphicsObj.x < 0)
+                {
+                graphicsObj.x = 0; // push-out
+                velocity.x *= -1 // bounce
+            }
+            else if(graphicsObj.x+ graphicsObj.width > screenWidth) // if on right-side of border
+            {
+                
+                graphicsObj.x = screenWidth-graphicsObj.width// push-out
+                velocity.x *= -1 // bounce
+            }
+
+            // if above border
+            if(graphicsObj.y < 0)
+                {
+                graphicsObj.y = 0; // push-out
+                velocity.y *= -1 // bounce
+            }
+            else if(graphicsObj.y + graphicsObj.height > screenHeight) // if below border
+            {
+                
+                graphicsObj.y = screenHeight-graphicsObj.height// push-out
+                velocity.y *= -1 // bounce
+            }
 
 
         }
