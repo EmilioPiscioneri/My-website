@@ -143,7 +143,9 @@ function main() {
 
     function launch(){
         rect1.position = new PIXI.Point(10, 150)
-        rect1.gameData.physics.velocity = new PIXI.Point(1, 3)
+        rect1.gameData.physics.velocity = new PIXI.Point(4, -10)
+        // rect1.gameData.physics.velocity = new PIXI.Point(1, -10)
+        // rect1.gameData.physics.velocity = new PIXI.Point(1, -10)
 
         // console.log(game.ConvertPixelsToUnits(game.ConvertUnitsToPixels(new PIXI.Point(1,-2))))
 
