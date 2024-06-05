@@ -2,8 +2,10 @@
 
 // libraries/class/object setup
 const game = new Game();
-const Graphics = PIXI.Graphics; // graphics library
-const Rectangle = PIXI.Rectangle;
+var Graphics = PIXI.Graphics; // graphics library
+var Rectangle = PIXI.Rectangle;
+var Point = PIXI.Point;
+
 
 // end of setup
 
@@ -20,7 +22,7 @@ game.Initialise(graphicsContainer)
 })*/
 
 
-let rectGraphics
+let rect1;
 
 function handleKeyDown(event) {
     // console.log(event)
@@ -32,22 +34,22 @@ function handleKeyDown(event) {
         // movement
         case "w":
             {
-                rectGraphics.y -= movementAmnt;
+                rect1.y += movementAmnt;
                 break;
             }
         case "s":
             {
-                rectGraphics.y += movementAmnt;
+                rect1.y -= movementAmnt;
                 break;
             }
         case "a":
             {
-                rectGraphics.x -= movementAmnt;
+                rect1.x -= movementAmnt;
                 break;
             }
         case "d":
             {
-                rectGraphics.x += movementAmnt;
+                rect1.x += movementAmnt;
                 break;
             }
 
@@ -99,12 +101,25 @@ function mainTickerHandler() {
 
 }
 
+
 function main() {
     game.AddTickerListener(mainTickerHandler);
     // create a rectangle and display
-    let rect1 = new Graphics()
-        .rect(10, 0, 100, 150)
+    let rect1Graphics = new Graphics()
+        .rect(0, 0, 100, 150)
         .fill("#FFFFFF")
+
+    // console.log(rect1Graphics)
+    // console.log(rect1Graphics.position)
+    // console.log(rect1Graphics.x,rect1Graphics.y)
+
+
+    rect1 = new GameObject(rect1Graphics, game);
+
+    rect1.position = new Point(50, 400)
+
+
+    /*
 
     // make it interactive
     rect1.interactive = true;
@@ -126,25 +141,17 @@ function main() {
         graphicsObjectToMoveToPointer = null
     })
 
-    // rect1.addEventListener("pointermove", (event) => {
-    //     if (isRect1Down) {
-    //         let clickPos = getCanvasPosFromPointerPos(event.client);
-    //         // console.log(clickPos)
+    */
 
-    //         // move the graphic to pointer
-    //         rect1.x = clickPos.x;
-    //         rect1.y = clickPos.y;
-    //     }
+    game.AddGameObject(rect1);
+    // rect1.position = new Point(50,0)
 
-    // })
 
-    game.AddGraphicsObject(rect1);
-
-    console.log(rect1.gameData.physics)
+    // console.log(rect1.gameData.physics)
     // rect1.gameData.physics.enabled = false
     // game.gravityScale = 0.5;
-    game.drag = 0.1
-    function launch(){
+    // game.drag = 0.1
+    function launch() {
         // .x and .y aren't the same as .position?
         rect1.x = 50
         rect1.y = 150
@@ -159,9 +166,9 @@ function main() {
 
 
     // every x seconds just re position the rect and launch it
-    setInterval(launch, 10000);
+    // setInterval(launch, 10000);
 
-    launch()
+    // launch()
 
 
     // // create a rectangle and display

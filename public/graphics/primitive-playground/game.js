@@ -1,4 +1,4 @@
-const Point = PIXI.Point;
+var Point = PIXI.Point;
 
 
 // main class, I included the subclasses in the same file because it is easier 
@@ -6,7 +6,7 @@ class Game {
     pixiApplication = new PIXI.Application();
     graphicsContainer = null; // a div where graphics go 
     defaultBackgroundColour = "#4f4f4f"
-    // gameObjects = []; // an array of game objects 
+    gameObjects = []; // an array of all game objects in scene 
     ticker; // a PIXI ticker object that is for this game obvject
     globalPhysicsEnabled = true; // Maybe you don't want physics idk
     gravity = 9.8; // gravitational acceleration in game units/second (only on y)
@@ -75,15 +75,28 @@ class Game {
 
     // need to be defined like this to keep "this" to the Game object under ticker listener
     onTick = () => {
-        if (this.globalPhysicsEnabled)
-            this.PhysicsTickUpdate();
+        if (this.globalPhysicsEnabled) {
+            // this.PhysicsTickUpdate();
+        }
     }
 
     // adds an object to the render canvas (makes it visible)
-    AddGraphicsObject(objectToAdd) {
+
+    /**
+     * 
+     * @param {GameObject} objectToAdd The game object to add to scene
+     */
+    AddGameObject(objectToAdd) {
+        // make sure it doesn't exist otherwise when it is added, it just doesn't duplicate 
+        if (this.DoesGameObjectExist(objectToAdd)) {
+            console.warn("Tried to add an object that already exists")
+            return;
+        }
+
         // this.gameObjects.push(objectToAdd);
 
 
+        /*
         // create it here so it doesn't get reused as reference
         let defaultGameData = {
             physics: {
@@ -96,21 +109,25 @@ class Game {
         if (!objectToAdd["gameData"])
             objectToAdd["gameData"] = defaultGameData;
 
+        */
 
-        this.pixiApplication.stage.addChild(objectToAdd)
+
+        this.pixiApplication.stage.addChild(objectToAdd.graphicsObject)
     }
 
     // removes an object from the render canvas (makes it invisible)
 
-    RemoveGraphicsObject(objectToRemove) {
-        if (this.DoesGraphicsObjectExist(objectToRemove))
-            this.pixiApplication.stage.removeChild(objectToAdd)
-
+    RemoveGameObject(objectToRemove) {
+        this.pixiApplication.stage.removeChild(objectToRemove.graphicsObj)
     }
 
-    DoesGraphicsObjectExist(objectToFind) {
-        return (this.pixiApplication.stage.getChildAt(objectToFind) != null)
-
+    /**
+     * Checks if a game object's graphic object exists in game stage
+     * @param {GameObject} objectToFind 
+     * @returns true or false
+     */
+    DoesGameObjectExist(objectToFind) {
+        return (this.pixiApplication.stage.children.indexOf(objectToFind.graphicsObject) != -1)
     }
 
     // Updates game physics on tick
@@ -118,7 +135,7 @@ class Game {
         let gameStage = this.pixiApplication.stage; // contains all the rendered children
         // loop through all the children and see if they're physics enabled
         for (const graphicsObj of gameStage.children) {
-            console.log(graphicsObj.y )
+            // console.log(graphicsObj.y )
 
             // check valid
             if (!graphicsObj["gameData"]) {
@@ -140,7 +157,7 @@ class Game {
             // --- apply physics ---
 
             // seconds since last frame, ik division is slower but it's insignificant
-            let deltaSec = this.ticker.deltaMS / 1000;            
+            let deltaSec = this.ticker.deltaMS / 1000;
 
             // -- applying velocity --
 
@@ -193,33 +210,31 @@ class Game {
             // -- Applying border collision --
 
             // console.log(gameStage)
-            let screenWidth = this.pixiApplication.canvas.width 
+            let screenWidth = this.pixiApplication.canvas.width
             let screenHeight = this.pixiApplication.canvas.height;
 
 
             // if on left-side of border
-            if(graphicsObj.x < 0)
-                {
+            if (graphicsObj.x < 0) {
                 graphicsObj.x = 0; // push-out
                 velocity.x *= -1 // bounce
             }
-            else if(graphicsObj.x+ graphicsObj.width > screenWidth) // if on right-side of border
+            else if (graphicsObj.x + graphicsObj.width > screenWidth) // if on right-side of border
             {
-                
-                graphicsObj.x = screenWidth-graphicsObj.width// push-out
+
+                graphicsObj.x = screenWidth - graphicsObj.width// push-out
                 velocity.x *= -1 // bounce
             }
 
             // if above border
-            if(graphicsObj.y < 0)
-                {
+            if (graphicsObj.y < 0) {
                 graphicsObj.y = 0; // push-out
                 velocity.y *= -1 // bounce
             }
-            else if(graphicsObj.y + graphicsObj.height > screenHeight) // if below border
+            else if (graphicsObj.y + graphicsObj.height > screenHeight) // if below border
             {
-                
-                graphicsObj.y = screenHeight-graphicsObj.height// push-out
+
+                graphicsObj.y = screenHeight - graphicsObj.height// push-out
                 velocity.y *= -1 // bounce
             }
 
@@ -234,17 +249,114 @@ class Game {
 
 // subclasses
 /**
- * Abstract game object class
- * @abstract
+ * Currently, it is something that is renderable
  */
-/*class GameObject {
+class GameObject {
     graphicsObject; // the actual graphics object of the game object
+    game; // the current game object
+    _isVisible = true;
+    get isVisible() {
+        return this._isVisible;
+    }
+    set isVisible(newVisibility) {
+        this._isVisible = newVisibility // set class variable
+        this.graphicsObject.visible = newVisibility; // also set graphics visibility
+    }
 
-    constructor() {
+    // -- Physics stuff --
+    velocity = new Point(0, 0); // in game units/second 
+    physicsEnabled = true;
+    gravityEnabled = true;
+
+
+    updateGraphicsObjPosition() {
+        // clone to avoid conflicts
+        let newPosition = new Point(this._position.x, this._position.y);
+        newPosition.y = newPosition.y * -1 + game.pixiApplication.canvas.height - this.height; // inverse the y and make it bottom left (currently top left)
+        this.graphicsObject.position = newPosition; // set the new pos
+    }
+
+    _position = new Point(0,0);
+
+    // POSITION X AND Y ARE READONLY, see GameObject.x and .y
+    get position() {
+        return this._position
+    }
+    // make it act like cartesian coordinates
+    set position(newPosition) {
+        // console.log("Set pos to ",newPosition)
+        // set to original pos 
+        this._position = newPosition;
+        // make changes
+        this.updateGraphicsObjPosition();
+
+        // newPosition.y = newPosition.y * -1 + game.pixiApplication.canvas.height; // inverse the y and make it bottom left (currently top left)
+        // this.graphicsObject.position = newPosition; // set the new pos
+    }
+
+    // position values
+    get x(){
+        return this._position.x
+    }
+    set x(newX){
+        this.position = new Point(newX, this.y)
+    }
+    get y(){
+        return this._position.y
+    }
+    set y(newY){
+        this.position = new Point(this.x, newY)
+    }
+
+    _width = 0;
+    get width(){
+        return this._width
+    }
+    set width(newWidth){
+        this._width = newWidth;
+        this.graphicsObject.width = newWidth
+        // this.updateGraphicsObjPosition();
+    }
+    _height = 0;
+    get height(){
+        return this._height
+    }
+    set height(newHeight){
+        this._height = newHeight;
+        this.graphicsObject.height = newHeight
+        this.updateGraphicsObjPosition();
+    }
+
+
+    /**
+     * Creates a game object, make sure to add it to the game after creation
+     * @param {Graphics} graphicsObject A PIXI JS graphics object which holds all the render data. Is automatically added to game stage
+     * @param {Game} game The current game the object is under
+     */
+    constructor(graphicsObject, game) {
+        if (graphicsObject == null)
+            console.warn("Created a new game object with null graphics object")
+        if (game == null)
+            console.warn("Created a new game object with null game object")
+        this.graphicsObject = graphicsObject;
+        this.game = game;
+
+        // -- initialise values --
+        this._width = this.graphicsObject.width;
+        this.height = this.graphicsObject.height;
+
+        // console.log("current pos is "+this.graphicsObject.position.x, +" " + this.graphicsObject.position.y)
+
+        // intialising position doesn't work?
+        // this.position = this.graphicsObject.position; // run through the set function
 
     }
 }
 
+
+
+
+/*
 class Rect extends GameObject {
     x; // position x
     y; // position y
