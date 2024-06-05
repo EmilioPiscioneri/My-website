@@ -76,7 +76,7 @@ class Game {
     // need to be defined like this to keep "this" to the Game object under ticker listener
     onTick = () => {
         if (this.globalPhysicsEnabled) {
-            // this.PhysicsTickUpdate();
+            this.PhysicsTickUpdate();
         }
     }
 
@@ -111,14 +111,20 @@ class Game {
 
         */
 
-
+        this.gameObjects.push(objectToAdd)
         this.pixiApplication.stage.addChild(objectToAdd.graphicsObject)
     }
 
     // removes an object from the render canvas (makes it invisible)
 
     RemoveGameObject(objectToRemove) {
-        this.pixiApplication.stage.removeChild(objectToRemove.graphicsObj)
+        if (this.DoesGameObjectExist(objectToRemove)) {
+            // remove from array
+            this.gameObjects.splice(this.gameObjects.indexOf(objectToRemove), 1)
+            // remove from stage
+            this.pixiApplication.stage.removeChild(objectToRemove.graphicsObj)
+        }
+
     }
 
     /**
@@ -127,30 +133,32 @@ class Game {
      * @returns true or false
      */
     DoesGameObjectExist(objectToFind) {
-        return (this.pixiApplication.stage.children.indexOf(objectToFind.graphicsObject) != -1)
+        // if not found in either game stage or game objects array
+        return (this.gameObjects.indexOf(objectToFind) != -1 ||
+            this.pixiApplication.stage.children.indexOf(objectToFind.graphicsObject) != -1)
     }
 
     // Updates game physics on tick
     PhysicsTickUpdate() {
         let gameStage = this.pixiApplication.stage; // contains all the rendered children
         // loop through all the children and see if they're physics enabled
-        for (const graphicsObj of gameStage.children) {
+        for (const gameObj of this.gameObjects) {
             // console.log(graphicsObj.y )
 
             // check valid
-            if (!graphicsObj["gameData"]) {
-                console.log("Added graphics object doesn't have game data:", graphicsObj)
-                continue;
-            }
+            // if (!gameObj["gameData"]) {
+            //     console.log("Added graphics object doesn't have game data:", gameObj)
+            //     continue;
+            // }
 
-            let physicsData = graphicsObj.gameData.physics;
+            // let physicsData = gameObj.gameData.physics;
 
             // check should interact with physics
-            if (!physicsData.enabled)
+            if (!gameObj.physicsEnabled)
                 continue;
 
             // the position is relative to parent so I'll just make it so only parent can move for now
-            if (graphicsObj.parent != gameStage)
+            if (gameObj.graphicsObject.parent != gameStage)
                 continue;
 
 
@@ -162,7 +170,7 @@ class Game {
             // -- applying velocity --
 
             // in units/sec
-            let velocity = physicsData.velocity;
+            let velocity = gameObj.velocity;
 
 
             // Linear drag https://www.youtube.com/watch?v=OBq07mCMXlc&t=292s
@@ -187,25 +195,25 @@ class Game {
             // a=acceleration, v=velocity, k=drag (factor of resistance against motion)
             // Normal formula (treating positive as up for y)
             // a.y = -k * v.y -g
-            // Basically oppose velocity by drag factor (-k*v) and then lower it more by the gravity constant (- g)
 
-            // Due to negative being up in renderer, you just invert the y value 
 
             let yGravity = this.gravity * this.gravityScale
-            let yAcceleration = (-this.drag * -velocity.y) - yGravity
+            let yAcceleration = -this.drag * velocity.y - yGravity
+            // let yAcceleration = (-this.drag * -velocity.y) - yGravity
 
 
             // apply acceleration changes to velocity (times by deltaSec to get change since last frame)
             velocity.x += xAcceleration * deltaSec
-            velocity.y -= yAcceleration * deltaSec // minus the acceleration because negative is up
+            velocity.y += yAcceleration * deltaSec 
+            // velocity.y -= yAcceleration * deltaSec // minus the acceleration because negative is up
             // pixelVelocity.y *= -1
 
             // console.log(velocity.y)
             // unflip the y value
 
             // times velocity by deltaSex (time) to get change since last frame and also convert units to pixels as object position is in pixels
-            graphicsObj.x += deltaSec * (velocity.x * this.pixelsPerUnit.x)
-            graphicsObj.y += deltaSec * (velocity.y * this.pixelsPerUnit.y)
+            gameObj.x += deltaSec * (velocity.x * this.pixelsPerUnit.x)
+            gameObj.y += deltaSec * (velocity.y * this.pixelsPerUnit.y)
 
             // -- Applying border collision --
 
@@ -215,26 +223,26 @@ class Game {
 
 
             // if on left-side of border
-            if (graphicsObj.x < 0) {
-                graphicsObj.x = 0; // push-out
+            if (gameObj.x < 0) {
+                gameObj.x = 0; // push-out
                 velocity.x *= -1 // bounce
             }
-            else if (graphicsObj.x + graphicsObj.width > screenWidth) // if on right-side of border
+            else if (gameObj.x + gameObj.width > screenWidth) // if on right-side of border
             {
 
-                graphicsObj.x = screenWidth - graphicsObj.width// push-out
+                gameObj.x = screenWidth - gameObj.width// push-out
                 velocity.x *= -1 // bounce
             }
 
             // if above border
-            if (graphicsObj.y < 0) {
-                graphicsObj.y = 0; // push-out
+            if (gameObj.y < 0) {
+                gameObj.y = 0; // push-out
                 velocity.y *= -1 // bounce
             }
-            else if (graphicsObj.y + graphicsObj.height > screenHeight) // if below border
+            else if (gameObj.y + gameObj.height > screenHeight) // if below border
             {
 
-                graphicsObj.y = screenHeight - graphicsObj.height// push-out
+                gameObj.y = screenHeight - gameObj.height// push-out
                 velocity.y *= -1 // bounce
             }
 
@@ -276,7 +284,7 @@ class GameObject {
         this.graphicsObject.position = newPosition; // set the new pos
     }
 
-    _position = new Point(0,0);
+    _position = new Point(0, 0);
 
     // POSITION X AND Y ARE READONLY, see GameObject.x and .y
     get position() {
@@ -295,33 +303,33 @@ class GameObject {
     }
 
     // position values
-    get x(){
+    get x() {
         return this._position.x
     }
-    set x(newX){
+    set x(newX) {
         this.position = new Point(newX, this.y)
     }
-    get y(){
+    get y() {
         return this._position.y
     }
-    set y(newY){
+    set y(newY) {
         this.position = new Point(this.x, newY)
     }
 
     _width = 0;
-    get width(){
+    get width() {
         return this._width
     }
-    set width(newWidth){
+    set width(newWidth) {
         this._width = newWidth;
         this.graphicsObject.width = newWidth
         // this.updateGraphicsObjPosition();
     }
     _height = 0;
-    get height(){
+    get height() {
         return this._height
     }
-    set height(newHeight){
+    set height(newHeight) {
         this._height = newHeight;
         this.graphicsObject.height = newHeight
         this.updateGraphicsObjPosition();
