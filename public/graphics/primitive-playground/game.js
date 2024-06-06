@@ -85,14 +85,14 @@ class Game extends EventSystem {
     ticker; // a PIXI ticker object that is for this game obvject
     globalPhysicsEnabled = true; // Maybe you don't want physics idk
     // gravitational acceleration constant in game units/second (only on y)
-    gravity = 0.98;//9.8; // Just make it 0.98 cos it's easy and scales with game units
+    gravity = 9.8; // 
     gravityScale = 1; // how much force gravity will apply to objects (lower is less pull and higher is more pull)
     drag = 0.125; // opposing force on velocity of object in game units/sec 
     _pixelsPerUnit = new PIXI.Point(50, 50); // each game unit is a certain amount of pixels in x and y 
 
     // each game unit is a certain amount of pixels in x and y 
-    get pixelsPerUnit(){return this._pixelsPerUnit};
-    set pixelsPerUnit(newValue){
+    get pixelsPerUnit() { return this._pixelsPerUnit };
+    set pixelsPerUnit(newValue) {
         this._pixelsPerUnit = newValue;
         this.FireListener("pixelsPerUnitChanged")
     }
@@ -288,20 +288,34 @@ class Game extends EventSystem {
             // basically oppose the current velocity by the drag factor (-k*v)
             // let xAcceleration = (-1*this.drag)*unitVelocity.x;
 
-            // let xDrag = this.drag;
-            let xAcceleration = -this.drag * velocity.x
+            
 
+            /* NOTE: The whole point of the acceleration is to be an opposing force to velocity
+                */
+
+            // If no drag, default to 0
+            let drag  = this.drag;
+            if (!gameObj.dragEnabled)
+                drag = 0; 
+            // Same with gravity
+            let gravity = this.gravity * this.gravityScale;
+            if (!gameObj.gravityEnabled)
+                gravity = 0;
+            
+            let xAcceleration = -drag * velocity.x
 
             // a=acceleration, v=velocity, k=drag (factor of resistance against motion)
             // Normal formula (treating positive as up for y)
             // a.y = -k * v.y -g
 
 
-            let yGravity = this.gravity * this.gravityScale
-            if (!gameObj.gravityEnabled)
-                yGravity = 0; // make gravity have no affect on formula
-            let yAcceleration = -this.drag * velocity.y - yGravity
-
+            // let yGravity = this.gravity * this.gravityScale
+            let yAcceleration = -this.drag * velocity.y - gravity
+            // let yAcceleration = velocity.y
+            // if(gameObj.dragEnabled)
+            // yAcceleration *= -this.drag
+            // if (gameObj.gravityEnabled)
+            // yAcceleration -= yGravity
             // let yAcceleration = (-this.drag * -velocity.y) - yGravity
 
 
@@ -314,9 +328,9 @@ class Game extends EventSystem {
             // console.log(velocity.y)
             // unflip the y value
 
-            // times velocity by deltaSex (time) to get change since last frame and also convert units to pixels as object position is in pixels
-            gameObj.x += deltaSec * (velocity.x * this.pixelsPerUnit.x)
-            gameObj.y += deltaSec * (velocity.y * this.pixelsPerUnit.y)
+            // times velocity by deltaSec (time) to get change since last frame 
+            gameObj.x += deltaSec * velocity.x
+            gameObj.y += deltaSec * velocity.y
 
             // -- Applying border collision --
 
@@ -330,10 +344,10 @@ class Game extends EventSystem {
                 gameObj.x = 0; // push-out
                 velocity.x *= -1 // bounce
             }
-            else if (gameObj.x + gameObj.width > screenWidth/this.pixelsPerUnit.x) // if on right-side of border
+            else if (gameObj.x + gameObj.width > screenWidth / this.pixelsPerUnit.x) // if on right-side of border
             {
 
-                gameObj.x = screenWidth/this.pixelsPerUnit.x - gameObj.width// push-out
+                gameObj.x = screenWidth / this.pixelsPerUnit.x - gameObj.width// push-out
                 velocity.x *= -1 // bounce
             }
 
@@ -342,10 +356,10 @@ class Game extends EventSystem {
                 gameObj.y = 0; // push-out
                 velocity.y *= -1 // bounce
             }
-            else if (gameObj.y + gameObj.height > screenHeight/this.pixelsPerUnit.y) // if below border
+            else if (gameObj.y + gameObj.height > screenHeight / this.pixelsPerUnit.y) // if below border
             {
 
-                gameObj.y = screenHeight/this.pixelsPerUnit.y - gameObj.height// push-out
+                gameObj.y = screenHeight / this.pixelsPerUnit.y - gameObj.height// push-out
                 velocity.y *= -1 // bounce
             }
 
@@ -381,6 +395,7 @@ class GameObject extends EventSystem {
     velocity = new Point(0, 0); // in game units/second 
     physicsEnabled = true; // Whether the 
     gravityEnabled = true; // If gravity will affect the current object, excludes drag
+    dragEnabled = true; // if drag will affect the current object
     _collider; // associated collider for the current game object
     get collider() { return this._collider }
     set collider(newCollider) {
@@ -396,9 +411,9 @@ class GameObject extends EventSystem {
         let canvasHeight = game.pixiApplication.canvas.height / this.game.pixelsPerUnit.y; // convert from pixels to units
 
         newPosition.y = newPosition.y * -1 // inverse y
-         + canvasHeight - this.height // convert to bottom-left (currently top left)
-        
-         // set the new pos, convert to pixel units first
+            + canvasHeight - this.height // convert to bottom-left (currently top left)
+
+        // set the new pos, convert to pixel units first
         this.graphicsObject.position = this.game.ConvertUnitsToPixels(newPosition);
     }
 
@@ -480,7 +495,7 @@ class GameObject extends EventSystem {
 
         // -- setup listeners --
 
-        game.AddEventListener("pixelsPerUnitChanged",() => {
+        game.AddEventListener("pixelsPerUnitChanged", () => {
             // Fire all the setters of variables to just update them so they adhere to the new change visually
             this.width = this.width;
             this.height = this.height;

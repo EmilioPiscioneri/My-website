@@ -130,7 +130,7 @@ function main() {
     game.AddTickerListener(mainTickerHandler);
     // create a rectangle and display
     let rect1Graphics = new Graphics()
-        .rect(0, 0, 1, 2)
+        .rect(0, 0, 3, 2)
         .fill("#FFFFFF")
 
     // console.log(rect1Graphics)
