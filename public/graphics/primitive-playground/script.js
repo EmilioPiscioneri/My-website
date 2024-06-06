@@ -110,7 +110,7 @@ function mainTickerHandler() {
         //
         // let rectVelocity = gameObjectToMoveToPointer.velocity;
         let rectPos = gameObjectToMoveToPointer.position;
-        let mousePos = game.ConvertToCartesian(game.mousePos);
+        let mousePos = game.ConvertToCartesian(game.ConvertPixelsToUnits(game.mousePos));
 
         // (m-r)
         let differenceVec = new Point(mousePos.x - rectPos.x, mousePos.y - rectPos.y)
@@ -130,7 +130,7 @@ function main() {
     game.AddTickerListener(mainTickerHandler);
     // create a rectangle and display
     let rect1Graphics = new Graphics()
-        .rect(0, 0, 100, 150)
+        .rect(0, 0, 1, 2)
         .fill("#FFFFFF")
 
     // console.log(rect1Graphics)
@@ -144,7 +144,7 @@ function main() {
     rect1Collider = new AABB();
     rect1.collider = rect1Collider;
 
-    rect1.position = new Point(50, 400)
+    rect1.position = new Point(1, 3)
 
     // let posChangeFunction = function(){
     //     let newPosition = rect1.position;
@@ -178,12 +178,14 @@ function main() {
         // let clickPos = getCanvasPosFromPointerPos(event.client);
         // console.log(clickPos)
 
+        rect1.gravityEnabled = false; // disable gravity while dragging
         gameObjectToMoveToPointer = rect1;
         // isRect1Down = true;
     })
 
     document.addEventListener("pointerup", (event) => {
         // isRect1Down = false;
+        rect1.gravityEnabled = true; // enable gravity again
         gameObjectToMoveToPointer = null
     })
 

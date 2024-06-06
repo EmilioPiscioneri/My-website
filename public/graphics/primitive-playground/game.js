@@ -1,18 +1,101 @@
 var Point = PIXI.Point;
 
+/**
+ * The event system is an abstract class that adds support to a class for listening and firing its own events
+ * @abstract
+ */
+class EventSystem {
+    listeners = {}; // object where key is event name and value is an array of listeners
+
+    constructor() {
+    }
+
+    /**
+     * Adds a listener to the object
+     * @param {string} eventName 
+     * @param {Function} listener a function that will be called when event is fired. It may pass in data
+     */
+    AddEventListener(eventName, listener) {
+        // The associated array with the current event name and all its listeners
+        let listenerArray = this.listeners[eventName];
+        // if hasn't been intialised, do so
+        if (!listenerArray) {
+            listenerArray = [];
+            this.listeners[eventName] = listenerArray;
+        }
+
+        if (typeof (listener) != "function")
+            throw new Error("You didn't pass in a function to the AddEventListener function");
+
+        listenerArray.push(listener);
+    }
+
+    /**
+     * Removes an existing listener from object
+     * @param {string} eventName 
+     * @param {Function} listener a function that will be called when event is fired. It may pass in data
+     */
+    RemoveEventListener(eventName, listener) {
+        let listenerArray = this.listeners[eventName];
+        // There is no array for listener with associated name
+        if (!listenerArray)
+            return;
+
+        let listenerIndex = listenerArray.indexOf(listener);
+        listenerArray.splice(listenerIndex, 1); // remove the listener
+    }
+
+    /**
+     * Removes an existing listener from object
+     * @param {string} eventName 
+     * @param {object} [eventData] Optional data to pass to listener
+     */
+    FireListener(eventName, eventData) {
+        let listenerArray = this.listeners[eventName];
+        // There is no array for listener with associated name
+        if (!listenerArray)
+            return;
+
+        // loop thru array
+        for (const listener of listenerArray)
+            listener(eventData); // call the listener
+    }
+
+    /**
+     * Prepares the object for getting destroyed later by the garbage collector
+     */
+    Destruct() {
+        // loop thru all listener arrays
+        for (const listenerArray of Object.values(this.listeners)) {
+            // keep removing until empty
+            while (listenerArray.length != 0) {
+                listenerArray.pop(); // remove last element
+            }
+        }
+
+    }
+}
 
 // main class, I included the subclasses in the same file because it is easier 
-class Game {
+class Game extends EventSystem {
     pixiApplication = new PIXI.Application();
     graphicsContainer = null; // a div where graphics go 
     defaultBackgroundColour = "#4f4f4f"
     gameObjects = []; // an array of all game objects in scene 
     ticker; // a PIXI ticker object that is for this game obvject
     globalPhysicsEnabled = true; // Maybe you don't want physics idk
-    gravity = 9.8; // gravitational acceleration in game units/second (only on y)
+    // gravitational acceleration constant in game units/second (only on y)
+    gravity = 0.98;//9.8; // Just make it 0.98 cos it's easy and scales with game units
     gravityScale = 1; // how much force gravity will apply to objects (lower is less pull and higher is more pull)
     drag = 0.125; // opposing force on velocity of object in game units/sec 
-    pixelsPerUnit = new PIXI.Point(50, 50); // each game unit is a certain amount of pixels in x and y 
+    _pixelsPerUnit = new PIXI.Point(50, 50); // each game unit is a certain amount of pixels in x and y 
+
+    // each game unit is a certain amount of pixels in x and y 
+    get pixelsPerUnit(){return this._pixelsPerUnit};
+    set pixelsPerUnit(newValue){
+        this._pixelsPerUnit = newValue;
+        this.FireListener("pixelsPerUnitChanged")
+    }
 
     // I don't need to listen for multiple events so I'll just use the on... functions
     //onTick; //a function that fires whenever the game ticks (new frame)
@@ -21,6 +104,7 @@ class Game {
 
     // game constructor, pass in a div container for game graphics
     constructor() {
+        super();
         this.ticker = new PIXI.Ticker();
         this.ticker.autoStart = true;
 
@@ -64,9 +148,15 @@ class Game {
         this.ticker.add(listeningFunction)
     }
 
+    /**
+     * Converts a point from unit coords to pixel
+     * @param {PIXI.Point} unitPoint The point in units  
+     * @returns  The point converted to pixels
+     */
     ConvertUnitsToPixels(unitPoint) {
         return new PIXI.Point(unitPoint.x * this.pixelsPerUnit.x, unitPoint.y * this.pixelsPerUnit.y);
     }
+
 
     ConvertPixelsToUnits(pixelPoint) {
         return new PIXI.Point(pixelPoint.x / this.pixelsPerUnit.x, pixelPoint.y / this.pixelsPerUnit.y);
@@ -74,10 +164,12 @@ class Game {
 
     /**
      * Converts the weird coordinates to ones that behave like cartesian coords
-     * @param {PIXI.Point} oldPos The old position that you want to convert to 
+     * @param {PIXI.Point} oldPos In GAME UNITS, the old position that you want to convert to 
      */
     ConvertToCartesian(oldPos) {
-        return new Point(oldPos.x, oldPos.y * -1 + this.pixiApplication.canvas.height)
+        let canvasHeight = game.pixiApplication.canvas.height / this.pixelsPerUnit.y; // convert from pixels to units
+
+        return new Point(oldPos.x, oldPos.y * -1 + canvasHeight)
     }
 
 
@@ -238,10 +330,10 @@ class Game {
                 gameObj.x = 0; // push-out
                 velocity.x *= -1 // bounce
             }
-            else if (gameObj.x + gameObj.width > screenWidth) // if on right-side of border
+            else if (gameObj.x + gameObj.width > screenWidth/this.pixelsPerUnit.x) // if on right-side of border
             {
 
-                gameObj.x = screenWidth - gameObj.width// push-out
+                gameObj.x = screenWidth/this.pixelsPerUnit.x - gameObj.width// push-out
                 velocity.x *= -1 // bounce
             }
 
@@ -250,10 +342,10 @@ class Game {
                 gameObj.y = 0; // push-out
                 velocity.y *= -1 // bounce
             }
-            else if (gameObj.y + gameObj.height > screenHeight) // if below border
+            else if (gameObj.y + gameObj.height > screenHeight/this.pixelsPerUnit.y) // if below border
             {
 
-                gameObj.y = screenHeight - gameObj.height// push-out
+                gameObj.y = screenHeight/this.pixelsPerUnit.y - gameObj.height// push-out
                 velocity.y *= -1 // bounce
             }
 
@@ -268,82 +360,7 @@ class Game {
 
 // subclasses/abstract classes
 
-/**
- * The event system is an abstract class that adds support to a class for listening and firing its own events
- * @abstract
- */
-class EventSystem {
-    listeners = {}; // object where key is event name and value is an array of listeners
 
-    constructor() {
-
-    }
-
-    /**
-     * Adds a listener to the object
-     * @param {string} eventName 
-     * @param {Function} listener a function that will be called when event is fired. It may pass in data
-     */
-    AddEventListener(eventName, listener) {
-        // The associated array with the current event name and all its listeners
-        let listenerArray = this.listeners[eventName];
-        // if hasn't been intialised, do so
-        if (!listenerArray) {
-            listenerArray = [];
-            this.listeners[eventName] = listenerArray;
-        }
-
-        if (typeof (listener) != "function")
-            throw new Error("You didn't pass in a function to the AddEventListener function");
-
-        listenerArray.push(listener);
-    }
-
-    /**
-     * Removes an existing listener from object
-     * @param {string} eventName 
-     * @param {Function} listener a function that will be called when event is fired. It may pass in data
-     */
-    RemoveEventListener(eventName, listener) {
-        let listenerArray = this.listeners[eventName];
-        // There is no array for listener with associated name
-        if (!listenerArray)
-            return;
-
-        let listenerIndex = listenerArray.indexOf(listener);
-        listenerArray.splice(listenerIndex, 1); // remove the listener
-    }
-
-    /**
-     * Removes an existing listener from object
-     * @param {string} eventName 
-     * @param {object} [eventData] Optional data to pass to listener
-     */
-    FireListener(eventName, eventData) {
-        let listenerArray = this.listeners[eventName];
-        // There is no array for listener with associated name
-        if (!listenerArray)
-            return;
-
-        // loop thru array
-        for (const listener of listenerArray)
-            listener(eventData); // call the listener
-    }
-
-    /**
-     * Prepares the object for getting destroyed later by the garbage collector
-     */
-    Destruct() {
-        // loop thru all listener arrays
-        for (const listenerArray of Object.values(this.listeners)) {
-            // keep removing until empty
-            while (listenerArray.length != 0) {
-                listenerArray.pop(); // remove last element
-            }
-        }
-
-    }
-}
 
 /**
  * Currently, it is something that is renderable
@@ -376,8 +393,13 @@ class GameObject extends EventSystem {
     updateGraphicsObjPosition() {
         // clone to avoid conflicts
         let newPosition = new Point(this._position.x, this._position.y);
-        newPosition.y = newPosition.y * -1 + game.pixiApplication.canvas.height - this.height; // inverse the y and make it bottom left (currently top left)
-        this.graphicsObject.position = newPosition; // set the new pos
+        let canvasHeight = game.pixiApplication.canvas.height / this.game.pixelsPerUnit.y; // convert from pixels to units
+
+        newPosition.y = newPosition.y * -1 // inverse y
+         + canvasHeight - this.height // convert to bottom-left (currently top left)
+        
+         // set the new pos, convert to pixel units first
+        this.graphicsObject.position = this.game.ConvertUnitsToPixels(newPosition);
     }
 
     _position = new Point(0, 0);
@@ -421,7 +443,7 @@ class GameObject extends EventSystem {
     }
     set width(newWidth) {
         this._width = newWidth;
-        this.graphicsObject.width = newWidth
+        this.graphicsObject.width = newWidth * this.game.pixelsPerUnit.x;// convert units to pixels
         this.FireListener("widthChanged") // fire changed event
         // this.updateGraphicsObjPosition();
     }
@@ -431,11 +453,9 @@ class GameObject extends EventSystem {
     }
     set height(newHeight) {
         this._height = newHeight;
-        this.graphicsObject.height = newHeight
+        this.graphicsObject.height = newHeight * this.game.pixelsPerUnit.y;// convert units to pixels
         this.updateGraphicsObjPosition();
         this.FireListener("heightChanged") // fire changed event
-
-
     }
 
 
@@ -446,6 +466,7 @@ class GameObject extends EventSystem {
      */
     constructor(graphicsObject, game) {
         super(); // calls constructor for inherited object
+
         if (graphicsObject == null)
             console.warn("Created a new game object with null graphics object")
         if (game == null)
@@ -454,8 +475,18 @@ class GameObject extends EventSystem {
         this.game = game;
 
         // -- initialise values --
-        this._width = this.graphicsObject.width;
+        this.width = this.graphicsObject.width;
         this.height = this.graphicsObject.height;
+
+        // -- setup listeners --
+
+        game.AddEventListener("pixelsPerUnitChanged",() => {
+            // Fire all the setters of variables to just update them so they adhere to the new change visually
+            this.width = this.width;
+            this.height = this.height;
+            this.position = this.position;
+
+        })
 
         // console.log("current pos is "+this.graphicsObject.position.x, +" " + this.graphicsObject.position.y)
 
@@ -507,7 +538,7 @@ class AABB extends Collider {
     type = ColliderType.AABB
     width = 0; // in game units 
     height = 0; // in game units
-    position = new Point(0,0); // in game units
+    position = new Point(0, 0); // in game units
     shareWidth = true; // whether to share width with parent game object
     shareHeight = true; // whether to share width with parent game object
     sharePosition = true; // whether to share position with parent game object
