@@ -87,16 +87,40 @@ function getCanvasPosFromPointerPos(position) {
     }
 }
 
-let graphicsObjectToMoveToPointer = null;
+let gameObjectToMoveToPointer = null;
+let speed = 0.25; // rect to mouse speed
 
 function mainTickerHandler() {
-    if (graphicsObjectToMoveToPointer) {
-        let clickPos = game.mousePos;
+    if (gameObjectToMoveToPointer) {
+        
         // console.log(clickPos)
 
         // move the graphic to pointer
-        graphicsObjectToMoveToPointer.x = clickPos.x;
-        graphicsObjectToMoveToPointer.y = clickPos.y;
+        // gameObjectToMoveToPointer.x = clickPos.x;
+        // gameObjectToMoveToPointer.y = clickPos.y;
+
+        // I am doing a cool thing, see desmos
+        // This will basically make the rect move to the mouse using a force instead of directly teleporting to it
+        // This way you can fling it around and let go and stuff
+
+        // See my desmos graph for some explanation to visualise the problem
+        // I love desmos
+        // https://www.desmos.com/calculator/dl8hdrfrmx
+
+        //
+        // let rectVelocity = gameObjectToMoveToPointer.velocity;
+        let rectPos = gameObjectToMoveToPointer.position;
+        let mousePos = game.ConvertToCartesian(game.mousePos);
+
+        // (m-r)
+        let differenceVec = new Point(mousePos.x - rectPos.x, mousePos.y - rectPos.y)
+
+        // A coefficient that affects how long it takes for the rect to reach the mouse
+        // speed = speed
+
+        let newVelocity = new Point(differenceVec.x*speed, differenceVec.y*speed)
+
+        gameObjectToMoveToPointer.velocity = newVelocity;
     }
 
 }
@@ -119,29 +143,29 @@ function main() {
     rect1.position = new Point(50, 400)
 
 
-    /*
+    
 
     // make it interactive
-    rect1.interactive = true;
+    rect1.graphicsObject.interactive = true;
     // let isRect1Down = false; // if pointer is on rect1
     // define hitbox
     // rect1.hitArea = new Rectangle(rect1.x,rect1.y,rect1.width, rect1.height);
 
     // pointer is for touch and mouse
-    rect1.addEventListener("pointerdown", (event) => {
-        let clickPos = getCanvasPosFromPointerPos(event.client);
+    rect1.graphicsObject.addEventListener("pointerdown", (event) => {
+        // let clickPos = getCanvasPosFromPointerPos(event.client);
         // console.log(clickPos)
 
-        graphicsObjectToMoveToPointer = rect1;
+        gameObjectToMoveToPointer = rect1;
         // isRect1Down = true;
     })
 
     document.addEventListener("pointerup", (event) => {
         // isRect1Down = false;
-        graphicsObjectToMoveToPointer = null
+        gameObjectToMoveToPointer = null
     })
 
-    */
+    
 
     game.AddGameObject(rect1);
     // rect1.position = new Point(50,0)

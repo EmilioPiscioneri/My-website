@@ -11,7 +11,7 @@ class Game {
     globalPhysicsEnabled = true; // Maybe you don't want physics idk
     gravity = 9.8; // gravitational acceleration in game units/second (only on y)
     gravityScale = 1; // how much force gravity will apply to objects (lower is less pull and higher is more pull)
-    drag = 0.25; // opposing force on velocity of object in game units/sec 
+    drag = 0.125; // opposing force on velocity of object in game units/sec 
     pixelsPerUnit = new PIXI.Point(50, 50); // each game unit is a certain amount of pixels in x and y 
 
     // I don't need to listen for multiple events so I'll just use the on... functions
@@ -70,6 +70,14 @@ class Game {
 
     ConvertPixelsToUnits(pixelPoint) {
         return new PIXI.Point(pixelPoint.x / this.pixelsPerUnit.x, pixelPoint.y / this.pixelsPerUnit.y);
+    }
+
+    /**
+     * Converts the weird coordinates to ones that behave like cartesian coords
+     * @param {PIXI.Point} oldPos The old position that you want to convert to 
+     */
+    ConvertToCartesian(oldPos){
+        return new Point(oldPos.x, oldPos.y * -1 + this.pixiApplication.canvas.height)
     }
 
 
@@ -256,10 +264,30 @@ class Game {
 
 
 // subclasses
+
+/**
+ * The event system is an abstract class that adds support to a class for listening and firing its own events
+ * @abstract
+ */
+class EventSystem {
+    listeners = {}; // each object has a key and pair value
+    
+    constructor(){
+        
+    }
+
+    /**
+     * Prepares the object for getting destroyed later by the garbage collector
+     */
+    Destruct() {
+        // TO-DO: remove all listeners
+    }
+}
+
 /**
  * Currently, it is something that is renderable
  */
-class GameObject {
+class GameObject extends EventSystem  {
     graphicsObject; // the actual graphics object of the game object
     game; // the current game object
     _isVisible = true;
@@ -342,6 +370,7 @@ class GameObject {
      * @param {Game} game The current game the object is under
      */
     constructor(graphicsObject, game) {
+        super(); // calls constructor for inherited object
         if (graphicsObject == null)
             console.warn("Created a new game object with null graphics object")
         if (game == null)
@@ -360,6 +389,8 @@ class GameObject {
 
     }
 }
+
+
 
 
 

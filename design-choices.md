@@ -20,8 +20,12 @@ E.g. I plan to add dynamic sites so I need a template one
 
 - ~~graphics/primitive-playgound: I decided to use the existing graphics objects and the pixi stage container because there isn't a need in js to add a seperate class when I can just add to the existing classes. This also isn't supposed to be a robust system, may need to rework this part~~
 
+- graphics/primitive-playgound: The graphics renderer is designed for ES6 (ECMAScript 2015) aka modern browsers
+
 - graphics/primitive-playgound: You can only collide objects with border of screen. This is due to the fact that object collisions between hitboxes and other polygons would require a lot more time and math than I can currently dedicate to this project. 
 
 - graphics/primitive-playgound: I made custom game objects. Each point that references positions is done so from bottom-left with cartesian like behaviour (positive y is up)
 
 - graphics/primitive-playgound: Due to me making the position coordinates cartesian like, you cannot do object.position.x += 5. Instead you just do object.x += 10 and so on. Also you need to set position to 0,0 when creating graphics and then set them in the game object 
+
+- graphics/primitive-playgound:I am keeping all the different classes for the game in one file because it means it is easier to import into other projects which will likely use it too
