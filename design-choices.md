@@ -29,3 +29,7 @@ E.g. I plan to add dynamic sites so I need a template one
 - graphics/primitive-playgound: Due to me making the position coordinates cartesian like, you cannot do object.position.x += 5. Instead you just do object.x += 10 and so on. Also you need to set position to 0,0 when creating graphics and then set them in the game object 
 
 - graphics/primitive-playgound:I am keeping all the different classes for the game in one file because it means it is easier to import into other projects which will likely use it too
+
+- graphics/primitive-playgound: You have to manually call destructor for event listener inherited classes e.g. game object, because I needed a way to clear event listeners when the object is no longer needed. This is just a precaution because I am not sure if it will be garbage collected properly
+
+- graphics/primitive-playgound: You can probably run into issues if you add more than one event listener for custom objects (it just removes the first occurance) but I kept it in there because it might have use cases

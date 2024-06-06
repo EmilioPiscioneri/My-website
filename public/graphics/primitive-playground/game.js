@@ -76,7 +76,7 @@ class Game {
      * Converts the weird coordinates to ones that behave like cartesian coords
      * @param {PIXI.Point} oldPos The old position that you want to convert to 
      */
-    ConvertToCartesian(oldPos){
+    ConvertToCartesian(oldPos) {
         return new Point(oldPos.x, oldPos.y * -1 + this.pixiApplication.canvas.height)
     }
 
@@ -206,13 +206,16 @@ class Game {
 
 
             let yGravity = this.gravity * this.gravityScale
+            if (!gameObj.gravityEnabled)
+                yGravity = 0; // make gravity have no affect on formula
             let yAcceleration = -this.drag * velocity.y - yGravity
+
             // let yAcceleration = (-this.drag * -velocity.y) - yGravity
 
 
             // apply acceleration changes to velocity (times by deltaSec to get change since last frame)
             velocity.x += xAcceleration * deltaSec
-            velocity.y += yAcceleration * deltaSec 
+            velocity.y += yAcceleration * deltaSec
             // velocity.y -= yAcceleration * deltaSec // minus the acceleration because negative is up
             // pixelVelocity.y *= -1
 
@@ -270,24 +273,82 @@ class Game {
  * @abstract
  */
 class EventSystem {
-    listeners = {}; // each object has a key and pair value
-    
-    constructor(){
-        
+    listeners = {}; // object where key is event name and value is an array of listeners
+
+    constructor() {
+
+    }
+
+    /**
+     * Adds a listener to the object
+     * @param {string} eventName 
+     * @param {Function} listener a function that will be called when event is fired. It may pass in data
+     */
+    AddEventListener(eventName, listener) {
+        // The associated array with the current event name and all its listeners
+        let listenerArray = this.listeners[eventName];
+        // if hasn't been intialised, do so
+        if (!listenerArray) {
+            listenerArray = [];
+            this.listeners[eventName] = listenerArray;
+        }
+
+        if (typeof (listener) != "function")
+            throw new Error("You didn't pass in a function to the AddEventListener function");
+
+        listenerArray.push(listener);
+    }
+
+    /**
+     * Removes an existing listener from object
+     * @param {string} eventName 
+     * @param {Function} listener a function that will be called when event is fired. It may pass in data
+     */
+    RemoveEventListener(eventName, listener) {
+        let listenerArray = this.listeners[eventName];
+        // There is no array for listener with associated name
+        if (!listenerArray)
+            return;
+
+        let listenerIndex = listenerArray.indexOf(listener);
+        listenerArray.splice(listenerIndex, 1); // remove the listener
+    }
+
+    /**
+     * Removes an existing listener from object
+     * @param {string} eventName 
+     * @param {object} [eventData] Optional data to pass to listener
+     */
+    FireListener(eventName, eventData) {
+        let listenerArray = this.listeners[eventName];
+        // There is no array for listener with associated name
+        if (!listenerArray)
+            return;
+
+        // loop thru array
+        for (const listener of listenerArray)
+            listener(eventData); // call the listener
     }
 
     /**
      * Prepares the object for getting destroyed later by the garbage collector
      */
     Destruct() {
-        // TO-DO: remove all listeners
+        // loop thru all listener arrays
+        for (const listenerArray of Object.values(this.listeners)) {
+            // keep removing until empty
+            while (listenerArray.length != 0) {
+                listenerArray.pop(); // remove last element
+            }
+        }
+
     }
 }
 
 /**
  * Currently, it is something that is renderable
  */
-class GameObject extends EventSystem  {
+class GameObject extends EventSystem {
     graphicsObject; // the actual graphics object of the game object
     game; // the current game object
     _isVisible = true;
@@ -301,8 +362,8 @@ class GameObject extends EventSystem  {
 
     // -- Physics stuff --
     velocity = new Point(0, 0); // in game units/second 
-    physicsEnabled = true;
-    gravityEnabled = true;
+    physicsEnabled = true; // Whether the 
+    gravityEnabled = true; // If gravity will affect the current object, excludes drag
 
 
     updateGraphicsObjPosition() {
@@ -325,6 +386,9 @@ class GameObject extends EventSystem  {
         this._position = newPosition;
         // make changes
         this.updateGraphicsObjPosition();
+
+        this.FireListener("positionChanged") // fire changed event
+
 
         // newPosition.y = newPosition.y * -1 + game.pixiApplication.canvas.height; // inverse the y and make it bottom left (currently top left)
         // this.graphicsObject.position = newPosition; // set the new pos
@@ -351,6 +415,7 @@ class GameObject extends EventSystem  {
     set width(newWidth) {
         this._width = newWidth;
         this.graphicsObject.width = newWidth
+        this.FireListener("widthChanged") // fire changed event
         // this.updateGraphicsObjPosition();
     }
     _height = 0;
@@ -361,6 +426,9 @@ class GameObject extends EventSystem  {
         this._height = newHeight;
         this.graphicsObject.height = newHeight
         this.updateGraphicsObjPosition();
+        this.FireListener("heightChanged") // fire changed event
+
+
     }
 
 
