@@ -140,25 +140,30 @@ function main() {
 
     rect1 = new GameObject(rect1Graphics, game);
 
+    // give it a collider
+    rect1Collider = new AABB();
+    rect1.collider = rect1Collider;
+
     rect1.position = new Point(50, 400)
 
-    let posChangeFunction = function(){
-        let newPosition = rect1.position;
+    // let posChangeFunction = function(){
+    //     let newPosition = rect1.position;
 
-        console.log("Event fired, position changed to ("+newPosition.x+", "+newPosition.y+")");
-    }
+    //     console.log("Event fired, position changed to ("+newPosition.x+", "+newPosition.y+")");
+    // }
 
-    rect1.AddEventListener("positionChanged",posChangeFunction)
+    // rect1.AddEventListener("positionChanged",posChangeFunction)
 
-    // test removing 
-    setTimeout(() => {
-        rect1.RemoveEventListener("positionChanged", posChangeFunction);
-    }, 5000);
+    // // test removing 
+    // setTimeout(() => {
+    //     rect1.Destruct();
+    //     // rect1.RemoveEventListener("positionChanged", posChangeFunction);
+    // }, 5000);
 
-    // test adding back 
-    setTimeout(() => {
-        rect1.AddEventListener("positionChanged", posChangeFunction);
-    }, 10000)
+    // // test adding back 
+    // setTimeout(() => {
+    //     rect1.AddEventListener("positionChanged", posChangeFunction);
+    // }, 10000)
 
     
 

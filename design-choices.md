@@ -20,7 +20,7 @@ E.g. I plan to add dynamic sites so I need a template one
 
 - ~~graphics/primitive-playgound: I decided to use the existing graphics objects and the pixi stage container because there isn't a need in js to add a seperate class when I can just add to the existing classes. This also isn't supposed to be a robust system, may need to rework this part~~
 
-- graphics/primitive-playgound: The graphics renderer is designed for ES6 (ECMAScript 2015) aka modern browsers
+- graphics/primitive-playgound: The graphics renderer is designed for modern browsers. I use different js functions and syntax like classes.
 
 - graphics/primitive-playgound: You can only collide objects with border of screen. This is due to the fact that object collisions between hitboxes and other polygons would require a lot more time and math than I can currently dedicate to this project. 
 
@@ -33,3 +33,5 @@ E.g. I plan to add dynamic sites so I need a template one
 - graphics/primitive-playgound: You have to manually call destructor for event listener inherited classes e.g. game object, because I needed a way to clear event listeners when the object is no longer needed. This is just a precaution because I am not sure if it will be garbage collected properly
 
 - graphics/primitive-playgound: You can probably run into issues if you add more than one event listener for custom objects (it just removes the first occurance) but I kept it in there because it might have use cases
+
+- graphics/primitive-playgound: I use static classes as enums because it is easier for intellisense reasons and doesn't create much overhead

@@ -266,7 +266,7 @@ class Game {
 
 
 
-// subclasses
+// subclasses/abstract classes
 
 /**
  * The event system is an abstract class that adds support to a class for listening and firing its own events
@@ -364,6 +364,13 @@ class GameObject extends EventSystem {
     velocity = new Point(0, 0); // in game units/second 
     physicsEnabled = true; // Whether the 
     gravityEnabled = true; // If gravity will affect the current object, excludes drag
+    _collider; // associated collider for the current game object
+    get collider() { return this._collider }
+    set collider(newCollider) {
+        newCollider.gameObject = this; // set to this game object
+        this._collider = newCollider
+
+    }
 
 
     updateGraphicsObjPosition() {
@@ -456,6 +463,113 @@ class GameObject extends EventSystem {
         // this.position = this.graphicsObject.position; // run through the set function
 
     }
+}
+
+/**
+ * An ENUM for collider type
+ * @static
+ */
+class ColliderType {
+    static ERROR = 1;
+    static AABB = 2;
+}
+
+/**
+ * Base class for collider
+ * @abstract
+ */
+class Collider extends EventSystem {
+    type = ColliderType.ERROR;
+    _gameObject; // a gameObject that the current collider is associated with
+    get gameObject() { return this._gameObject }
+    set gameObject(newGameObject) {
+        let oldValue = this._gameObject
+        this._gameObject = newGameObject;
+        this.FireListener("gameObjectChanged", {
+            oldValue: oldValue,
+            newValue: newGameObject
+        });
+        // console.log("Game object changed to",newGameObject)
+
+    }
+
+    constructor() {
+        super(); // call inherited class constructor
+    }
+}
+
+/**
+ * Axis-Aligned Bounding Box collider 
+ * Basically a rectangle collider with no rotation
+ * Search it up on the goog for more info
+ */
+class AABB extends Collider {
+    type = ColliderType.AABB
+    width = 0; // in game units 
+    height = 0; // in game units
+    position = new Point(0,0); // in game units
+    shareWidth = true; // whether to share width with parent game object
+    shareHeight = true; // whether to share width with parent game object
+    sharePosition = true; // whether to share position with parent game object
+
+    constructor() {
+        super();
+        let thisObject = this; // to keep reference in deeper scoped functions
+
+        // share width and height with parent game object if it exists
+        this.AddEventListener("gameObjectChanged", function (eventData) {
+            let oldGameObject = eventData.oldValue;
+            let newGameObject = eventData.newValue;
+
+            if (oldGameObject) {
+                // remove old listeners, changing game object
+                oldGameObject.RemoveEventListener("widthChanged", thisObject.WidthChangeCallback)
+                oldGameObject.RemoveEventListener("heightChanged", thisObject.HeightChangeCallback)
+                oldGameObject.RemoveEventListener("positionChanged", thisObject.PositionChangeCallback)
+            }
+
+            if (newGameObject) {
+                // Fire the callbacks once to update changes
+                thisObject.WidthChangeCallback();
+                thisObject.HeightChangeCallback();
+                thisObject.PositionChangeCallback();
+
+                // add new listeners, changing game object
+                newGameObject.AddEventListener("widthChanged", thisObject.WidthChangeCallback)
+                newGameObject.AddEventListener("heightChanged", thisObject.HeightChangeCallback)
+                newGameObject.AddEventListener("positionChanged", thisObject.PositionChangeCallback)
+            }
+        })
+    }
+
+
+    // define like this to preserve the this var
+    WidthChangeCallback = () => {
+        if (this.shareWidth) {
+            let newWidth = this.gameObject.width;
+            this.width = newWidth;
+            // console.log("Updated collider width to " + this.width);
+        }
+    }
+
+    // define like this to preserve the this var
+    HeightChangeCallback = () => {
+        if (this.shareHeight) {
+            let newHeight = this.gameObject.height;
+            this.height = newHeight
+            // console.log("Updated collider height to " + this.height);
+        }
+    }
+
+    // define like this to preserve the this var
+    PositionChangeCallback = () => {
+        if (this.sharePosition) {
+            let newPosition = this.gameObject.position;
+            this.position = newPosition
+            // console.log("Updated position to", this.position);
+        }
+    }
+
 }
 
 
