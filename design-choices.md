@@ -32,6 +32,4 @@ E.g. I plan to add dynamic sites so I need a template one
 
 - graphics/primitive-playgound: You have to manually call destructor for event listener inherited classes e.g. game object, because I needed a way to clear event listeners when the object is no longer needed. This is just a precaution because I am not sure if it will be garbage collected properly
 
-- graphics/primitive-playgound: You can probably run into issues if you add more than one event listener for custom objects (it just removes the first occurance) but I kept it in there because it might have use cases
-
 - graphics/primitive-playgound: I use static classes as enums because it is easier for intellisense reasons and doesn't create much overhead

@@ -44,7 +44,7 @@ class ScriptLoader extends EventSystem {
     Load() {
         if (typeof (this._onTickFunction) == "function")
             this._loadFunction(this.game);
-        this.FireListener("setupCompleted");
+        this.FireListener("loaded");
     }
 
     /**
@@ -63,6 +63,7 @@ class ScriptLoader extends EventSystem {
         // check if function exists and is valid
         if (typeof (this._unloadFunction) == "function")
             this._unloadFunction(this.game);
+        this.FireListener("unloaded")
     }
 }
 
@@ -118,21 +119,61 @@ function mainTickerHandler() {
     for (const loader of loaders) {
         loader.OnTick(); // call on tick function
     }
+}
 
+/**
+ * Adds a script loader to the scene AND loads it's load script
+ * @param {ScriptLoader} loaderToAdd 
+ */
+function AddLoader(loaderToAdd) {
+    if (loaders.indexOf(loaderToAdd) != -1) {
+        console.warn("Tried to add a loader to scene that already has been added")
+        return;
+    }
+
+    loaderToAdd.Load();
+    loaders.push(loaderToAdd);
+}
+
+/**
+ * Removes a loader from the scene AND calls it's unload funct ion
+ * @param {ScriptLoader} loaderToRemove 
+ */
+function RemoveLoader(loaderToRemove){
+    
+    let loaderIndex = loaders.indexOf(loaderToRemove)
+    if(loaderIndex != -1){
+        loaderToRemove.Unload(); // unload
+        loaders.splice(loaderIndex, 1); // remove from array
+    }else
+    console.warn("Tried to remove a loader that hasn't been added to scene")
+        
 }
 
 // -- scripts to load --
-let collisionTestScript = new ScriptLoader(game, collisionTestLoad, collisionTestOnTick, collisionTestUnLoad);
+let collisionTestScript = new ScriptLoader(game, collisionTestLoad, collisionTestOnTick, collisionTestUnload);
+let velTstScript = new ScriptLoader(game, velTstLoad, velTstOnTick, velTstUnload); // velocity test script
 
 function main() {
-    game.AddEventListener("onTick", mainTickerHandler);
+    game.AddEventListener("tick", mainTickerHandler);
 
-    collisionTestScript.Load(); // load script
-    loaders.push(collisionTestScript); // add to array of scripts
+    AddLoader(collisionTestScript); // add to scene and load
+
+    // unload after x seconds
+
+    setTimeout(() => {
+        RemoveLoader(collisionTestScript) // remove from scene and unload
+    }, 3000);
+
+    // After script is unloaded, load the next script
+    collisionTestScript.AddEventListener("unloaded", ()=>{
+
+    })
 
 
 
-    
+
+
 
     // console.log(game.pixiApplication.stage.getChildAt(null) == null)
 
@@ -149,7 +190,6 @@ function main() {
 
 let gameObjectToMoveToPointer = null;
 let speed = 10; // rect to mouse speed
-let rect1;
 
 
 // callbacks to remove on unload
@@ -168,6 +208,7 @@ function collisionTestLoad(game) {
 
     // create rectangle game object
     rect1 = new GameObject(rect1Graphics, game);
+    // console.log(rect1.graphicsObject)
 
     // give it a collider
     rect1Collider = new AABB();
@@ -199,10 +240,10 @@ function collisionTestLoad(game) {
 
     collisionTestKeyDwn = (event) => {
         // console.log(event)
-    
+
         let keyDown = event.key;
         let movementAmnt = 0.1; // movement amount in game units
-    
+
         switch (keyDown) {
             // movement
             case "w":
@@ -225,13 +266,13 @@ function collisionTestLoad(game) {
                     rect1.x += movementAmnt;
                     break;
                 }
-    
+
             default:
                 break;
         }
     }
 
-    game.AddEventListener("onKeyDown", collisionTestKeyDwn)
+    game.AddEventListener("keyDown", collisionTestKeyDwn)
 }
 
 function collisionTestOnTick(game) {
@@ -268,11 +309,31 @@ function collisionTestOnTick(game) {
     }
 }
 
-function collisionTestUnLoad() {
+function collisionTestUnload() {
+    console.log("Unloading collision test")
     game.RemoveGameObjects(collisionTestObjsToRmv)
     rect1.graphicsObject.removeEventListener("pointerdown", collisionTestPointerDownCbck)
     document.removeEventListener("pointerup", collisionTestPointerUpCbck)
-    game.removeEventListener("onKeyDown", collisionTestKeyDwn)
+    game.RemoveEventListener("keyDown", collisionTestKeyDwn)
+}
+
+// #endregion
+
+// #region Veocity test script
+
+// called once
+function velTstLoad(game){
+
+}
+
+// called once per tick (frame)
+function velTstOnTick(game){
+
+}
+
+// unloads the script at end
+function velTstUnload(game){
+
 }
 
 // #endregion

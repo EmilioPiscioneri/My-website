@@ -27,6 +27,10 @@ class EventSystem {
         if (typeof (listener) != "function")
             throw new Error("You didn't pass in a function to the AddEventListener function");
 
+        // Make sure the event hasn't already been added
+        if(listenerArray.indexOf(listener) != -1)
+            throw new Error("Tried to add a listener which has already been registered for the "+eventName+" event")
+
         listenerArray.push(listener);
     }
 
@@ -178,18 +182,19 @@ class Game extends EventSystem {
         if (this.globalPhysicsEnabled) {
             this.PhysicsTickUpdate();
             // fire on tick event
-            this.FireListener("onTick");
+            this.FireListener("tick");
         }
     }
 
+    // Handler for when key is pressed down
     OnKeyDown = (eventData) => {
-        this.FireListener("onKeyDown", eventData)
+        this.FireListener("keyDown", eventData)
     }
 
-    // adds an object to the render canvas (makes it visible)
+
 
     /**
-     * 
+     * Adds a game object to scene, can only add one per scene
      * @param {GameObject} objectToAdd The game object to add to scene
      */
     AddGameObject(objectToAdd) {
@@ -212,7 +217,7 @@ class Game extends EventSystem {
             // remove from array
             this.gameObjects.splice(this.gameObjects.indexOf(objectToRemove), 1)
             // remove from stage
-            this.pixiApplication.stage.removeChild(objectToRemove.graphicsObj)
+            this.pixiApplication.stage.removeChild(objectToRemove.graphicsObject)
         }
     }
 
@@ -221,6 +226,8 @@ class Game extends EventSystem {
      * @param {Array.<GameObject>} gameObjects Array of game objects to remove
      */
     RemoveGameObjects(gameObjects) {
+        if(!Array.isArray(gameObjects))
+            throw new Error("Passed game objects isn't an array")
         for(const gameObj of gameObjects){
             this.RemoveGameObject(gameObj);
         }
@@ -241,9 +248,12 @@ class Game extends EventSystem {
      * @returns true or false
      */
     DoesGameObjectExist(objectToFind) {
-        // if not found in either game stage or game objects array
-        return (this.gameObjects.indexOf(objectToFind) != -1 ||
-            this.pixiApplication.stage.children.indexOf(objectToFind.graphicsObject) != -1)
+        return (this.gameObjects.indexOf(objectToFind) != -1)
+
+        // game stage children doesn't mtter because it will handle errors
+        // if found in both game stage and game objects array
+        // return (this.gameObjects.indexOf(objectToFind) != -1 &&
+        //     this.pixiApplication.stage.children.indexOf(objectToFind.graphicsObject) != -1)
     }
 
     // Updates game physics on tick
