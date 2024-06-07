@@ -88,7 +88,7 @@ function getCanvasPosFromPointerPos(position) {
 }
 
 let gameObjectToMoveToPointer = null;
-let speed = 0.25; // rect to mouse speed
+let speed = 10; // rect to mouse speed
 
 function mainTickerHandler() {
     if (gameObjectToMoveToPointer) {
@@ -169,6 +169,8 @@ function main() {
 
     // make it interactive
     rect1.graphicsObject.interactive = true;
+    rect1.gravityEnabled = false;
+    rect1.dragEnabled = false;
     // let isRect1Down = false; // if pointer is on rect1
     // define hitbox
     // rect1.hitArea = new Rectangle(rect1.x,rect1.y,rect1.width, rect1.height);
@@ -178,14 +180,14 @@ function main() {
         // let clickPos = getCanvasPosFromPointerPos(event.client);
         // console.log(clickPos)
 
-        rect1.gravityEnabled = false; // disable gravity while dragging
+        // rect1.gravityEnabled = false; // disable gravity while dragging
         gameObjectToMoveToPointer = rect1;
         // isRect1Down = true;
     })
 
     document.addEventListener("pointerup", (event) => {
         // isRect1Down = false;
-        rect1.gravityEnabled = true; // enable gravity again
+        // rect1.gravityEnabled = true; // enable gravity again
         gameObjectToMoveToPointer = null
     })
 

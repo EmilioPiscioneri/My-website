@@ -85,7 +85,8 @@ class Game extends EventSystem {
     ticker; // a PIXI ticker object that is for this game obvject
     globalPhysicsEnabled = true; // Maybe you don't want physics idk
     // gravitational acceleration constant in game units/second (only on y)
-    gravity = 9.8; // 
+    // Earth has roughly 9.8 m/s^2. I try to set the default to a value that kind of emulates real behaviour
+    gravity = 98; // 
     gravityScale = 1; // how much force gravity will apply to objects (lower is less pull and higher is more pull)
     drag = 0.125; // opposing force on velocity of object in game units/sec 
     _pixelsPerUnit = new PIXI.Point(50, 50); // each game unit is a certain amount of pixels in x and y 
@@ -288,29 +289,32 @@ class Game extends EventSystem {
             // basically oppose the current velocity by the drag factor (-k*v)
             // let xAcceleration = (-1*this.drag)*unitVelocity.x;
 
-            
+
 
             /* NOTE: The whole point of the acceleration is to be an opposing force to velocity
                 */
 
             // If no drag, default to 0
-            let drag  = this.drag;
+            let drag = this.drag;
             if (!gameObj.dragEnabled)
-                drag = 0; 
+                drag = 0;
             // Same with gravity
             let gravity = this.gravity * this.gravityScale;
             if (!gameObj.gravityEnabled)
                 gravity = 0;
-            
+
             let xAcceleration = -drag * velocity.x
 
             // a=acceleration, v=velocity, k=drag (factor of resistance against motion)
             // Normal formula (treating positive as up for y)
             // a.y = -k * v.y -g
 
+            console.log("---------")
 
             // let yGravity = this.gravity * this.gravityScale
-            let yAcceleration = -this.drag * velocity.y - gravity
+            let yAcceleration = -drag * velocity.y - gravity
+
+
             // let yAcceleration = velocity.y
             // if(gameObj.dragEnabled)
             // yAcceleration *= -this.drag
@@ -319,9 +323,13 @@ class Game extends EventSystem {
             // let yAcceleration = (-this.drag * -velocity.y) - yGravity
 
 
+            console.log("yAcceleration: " + yAcceleration);
+
+
             // apply acceleration changes to velocity (times by deltaSec to get change since last frame)
             velocity.x += xAcceleration * deltaSec
             velocity.y += yAcceleration * deltaSec
+            console.log("Velocity change: (" + (xAcceleration * deltaSec), ", " + (yAcceleration * deltaSec) + ")");
             // velocity.y -= yAcceleration * deltaSec // minus the acceleration because negative is up
             // pixelVelocity.y *= -1
 
