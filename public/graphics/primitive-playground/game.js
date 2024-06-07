@@ -132,7 +132,8 @@ class Game extends EventSystem {
             }).then(() => {
                 // now add the canvas to html
                 graphicsContainer.appendChild(this.pixiApplication.canvas)
-                this.AddTickerListener(this.onTick);
+                graphicsContainer.onkeydown = this.OnKeyDown;
+                this.ticker.add(this.OnTick); // attach to ticker event system
                 this.pixiApplication.canvas.addEventListener("pointermove", this.HandleMouseMove)
 
 
@@ -145,9 +146,6 @@ class Game extends EventSystem {
         })
     }
 
-    AddTickerListener(listeningFunction) {
-        this.ticker.add(listeningFunction)
-    }
 
     /**
      * Converts a point from unit coords to pixel
@@ -174,11 +172,18 @@ class Game extends EventSystem {
     }
 
 
+
     // need to be defined like this to keep "this" to the Game object under ticker listener
-    onTick = () => {
+    OnTick = () => {
         if (this.globalPhysicsEnabled) {
             this.PhysicsTickUpdate();
+            // fire on tick event
+            this.FireListener("onTick");
         }
+    }
+
+    OnKeyDown = (eventData) => {
+        this.FireListener("onKeyDown", eventData)
     }
 
     // adds an object to the render canvas (makes it visible)
@@ -194,30 +199,14 @@ class Game extends EventSystem {
             return;
         }
 
-        // this.gameObjects.push(objectToAdd);
-
-
-        /*
-        // create it here so it doesn't get reused as reference
-        let defaultGameData = {
-            physics: {
-                enabled: true,
-                velocity: new PIXI.Point(0, 0), // each one represents movement over axis in game units per second 
-            }
-        }
-
-        // if the object doesn't have game data attributte, add it
-        if (!objectToAdd["gameData"])
-            objectToAdd["gameData"] = defaultGameData;
-
-        */
-
         this.gameObjects.push(objectToAdd)
         this.pixiApplication.stage.addChild(objectToAdd.graphicsObject)
     }
 
-    // removes an object from the render canvas (makes it invisible)
-
+    /**
+     * Removes an object from the game
+     * @param {GameObject} objectToRemove Game object to remove
+     */
     RemoveGameObject(objectToRemove) {
         if (this.DoesGameObjectExist(objectToRemove)) {
             // remove from array
@@ -225,7 +214,25 @@ class Game extends EventSystem {
             // remove from stage
             this.pixiApplication.stage.removeChild(objectToRemove.graphicsObj)
         }
+    }
 
+    /**
+     * Removes an array of object from the game
+     * @param {Array.<GameObject>} gameObjects Array of game objects to remove
+     */
+    RemoveGameObjects(gameObjects) {
+        for(const gameObj of gameObjects){
+            this.RemoveGameObject(gameObj);
+        }
+    }
+
+    /**
+     * Remove all objects from the game
+     */
+    RemoveAllGameObjects() {
+        for(const gameObj of this.gameObjects){
+            this.RemoveGameObject(gameObj);
+        }
     }
 
     /**
@@ -287,12 +294,7 @@ class Game extends EventSystem {
             // a=acceleration, v=velocity, k=drag (factor of resistance against motion)
             // a.x = -k * v.x
             // basically oppose the current velocity by the drag factor (-k*v)
-            // let xAcceleration = (-1*this.drag)*unitVelocity.x;
-
-
-
-            /* NOTE: The whole point of the acceleration is to be an opposing force to velocity
-                */
+            // let xAcceleration = (-1*this.drag)*unitVelocity.x;                
 
             // If no drag, default to 0
             let drag = this.drag;
@@ -309,32 +311,13 @@ class Game extends EventSystem {
             // Normal formula (treating positive as up for y)
             // a.y = -k * v.y -g
 
-            console.log("---------")
 
             // let yGravity = this.gravity * this.gravityScale
             let yAcceleration = -drag * velocity.y - gravity
 
-
-            // let yAcceleration = velocity.y
-            // if(gameObj.dragEnabled)
-            // yAcceleration *= -this.drag
-            // if (gameObj.gravityEnabled)
-            // yAcceleration -= yGravity
-            // let yAcceleration = (-this.drag * -velocity.y) - yGravity
-
-
-            console.log("yAcceleration: " + yAcceleration);
-
-
             // apply acceleration changes to velocity (times by deltaSec to get change since last frame)
             velocity.x += xAcceleration * deltaSec
             velocity.y += yAcceleration * deltaSec
-            console.log("Velocity change: (" + (xAcceleration * deltaSec), ", " + (yAcceleration * deltaSec) + ")");
-            // velocity.y -= yAcceleration * deltaSec // minus the acceleration because negative is up
-            // pixelVelocity.y *= -1
-
-            // console.log(velocity.y)
-            // unflip the y value
 
             // times velocity by deltaSec (time) to get change since last frame 
             gameObj.x += deltaSec * velocity.x
@@ -342,7 +325,6 @@ class Game extends EventSystem {
 
             // -- Applying border collision --
 
-            // console.log(gameStage)
             let screenWidth = this.pixiApplication.canvas.width
             let screenHeight = this.pixiApplication.canvas.height;
 
@@ -491,9 +473,9 @@ class GameObject extends EventSystem {
         super(); // calls constructor for inherited object
 
         if (graphicsObject == null)
-            console.warn("Created a new game object with null graphics object")
+            throw new Error("Created a new game object with null graphics object")
         if (game == null)
-            console.warn("Created a new game object with null game object")
+            throw new Error("Created a new game object with null game input")
         this.graphicsObject = graphicsObject;
         this.game = game;
 

@@ -5,6 +5,66 @@ const game = new Game();
 var Graphics = PIXI.Graphics; // graphics library
 var Rectangle = PIXI.Rectangle;
 var Point = PIXI.Point;
+let loaders = []; // an array of loader objects that are active in the current script. This ensures their onTick function is fired correctly
+
+/**
+ * This class loads different pieces of code. Useful just so I can easily load and unload different code that I want in a scene at certain times
+ */
+class ScriptLoader extends EventSystem {
+
+    _loadFunction; // the custom setup function for the loader
+    _onTickFunction; // the custom on tick function for the loader
+    _unloadFunction; // the custom cleanup function for the loader
+    game; // the associated game object for the current script
+
+    /**
+     * 
+     * @param {Game} game The game associated with script. Is passed into the different functions 
+     * @param {Function} loadFunction This function is called to load the script. Game is passed into first parameter
+     * @param {Function} [onTickFunction] This function is called every game tick. Game is passed into first parameter
+     * @param {Function} [unloadFunction] This function is called when the script should be unloaded. Game is passed into first parameter 
+     */
+    constructor(game, loadFunction, onTickFunction, unloadFunction) {
+        super();
+
+        if (typeof (loadFunction) != "function")
+            throw new Error("Tried to create a Loader but passed load function isn't a function")
+
+        // assign params to this vars
+        this.game = game;
+        this._loadFunction = loadFunction;
+        this._onTickFunction = onTickFunction;
+        this._unloadFunction = unloadFunction;
+
+    }
+
+    /**
+     * Call when you want to load the script. Game is passed in as parameter.
+     */
+    Load() {
+        if (typeof (this._onTickFunction) == "function")
+            this._loadFunction(this.game);
+        this.FireListener("setupCompleted");
+    }
+
+    /**
+     * Called every frame tick. Game is passed in as parameter.
+     */
+    OnTick() {
+        // check if function exists and is valid
+        if (typeof (this._onTickFunction) == "function")
+            this._onTickFunction(this.game);
+    }
+
+    /**
+     * Call when you want to unload the script. Game is passed in as parameter.
+     */
+    Unload() {
+        // check if function exists and is valid
+        if (typeof (this._unloadFunction) == "function")
+            this._unloadFunction(this.game);
+    }
+}
 
 
 // end of setup
@@ -14,7 +74,6 @@ const graphicsContainer = document.getElementById("graphics-container"); // a di
 // initialise the game object (it is done asynchronously)
 game.Initialise(graphicsContainer)
     .then(() => {
-
         main();
     })
 /*.catch((err) => {
@@ -22,41 +81,7 @@ game.Initialise(graphicsContainer)
 })*/
 
 
-let rect1;
 
-function handleKeyDown(event) {
-    // console.log(event)
-
-    let keyDown = event.key;
-    let movementAmnt = 10; // movement amount in pixels
-
-    switch (keyDown) {
-        // movement
-        case "w":
-            {
-                rect1.y += movementAmnt;
-                break;
-            }
-        case "s":
-            {
-                rect1.y -= movementAmnt;
-                break;
-            }
-        case "a":
-            {
-                rect1.x -= movementAmnt;
-                break;
-            }
-        case "d":
-            {
-                rect1.x += movementAmnt;
-                break;
-            }
-
-        default:
-            break;
-    }
-}
 
 // gets the canvas true screen position
 function getCanvasRealPosition() {
@@ -87,12 +112,131 @@ function getCanvasPosFromPointerPos(position) {
     }
 }
 
-let gameObjectToMoveToPointer = null;
-let speed = 10; // rect to mouse speed
+
 
 function mainTickerHandler() {
+    for (const loader of loaders) {
+        loader.OnTick(); // call on tick function
+    }
+
+}
+
+// -- scripts to load --
+let collisionTestScript = new ScriptLoader(game, collisionTestLoad, collisionTestOnTick, collisionTestUnLoad);
+
+function main() {
+    game.AddEventListener("onTick", mainTickerHandler);
+
+    collisionTestScript.Load(); // load script
+    loaders.push(collisionTestScript); // add to array of scripts
+
+
+
+    
+
+    // console.log(game.pixiApplication.stage.getChildAt(null) == null)
+
+    // game.AddTickerListener(()=>{
+    //     console.log(this)
+    // })
+
+}
+
+
+// --- The different script functions ---
+
+// #region -- Collision test script --
+
+let gameObjectToMoveToPointer = null;
+let speed = 10; // rect to mouse speed
+let rect1;
+
+
+// callbacks to remove on unload
+let collisionTestPointerDownCbck;
+let collisionTestPointerUpCbck;
+let collisionTestKeyDwn;
+
+// objects to remove on unload
+let collisionTestObjsToRmv = [];
+
+function collisionTestLoad(game) {
+    // create rectangle graphics
+    let rect1Graphics = new Graphics()
+        .rect(0, 0, 3, 2)
+        .fill("#FFFFFF")
+
+    // create rectangle game object
+    rect1 = new GameObject(rect1Graphics, game);
+
+    // give it a collider
+    rect1Collider = new AABB();
+    rect1.collider = rect1Collider;
+
+    // make it interactive
+    rect1.graphicsObject.interactive = true;
+    // rect1.gravityEnabled = false;
+    // rect1.dragEnabled = false;
+
+    collisionTestPointerDownCbck = (event) => {
+        gameObjectToMoveToPointer = rect1;
+    }
+
+    collisionTestPointerUpCbck = (event) => {
+        gameObjectToMoveToPointer = null
+    }
+
+    // pointer is for touch and mouse
+    rect1.graphicsObject.addEventListener("pointerdown", collisionTestPointerDownCbck)
+
+    document.addEventListener("pointerup", collisionTestPointerUpCbck)
+
+    // Add object to the game
+    game.AddGameObject(rect1);
+
+    // add objects to remove onm unload
+    collisionTestObjsToRmv.push(rect1);
+
+    collisionTestKeyDwn = (event) => {
+        // console.log(event)
+    
+        let keyDown = event.key;
+        let movementAmnt = 0.1; // movement amount in game units
+    
+        switch (keyDown) {
+            // movement
+            case "w":
+                {
+                    rect1.y += movementAmnt;
+                    break;
+                }
+            case "s":
+                {
+                    rect1.y -= movementAmnt;
+                    break;
+                }
+            case "a":
+                {
+                    rect1.x -= movementAmnt;
+                    break;
+                }
+            case "d":
+                {
+                    rect1.x += movementAmnt;
+                    break;
+                }
+    
+            default:
+                break;
+        }
+    }
+
+    game.AddEventListener("onKeyDown", collisionTestKeyDwn)
+}
+
+function collisionTestOnTick(game) {
     if (gameObjectToMoveToPointer) {
-        
+
         // console.log(clickPos)
 
         // move the graphic to pointer
@@ -118,125 +262,17 @@ function mainTickerHandler() {
         // A coefficient that affects how long it takes for the rect to reach the mouse
         // speed = speed
 
-        let newVelocity = new Point(differenceVec.x*speed, differenceVec.y*speed)
+        let newVelocity = new Point(differenceVec.x * speed, differenceVec.y * speed)
 
         gameObjectToMoveToPointer.velocity = newVelocity;
     }
-
 }
 
-
-function main() {
-    game.AddTickerListener(mainTickerHandler);
-    // create a rectangle and display
-    let rect1Graphics = new Graphics()
-        .rect(0, 0, 3, 2)
-        .fill("#FFFFFF")
-
-    // console.log(rect1Graphics)
-    // console.log(rect1Graphics.position)
-    // console.log(rect1Graphics.x,rect1Graphics.y)
-
-
-    rect1 = new GameObject(rect1Graphics, game);
-
-    // give it a collider
-    rect1Collider = new AABB();
-    rect1.collider = rect1Collider;
-
-    rect1.position = new Point(1, 3)
-
-    // let posChangeFunction = function(){
-    //     let newPosition = rect1.position;
-
-    //     console.log("Event fired, position changed to ("+newPosition.x+", "+newPosition.y+")");
-    // }
-
-    // rect1.AddEventListener("positionChanged",posChangeFunction)
-
-    // // test removing 
-    // setTimeout(() => {
-    //     rect1.Destruct();
-    //     // rect1.RemoveEventListener("positionChanged", posChangeFunction);
-    // }, 5000);
-
-    // // test adding back 
-    // setTimeout(() => {
-    //     rect1.AddEventListener("positionChanged", posChangeFunction);
-    // }, 10000)
-
-    
-
-    // make it interactive
-    rect1.graphicsObject.interactive = true;
-    rect1.gravityEnabled = false;
-    rect1.dragEnabled = false;
-    // let isRect1Down = false; // if pointer is on rect1
-    // define hitbox
-    // rect1.hitArea = new Rectangle(rect1.x,rect1.y,rect1.width, rect1.height);
-
-    // pointer is for touch and mouse
-    rect1.graphicsObject.addEventListener("pointerdown", (event) => {
-        // let clickPos = getCanvasPosFromPointerPos(event.client);
-        // console.log(clickPos)
-
-        // rect1.gravityEnabled = false; // disable gravity while dragging
-        gameObjectToMoveToPointer = rect1;
-        // isRect1Down = true;
-    })
-
-    document.addEventListener("pointerup", (event) => {
-        // isRect1Down = false;
-        // rect1.gravityEnabled = true; // enable gravity again
-        gameObjectToMoveToPointer = null
-    })
-
-    
-
-    game.AddGameObject(rect1);
-    // rect1.position = new Point(50,0)
-
-
-    // console.log(rect1.gameData.physics)
-    // rect1.gameData.physics.enabled = false
-    // game.gravityScale = 0.5;
-    // game.drag = 0.1
-    function launch() {
-        // .x and .y aren't the same as .position?
-        rect1.x = 50
-        rect1.y = 150
-        // rect1.position = new PIXI.Point(10, 150)
-        rect1.gameData.physics.velocity = new PIXI.Point(20, -20)
-        // rect1.gameData.physics.velocity = new PIXI.Point(1, -10)
-        // rect1.gameData.physics.velocity = new PIXI.Point(1, -10)
-
-        // console.log(game.ConvertPixelsToUnits(game.ConvertUnitsToPixels(new PIXI.Point(1,-2))))
-
-    }
-
-
-    // every x seconds just re position the rect and launch it
-    // setInterval(launch, 10000);
-
-    // launch()
-
-
-    // // create a rectangle and display
-    // rectGraphics = new Graphics();
-    // rectGraphics
-    //     .rect(10, 10, 200, 200)
-    //     .fill({
-    //         color: "#FFFFFF"
-    //     });
-
-    // game.pixiApplication.stage.addChild(rectGraphics)
-
-    graphicsContainer.onkeydown = handleKeyDown;
-
-    // console.log(game.pixiApplication.stage.getChildAt(null) == null)
-
-    // game.AddTickerListener(()=>{
-    //     console.log(this)
-    // })
-
+function collisionTestUnLoad() {
+    game.RemoveGameObjects(collisionTestObjsToRmv)
+    rect1.graphicsObject.removeEventListener("pointerdown", collisionTestPointerDownCbck)
+    document.removeEventListener("pointerup", collisionTestPointerUpCbck)
+    game.removeEventListener("onKeyDown", collisionTestKeyDwn)
 }
+
+// #endregion
