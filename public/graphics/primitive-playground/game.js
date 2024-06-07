@@ -473,7 +473,6 @@ class GameObject extends EventSystem {
         this.FireListener("heightChanged") // fire changed event
     }
 
-
     /**
      * Creates a game object, make sure to add it to the game after creation
      * @param {Graphics} graphicsObject A PIXI JS graphics object which holds all the render data. Is automatically added to game stage

@@ -1,5 +1,7 @@
 // primitive playground code
 
+// const { pointInTriangle } = require("./pixi");
+
 // libraries/class/object setup
 const game = new Game();
 var Graphics = PIXI.Graphics; // graphics library
@@ -139,15 +141,15 @@ function AddLoader(loaderToAdd) {
  * Removes a loader from the scene AND calls it's unload funct ion
  * @param {ScriptLoader} loaderToRemove 
  */
-function RemoveLoader(loaderToRemove){
-    
+function RemoveLoader(loaderToRemove) {
+
     let loaderIndex = loaders.indexOf(loaderToRemove)
-    if(loaderIndex != -1){
+    if (loaderIndex != -1) {
         loaderToRemove.Unload(); // unload
         loaders.splice(loaderIndex, 1); // remove from array
-    }else
-    console.warn("Tried to remove a loader that hasn't been added to scene")
-        
+    } else
+        console.warn("Tried to remove a loader that hasn't been added to scene")
+
 }
 
 // -- scripts to load --
@@ -163,11 +165,11 @@ function main() {
 
     setTimeout(() => {
         RemoveLoader(collisionTestScript) // remove from scene and unload
-    }, 3000);
+    }, 250);
 
     // After script is unloaded, load the next script
-    collisionTestScript.AddEventListener("unloaded", ()=>{
-
+    collisionTestScript.AddEventListener("unloaded", () => {
+        AddLoader(velTstScript)
     })
 
 
@@ -322,17 +324,72 @@ function collisionTestUnload() {
 // #region Veocity test script
 
 // called once
-function velTstLoad(game){
+function velTstLoad(game) {
+    /**
+     * The whole ieda of this script is to test if the velocity of the game is accruate
+     * The velocity is meant to represent game units/second
+     * This means with no drag or gravity, an object should roughly reach it's destination.
+     * Due to time between frames the path and end pos isn't mathematically perfect 
+     */
+
+    // create its visuals (graphics)
+    let launchObjGraphics = new Graphics()
+        .rect(0, 0, 2, 2)
+        .fill("rgb(244, 45, 47)");
+
+        // console.log(launchObjGraphics)
+    launchObjGraphics.zIndex = 2; // render on top of other object
+
+    let launchObj = new GameObject(launchObjGraphics, game);
+
+    // Want perfect path
+    launchObj.gravityEnabled = false;
+    launchObj.dragEnabled = false;
+
+    // add object to scene
+    game.AddGameObject(launchObj);
+
+    // This is where the launch object should end up after 1 second
+    let endPosition = new Point(6, 10);
+
+    // Set up a second opaque object at the end goal
+    let endObjGraphics = new Graphics()
+        .rect(0, 0, 2, 2)
+        .fill("rgb(0,70,115)")
+
+    let endObj = new GameObject(endObjGraphics, game);
+    endObj.position = endPosition;
+
+    // Keep static
+    endObj.physicsEnabled = false;
+
+    // Add to game
+    game.AddGameObject(endObj);
+
+    setTimeout(() => {
+        //launch after 2 sec
+        launchObj.velocity = endPosition
+        // After 1 sec, stop
+        setTimeout(() => {
+            launchObj.velocity = new Point(0, 0)
+            // record results
+            console.log("Stopped launch object, end position is:",launchObj.position)
+
+        }, 1000);
+    }, 2000);
+
+
+
 
 }
 
 // called once per tick (frame)
-function velTstOnTick(game){
+function velTstOnTick(game) {
 
 }
 
 // unloads the script at end
-function velTstUnload(game){
+function velTstUnload(game) {
 
 }
 
