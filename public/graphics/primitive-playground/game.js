@@ -545,7 +545,7 @@ class Collider extends EventSystem {
     }
 
 
-    
+
 }
 
 /**
@@ -621,14 +621,80 @@ class AABB extends Collider {
     }
 
     /**
+     * Gets the bounds of the current collider
+     * @returns {Object} The bounds of the collider
+     */
+    GetBounds() {
+        return {
+            left: this.position.x,
+            right: this.position.x + this.width,
+            bottom: this.position.y,
+            top: this.position.y + this.height
+        }
+
+    }
+
+    /**
      * Checks if the current collider collides with another one
      * @param {Collider} otherCollider Check if this collider, collides with the other one
      * @returns {boolean} Whether or not the collider does collide
      */
     DoesCollide(otherCollider) {
-        
+        switch (otherCollider.type) {
+            case ColliderType.AABB: // this AABB -> other AABB
 
-        return true
+                // I already explained it for AABB collision detection, see the theory folder of the website github
+
+                // translated code from leanrOpenGL
+
+                // collision x-axis?
+                let collisionX =
+                    (this.position.x + this.width >= otherCollider.position.x
+                        && otherCollider.position.x + otherCollider.width >= this.position.x);
+
+                // collision y-axis?
+                let collisionY =
+                    (this.position.y + this.height >= otherCollider.position.y
+                        && otherCollider.position.y + otherCollider.height >= this.position.y);
+
+                // collision only if on both axes
+                return collisionX && collisionY;
+
+                /* My first idea
+                let thisBounds = this.GetBounds();
+                let otherBounds = otherCollider.GetBounds()
+                if (
+                    (
+                        // x-axis collision
+                        (thisBounds.left > otherBounds.left && thisBounds.left < otherBounds.right)
+                        ||
+                        (otherBounds.left > thisBounds.left && otherBounds.left < thisBounds.right)
+                        ||
+                        (thisBounds.right > otherBounds.left && thisBounds.right < otherBounds.right)
+                        ||
+                        (otherBounds.right > thisBounds.left && otherBounds.right < thisBounds.right)
+                    )
+                    &&
+                    (
+                        // y-axis collision
+                        (thisBounds.bottom > otherBounds.bottom && thisBounds.bottom < otherBounds.top)
+                        ||
+                        (otherBounds.bottom > thisBounds.bottom && otherBounds.bottom < thisBounds.top)
+                        ||
+                        (thisBounds.top > otherBounds.bottom && thisBounds.top < otherBounds.top)
+                        ||
+                        (otherBounds.top > thisBounds.bottom && otherBounds.top < thisBounds.top)
+                    )
+                )
+                    return true
+                else
+                    return false*/
+                break;
+
+            default:
+                break;
+        }
+
     }
 }
 

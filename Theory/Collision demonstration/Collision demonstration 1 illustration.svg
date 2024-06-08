@@ -1,0 +1,1479 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="800"
+   height="800"
+   viewBox="0 0 211.66666 211.66669"
+   version="1.1"
+   id="svg1"
+   inkscape:version="1.3.2 (091e20e, 2023-11-25, custom)"
+   sodipodi:docname="Collision demonstration 1 illustration.svg"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview1"
+     pagecolor="#505050"
+     bordercolor="#eeeeee"
+     borderopacity="1"
+     inkscape:showpageshadow="0"
+     inkscape:pageopacity="0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#505050"
+     inkscape:document-units="px"
+     inkscape:zoom="1.0343421"
+     inkscape:cx="363.5161"
+     inkscape:cy="431.67537"
+     inkscape:window-width="1920"
+     inkscape:window-height="1017"
+     inkscape:window-x="-8"
+     inkscape:window-y="-8"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="layer2"
+     showgrid="false">
+    <inkscape:grid
+       id="grid2"
+       units="mm"
+       originx="0"
+       originy="0"
+       spacingx="1"
+       spacingy="1"
+       empcolor="#0099e5"
+       empopacity="0.30196078"
+       color="#0099e5"
+       opacity="0.14901961"
+       empspacing="5"
+       dotted="false"
+       gridanglex="30"
+       gridanglez="30"
+       visible="false" />
+  </sodipodi:namedview>
+  <defs
+     id="defs1" />
+  <g
+     inkscape:groupmode="layer"
+     id="layer2"
+     inkscape:label="Background">
+    <rect
+       style="fill:#4d4d4d;fill-opacity:1;stroke:none;stroke-width:1.45408;stroke-linecap:round;stroke-dasharray:none;stroke-opacity:1"
+       id="rect182"
+       width="263.72842"
+       height="276.77417"
+       x="-23.277679"
+       y="-44.508972" />
+  </g>
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1">
+    <text
+       xml:space="preserve"
+       style="font-size:7.99278px;fill:#ffffff;stroke-width:1.66517"
+       x="79.424675"
+       y="8.7553091"
+       id="text2"><tspan
+         sodipodi:role="line"
+         id="tspan2"
+         style="font-weight:bold;font-size:7.99278px;fill:#ffffff;stroke-width:1.66517"
+         x="79.424675"
+         y="8.7553091">Collisions</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:3.46191px;fill:#ffffff;stroke-width:0.721235"
+       x="2.2087479"
+       y="4.7679138"
+       id="text2-9"><tspan
+         sodipodi:role="line"
+         id="tspan2-3"
+         style="font-size:3.46191px;fill:#ffffff;stroke-width:0.721235"
+         x="2.2087479"
+         y="4.7679138">L: left</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:3.46191px;fill:#ffffff;stroke-width:0.721235"
+       x="17.06983"
+       y="4.5833864"
+       id="text2-9-3"><tspan
+         sodipodi:role="line"
+         id="tspan2-3-68"
+         style="font-size:3.46191px;fill:#ffffff;stroke-width:0.721235"
+         x="17.06983"
+         y="4.5833864">T: Top</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:3.46191px;fill:#ffffff;stroke-width:0.721235"
+       x="17.508038"
+       y="8.3653984"
+       id="text2-9-3-3"><tspan
+         sodipodi:role="line"
+         id="tspan2-3-68-9"
+         style="font-size:3.46191px;fill:#ffffff;stroke-width:0.721235"
+         x="17.508038"
+         y="8.3653984">B: Bottom</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:3.46191px;fill:#ffffff;stroke-width:0.721235"
+       x="40.189011"
+       y="5.3971624"
+       id="text2-9-4"><tspan
+         sodipodi:role="line"
+         id="tspan2-3-1"
+         style="font-size:3.46191px;fill:#ffffff;stroke-width:0.721235"
+         x="40.189011"
+         y="5.3971624">1: <tspan
+   style="fill:#00ff00"
+   id="tspan5">Rect 1</tspan></tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:3.46191px;fill:#ffffff;stroke-width:0.721235"
+       x="40.151333"
+       y="8.455368"
+       id="text2-9-4-0"><tspan
+         sodipodi:role="line"
+         id="tspan2-3-1-4"
+         style="font-size:3.46191px;fill:#ffffff;stroke-width:0.721235"
+         x="40.151333"
+         y="8.455368">2: <tspan
+   style="fill:#ff0000"
+   id="tspan5-7">Rect 2</tspan></tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:3.46191px;fill:#ffffff;stroke-width:0.721235"
+       x="2.0349574"
+       y="7.952692"
+       id="text2-9-6"><tspan
+         sodipodi:role="line"
+         id="tspan2-3-6"
+         style="font-size:3.46191px;fill:#ffffff;stroke-width:0.721235"
+         x="2.0349574"
+         y="7.952692">R: right</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:3.70417px;fill:#4f4f4f;fill-opacity:1;stroke-width:1.32292"
+       x="5.154994"
+       y="39.521618"
+       id="text3"><tspan
+         sodipodi:role="line"
+         id="tspan3"
+         style="stroke-width:1.32292"
+         x="5.154994"
+         y="39.521618" /></text>
+    <text
+       xml:space="preserve"
+       style="font-size:3.70417px;fill:#ffffff;fill-opacity:1;stroke-width:1.32292"
+       x="36.067616"
+       y="33.445679"
+       id="text7"
+       inkscape:label="text7"><tspan
+         sodipodi:role="line"
+         id="tspan7"
+         style="stroke-width:1.32292"
+         x="36.067616"
+         y="33.445679" /></text>
+  </g>
+  <g
+     inkscape:groupmode="layer"
+     id="layer3"
+     inkscape:label="Collisions">
+    <g
+       id="g10"
+       inkscape:label="Situation 1"
+       transform="translate(11.666565,6.7828869)">
+      <g
+         id="g66"
+         inkscape:label="Outer"
+         transform="matrix(0.99974888,0,0,1.0456943,0.00949318,-0.48200709)">
+        <rect
+           style="fill:none;stroke:#000000;stroke-width:1.38659;stroke-opacity:1"
+           id="rect66"
+           width="87.299911"
+           height="82.054482"
+           x="-5.8466663"
+           y="15.135063"
+           inkscape:label="Outline" />
+        <text
+           xml:space="preserve"
+           style="font-size:3.70417px;fill:#d7e3f4;stroke-width:1.32292"
+           x="6.3306942"
+           y="19.896469"
+           id="text66"
+           transform="translate(-11.666565,-6.7828869)"
+           inkscape:label="Situation text"><tspan
+             sodipodi:role="line"
+             id="tspan66"
+             style="font-weight:bold;fill:#ffffff;stroke-width:1.32292"
+             x="6.3306942"
+             y="19.896469">Situation 1</tspan></text>
+      </g>
+      <g
+         id="g67"
+         inkscape:label="Inner"
+         transform="translate(3.6175397,1.6278928)">
+        <g
+           id="g68"
+           inkscape:label="Graphic"
+           transform="translate(7.5968333,0.18087698)">
+          <g
+             id="g9"
+             inkscape:label="Rect1">
+            <rect
+               style="fill:#00ff00;stroke-width:1.32292"
+               id="rect1"
+               width="46.123631"
+               height="24.056639"
+               x="6.1294327"
+               y="20.658215" />
+            <text
+               xml:space="preserve"
+               style="font-size:3.70417px;fill:#00ff00;fill-opacity:1;stroke-width:1.32292"
+               x="2.6587076"
+               y="31.426245"
+               id="text8-0"><tspan
+                 sodipodi:role="line"
+                 id="tspan8-2"
+                 style="fill:#00ff00;stroke-width:1.32292"
+                 x="2.6587076"
+                 y="31.426245">L</tspan></text>
+            <text
+               xml:space="preserve"
+               style="font-size:3.70417px;fill:#00ff00;fill-opacity:1;stroke-width:1.32292"
+               x="53.499371"
+               y="25.406189"
+               id="text8-0-9"><tspan
+                 sodipodi:role="line"
+                 id="tspan8-2-2"
+                 style="fill:#00ff00;stroke-width:1.32292"
+                 x="53.499371"
+                 y="25.406189">R</tspan></text>
+            <text
+               xml:space="preserve"
+               style="font-size:3.70417px;fill:#00ff00;fill-opacity:1;stroke-width:1.32292"
+               x="26.242807"
+               y="19.535105"
+               id="text8-0-9-0"><tspan
+                 sodipodi:role="line"
+                 id="tspan8-2-2-7"
+                 style="fill:#00ff00;stroke-width:1.32292"
+                 x="26.242807"
+                 y="19.535105">T</tspan></text>
+            <text
+               xml:space="preserve"
+               style="font-size:3.70417px;fill:#00ff00;fill-opacity:1;stroke-width:1.32292"
+               x="25.516657"
+               y="48.291019"
+               id="text8-0-9-0-1"><tspan
+                 sodipodi:role="line"
+                 id="tspan8-2-2-7-8"
+                 style="fill:#00ff00;stroke-width:1.32292"
+                 x="25.516657"
+                 y="48.291019">B</tspan></text>
+            <text
+               xml:space="preserve"
+               style="font-size:7.97213px;fill:#000000;fill-opacity:1;stroke-width:2.8472"
+               x="23.363997"
+               y="35.04686"
+               id="text14"><tspan
+                 sodipodi:role="line"
+                 id="tspan14"
+                 style="fill:#000000;stroke-width:2.8472"
+                 x="23.363997"
+                 y="35.04686">1</tspan></text>
+          </g>
+          <g
+             id="g8"
+             inkscape:label="Rect 2">
+            <rect
+               style="fill:#ff0000;stroke-width:1.32292"
+               id="rect2"
+               width="16.821558"
+               height="9.5864801"
+               x="40.360397"
+               y="28.616804" />
+            <text
+               xml:space="preserve"
+               style="font-size:3.70417px;fill:#ff0000;fill-opacity:1;stroke-width:1.32292"
+               x="37.154758"
+               y="34.660721"
+               id="text8"><tspan
+                 sodipodi:role="line"
+                 id="tspan8"
+                 style="fill:#ff0000;stroke-width:1.32292"
+                 x="37.154758"
+                 y="34.660721">L</tspan></text>
+            <text
+               xml:space="preserve"
+               style="font-size:3.70417px;fill:#ff0000;fill-opacity:1;stroke-width:1.32292"
+               x="57.171593"
+               y="34.467018"
+               id="text8-4"><tspan
+                 sodipodi:role="line"
+                 id="tspan8-4"
+                 style="fill:#ff0000;stroke-width:1.32292"
+                 x="57.171593"
+                 y="34.467018">R</tspan></text>
+            <text
+               xml:space="preserve"
+               style="font-size:3.70417px;fill:#ff0000;fill-opacity:1;stroke-width:1.32292"
+               x="47.59671"
+               y="28.019342"
+               id="text8-9"><tspan
+                 sodipodi:role="line"
+                 id="tspan8-20"
+                 style="fill:#ff0000;stroke-width:1.32292"
+                 x="47.59671"
+                 y="28.019342">T</tspan></text>
+            <text
+               xml:space="preserve"
+               style="font-size:3.70417px;fill:#ff0000;fill-opacity:1;stroke-width:1.32292"
+               x="47.053326"
+               y="41.535206"
+               id="text8-9-9"><tspan
+                 sodipodi:role="line"
+                 id="tspan8-20-2"
+                 style="fill:#ff0000;stroke-width:1.32292"
+                 x="47.053326"
+                 y="41.535206">B</tspan></text>
+            <text
+               xml:space="preserve"
+               style="font-size:7.03652px;fill:#000000;fill-opacity:1;stroke-width:2.51305"
+               x="46.33424"
+               y="35.293304"
+               id="text15"><tspan
+                 sodipodi:role="line"
+                 id="tspan15"
+                 style="stroke-width:2.51305"
+                 x="46.33424"
+                 y="35.293304">2</tspan></text>
+          </g>
+          <g
+             id="g11"
+             inkscape:label="Axis">
+            <rect
+               style="fill:#ffffff;fill-opacity:1;stroke-width:1.32292"
+               id="rect10"
+               width="45.128807"
+               height="0.27131546"
+               x="7.1446404"
+               y="49.469852" />
+            <text
+               xml:space="preserve"
+               style="font-size:3.70417px;fill:#ffffff;fill-opacity:1;stroke-width:1.32292"
+               x="2.1705236"
+               y="50.193359"
+               id="text10"><tspan
+                 sodipodi:role="line"
+                 id="tspan10"
+                 style="stroke-width:1.32292"
+                 x="2.1705236"
+                 y="50.193359">-X</tspan></text>
+            <text
+               xml:space="preserve"
+               style="font-size:3.70417px;fill:#ffffff;fill-opacity:1;stroke-width:1.32292"
+               x="52.816078"
+               y="50.91687"
+               id="text11"><tspan
+                 sodipodi:role="line"
+                 id="tspan11"
+                 style="stroke-width:1.32292"
+                 x="52.816078"
+                 y="50.91687">+X</tspan></text>
+            <rect
+               style="fill:#ffffff;fill-opacity:1;stroke-width:1.32292"
+               id="rect11"
+               width="0.27131546"
+               height="24.780146"
+               x="-3.0749087"
+               y="20.891291" />
+            <text
+               xml:space="preserve"
+               style="font-size:3.70417px;fill:#ffffff;fill-opacity:1;stroke-width:1.32292"
+               x="-5.4263091"
+               y="50.193363"
+               id="text12"><tspan
+                 sodipodi:role="line"
+                 id="tspan12"
+                 style="stroke-width:1.32292"
+                 x="-5.4263091"
+                 y="50.193363">-Y</tspan></text>
+            <text
+               xml:space="preserve"
+               style="font-size:3.70417px;fill:#ffffff;fill-opacity:1;stroke-width:1.32292"
+               x="-5.516748"
+               y="19.80603"
+               id="text13"><tspan
+                 sodipodi:role="line"
+                 id="tspan13"
+                 style="stroke-width:1.32292"
+                 x="-5.516748"
+                 y="19.80603">+Y</tspan></text>
+          </g>
+        </g>
+        <g
+           id="g1"
+           inkscape:label="Text"
+           transform="translate(-3.3836851,5.2984101)">
+          <text
+             xml:space="preserve"
+             style="font-size:3.70417px;fill:#ff0000;fill-opacity:1;stroke-width:1.32292"
+             x="6.3598452"
+             y="56.44381"
+             id="text6"><tspan
+               sodipodi:role="line"
+               style="font-weight:bold;fill:#ffffff;stroke-width:1.32292"
+               x="6.3598452"
+               y="56.44381"
+               id="tspan42">Overlapping axis conditions </tspan></text>
+          <text
+             xml:space="preserve"
+             style="font-size:3.70417px;fill:#ff0000;fill-opacity:1;stroke-width:1.32292"
+             x="5.7863588"
+             y="85.351883"
+             id="text6-6"><tspan
+               sodipodi:role="line"
+               style="font-weight:bold;fill:#ffffff;stroke-width:1.32292"
+               x="5.7863588"
+               y="85.351883"
+               id="tspan55">Non-overlapping axis conditions </tspan></text>
+          <text
+             xml:space="preserve"
+             style="font-size:3.70417px;fill:#ff0000;fill-opacity:1;stroke-width:1.32292"
+             x="6.893589"
+             y="66.106468"
+             id="text6-2"><tspan
+               sodipodi:role="line"
+               style="fill:#ffffff;stroke-width:1.32292"
+               x="6.893589"
+               y="66.106468"
+               id="tspan42-4">L: <tspan
+   style="fill:#ff0000"
+   id="tspan43">2.L</tspan> &gt; <tspan
+   style="fill:#00ff00"
+   id="tspan44">1.L</tspan>   AND    <tspan
+   style="fill:#ff0000"
+   id="tspan45">2.L</tspan> &lt; <tspan
+   style="fill:#00ff00"
+   id="tspan46">1.R</tspan></tspan></text>
+          <text
+             xml:space="preserve"
+             style="font-size:3.70417px;fill:#ff0000;fill-opacity:1;stroke-width:1.32292"
+             x="6.4811668"
+             y="90.418228"
+             id="text6-2-9"><tspan
+               sodipodi:role="line"
+               style="fill:#ffffff;stroke-width:1.32292"
+               x="6.4811668"
+               y="90.418228"
+               id="tspan42-4-7">R: <tspan
+   style="fill:#ff0000"
+   id="tspan43-2">2.R</tspan> &gt; <tspan
+   style="fill:#00ff00"
+   id="tspan44-3">1.L</tspan>   AND    <tspan
+   style="fill:#ff0000"
+   id="tspan45-5">2.R</tspan> &gt; <tspan
+   style="fill:#00ff00"
+   id="tspan46-1">1.R</tspan></tspan></text>
+          <text
+             xml:space="preserve"
+             style="font-size:3.70417px;fill:#ff0000;fill-opacity:1;stroke-width:1.32292"
+             x="6.8640823"
+             y="74.608589"
+             id="text6-2-2"><tspan
+               sodipodi:role="line"
+               style="fill:#ffffff;stroke-width:1.32292"
+               x="6.8640823"
+               y="74.608589"
+               id="tspan42-4-8">T: <tspan
+   style="fill:#ff0000"
+   id="tspan47">2.T</tspan> &gt; <tspan
+   style="fill:#00ff00"
+   id="tspan48">1.B</tspan>   AND   <tspan
+   style="fill:#ff0000"
+   id="tspan49">2.T</tspan> &lt; <tspan
+   style="fill:#00ff00"
+   id="tspan50">1.T</tspan> </tspan></text>
+          <text
+             xml:space="preserve"
+             style="font-size:3.70417px;fill:#ff0000;fill-opacity:1;stroke-width:1.32292"
+             x="6.6563382"
+             y="79.185562"
+             id="text6-2-2-1"><tspan
+               sodipodi:role="line"
+               style="fill:#ffffff;stroke-width:1.32292"
+               x="6.6563382"
+               y="79.185562"
+               id="tspan42-4-8-6">B: <tspan
+   style="fill:#ff0000"
+   id="tspan51">2.B</tspan> &gt; <tspan
+   style="fill:#00ff00"
+   id="tspan52">1.B</tspan>   AND   <tspan
+   style="fill:#ff0000"
+   id="tspan53">2.B</tspan> &lt; <tspan
+   style="fill:#00ff00"
+   id="tspan54">1.T </tspan></tspan></text>
+          <text
+             xml:space="preserve"
+             style="font-size:3.70417px;fill:#ffff00;stroke-width:1.32292"
+             x="18.849958"
+             y="61.547958"
+             id="text1"><tspan
+               sodipodi:role="line"
+               id="tspan1"
+               style="fill:#ffff00;stroke-width:1.32292"
+               x="18.849958"
+               y="61.547958">Horizontal Axis (x)</tspan></text>
+          <text
+             xml:space="preserve"
+             style="font-size:3.70417px;fill:#ffff00;stroke-width:1.32292"
+             x="21.663744"
+             y="69.989319"
+             id="text4"><tspan
+               sodipodi:role="line"
+               id="tspan4"
+               style="fill:#ffff00;stroke-width:1.32292"
+               x="21.663744"
+               y="69.989319">Vertical Axis (y)</tspan></text>
+        </g>
+      </g>
+    </g>
+    <g
+       id="g108"
+       inkscape:label="Situation 2"
+       transform="translate(112.41504,6.7828869)">
+      <g
+         id="g69"
+         inkscape:label="Outer"
+         transform="matrix(0.99974888,0,0,1.0456943,0.00949318,-0.48200709)">
+        <rect
+           style="fill:none;stroke:#000000;stroke-width:1.38659;stroke-opacity:1"
+           id="rect68"
+           width="87.299911"
+           height="82.054482"
+           x="-5.8466663"
+           y="15.135063"
+           inkscape:label="Outline" />
+        <text
+           xml:space="preserve"
+           style="font-size:3.70417px;fill:#d7e3f4;stroke-width:1.32292"
+           x="6.3306942"
+           y="19.896469"
+           id="text68"
+           transform="translate(-11.666565,-6.7828869)"
+           inkscape:label="Situation text"><tspan
+             sodipodi:role="line"
+             id="tspan68"
+             style="font-weight:bold;fill:#ffffff;stroke-width:1.32292"
+             x="6.3306942"
+             y="19.896469">Situation 2</tspan></text>
+      </g>
+      <g
+         id="g107"
+         inkscape:label="Inner"
+         transform="translate(3.6175397,1.6278928)">
+        <g
+           id="g83"
+           inkscape:label="Graphic"
+           transform="translate(7.2350793,2.8940317)">
+          <g
+             id="g73"
+             inkscape:label="Rect1">
+            <rect
+               style="fill:#00ff00;stroke-width:1.32292"
+               id="rect69"
+               width="46.123631"
+               height="24.056639"
+               x="6.1294327"
+               y="20.658215" />
+            <text
+               xml:space="preserve"
+               style="font-size:3.70417px;fill:#00ff00;fill-opacity:1;stroke-width:1.32292"
+               x="2.6587076"
+               y="31.426245"
+               id="text69"><tspan
+                 sodipodi:role="line"
+                 id="tspan69"
+                 style="fill:#00ff00;stroke-width:1.32292"
+                 x="2.6587076"
+                 y="31.426245">L</tspan></text>
+            <text
+               xml:space="preserve"
+               style="font-size:3.70417px;fill:#00ff00;fill-opacity:1;stroke-width:1.32292"
+               x="53.499371"
+               y="25.406189"
+               id="text70"><tspan
+                 sodipodi:role="line"
+                 id="tspan70"
+                 style="fill:#00ff00;stroke-width:1.32292"
+                 x="53.499371"
+                 y="25.406189">R</tspan></text>
+            <text
+               xml:space="preserve"
+               style="font-size:3.70417px;fill:#00ff00;fill-opacity:1;stroke-width:1.32292"
+               x="26.242807"
+               y="19.535105"
+               id="text71"><tspan
+                 sodipodi:role="line"
+                 id="tspan71"
+                 style="fill:#00ff00;stroke-width:1.32292"
+                 x="26.242807"
+                 y="19.535105">T</tspan></text>
+            <text
+               xml:space="preserve"
+               style="font-size:3.70417px;fill:#00ff00;fill-opacity:1;stroke-width:1.32292"
+               x="25.516657"
+               y="48.291019"
+               id="text72"><tspan
+                 sodipodi:role="line"
+                 id="tspan72"
+                 style="fill:#00ff00;stroke-width:1.32292"
+                 x="25.516657"
+                 y="48.291019">B</tspan></text>
+            <text
+               xml:space="preserve"
+               style="font-size:8.84876px;fill:#000000;fill-opacity:1;stroke-width:3.16028"
+               x="19.535919"
+               y="37.349045"
+               id="text73"><tspan
+                 sodipodi:role="line"
+                 id="tspan73"
+                 style="fill:#000000;stroke-width:3.16028"
+                 x="19.535919"
+                 y="37.349045">1</tspan></text>
+          </g>
+          <g
+             id="g78"
+             inkscape:label="Rect 2"
+             transform="translate(-7.4181618,-10.999343)">
+            <rect
+               style="fill:#ff0000;stroke-width:1.47323"
+               id="rect73"
+               width="16.821558"
+               height="11.888668"
+               x="40.360397"
+               y="26.314615" />
+            <text
+               xml:space="preserve"
+               style="font-size:3.70417px;fill:#ff0000;fill-opacity:1;stroke-width:1.32292"
+               x="37.154758"
+               y="34.660721"
+               id="text74"><tspan
+                 sodipodi:role="line"
+                 id="tspan74"
+                 style="fill:#ff0000;stroke-width:1.32292"
+                 x="37.154758"
+                 y="34.660721">L</tspan></text>
+            <text
+               xml:space="preserve"
+               style="font-size:3.70417px;fill:#ff0000;fill-opacity:1;stroke-width:1.32292"
+               x="57.171593"
+               y="34.467018"
+               id="text75"><tspan
+                 sodipodi:role="line"
+                 id="tspan75"
+                 style="fill:#ff0000;stroke-width:1.32292"
+                 x="57.171593"
+                 y="34.467018">R</tspan></text>
+            <text
+               xml:space="preserve"
+               style="font-size:3.70417px;fill:#ff0000;fill-opacity:1;stroke-width:1.32292"
+               x="47.59671"
+               y="25.972954"
+               id="text76"><tspan
+                 sodipodi:role="line"
+                 id="tspan76"
+                 style="fill:#ff0000;stroke-width:1.32292"
+                 x="47.59671"
+                 y="25.972954">T</tspan></text>
+            <text
+               xml:space="preserve"
+               style="font-size:3.70417px;fill:#ff0000;fill-opacity:1;stroke-width:1.32292"
+               x="47.053326"
+               y="41.535206"
+               id="text77"><tspan
+                 sodipodi:role="line"
+                 id="tspan77"
+                 style="fill:#ff0000;stroke-width:1.32292"
+                 x="47.053326"
+                 y="41.535206">B</tspan></text>
+            <text
+               xml:space="preserve"
+               style="font-size:5.48557px;fill:#000000;fill-opacity:1;stroke-width:1.95913"
+               x="46.711964"
+               y="33.886414"
+               id="text78"><tspan
+                 sodipodi:role="line"
+                 id="tspan78"
+                 style="stroke-width:1.95913"
+                 x="46.711964"
+                 y="33.886414">2</tspan></text>
+          </g>
+          <g
+             id="g82"
+             inkscape:label="Axis">
+            <rect
+               style="fill:#ffffff;fill-opacity:1;stroke-width:1.32292"
+               id="rect78"
+               width="45.128807"
+               height="0.27131546"
+               x="7.1446404"
+               y="49.469852" />
+            <text
+               xml:space="preserve"
+               style="font-size:3.70417px;fill:#ffffff;fill-opacity:1;stroke-width:1.32292"
+               x="2.1705236"
+               y="50.193359"
+               id="text79"><tspan
+                 sodipodi:role="line"
+                 id="tspan79"
+                 style="stroke-width:1.32292"
+                 x="2.1705236"
+                 y="50.193359">-X</tspan></text>
+            <text
+               xml:space="preserve"
+               style="font-size:3.70417px;fill:#ffffff;fill-opacity:1;stroke-width:1.32292"
+               x="52.816078"
+               y="50.91687"
+               id="text80"><tspan
+                 sodipodi:role="line"
+                 id="tspan80"
+                 style="stroke-width:1.32292"
+                 x="52.816078"
+                 y="50.91687">+X</tspan></text>
+            <rect
+               style="fill:#ffffff;fill-opacity:1;stroke-width:1.32292"
+               id="rect80"
+               width="0.27131546"
+               height="24.780146"
+               x="-3.0749087"
+               y="20.891291" />
+            <text
+               xml:space="preserve"
+               style="font-size:3.70417px;fill:#ffffff;fill-opacity:1;stroke-width:1.32292"
+               x="-5.4263091"
+               y="50.193363"
+               id="text81"><tspan
+                 sodipodi:role="line"
+                 id="tspan81"
+                 style="stroke-width:1.32292"
+                 x="-5.4263091"
+                 y="50.193363">-Y</tspan></text>
+            <text
+               xml:space="preserve"
+               style="font-size:3.70417px;fill:#ffffff;fill-opacity:1;stroke-width:1.32292"
+               x="-5.516748"
+               y="19.80603"
+               id="text82"><tspan
+                 sodipodi:role="line"
+                 id="tspan82"
+                 style="stroke-width:1.32292"
+                 x="-5.516748"
+                 y="19.80603">+Y</tspan></text>
+          </g>
+        </g>
+        <g
+           id="g106"
+           inkscape:label="Text"
+           transform="translate(-3.3836851,5.2984101)">
+          <text
+             xml:space="preserve"
+             style="font-size:3.70417px;fill:#ff0000;fill-opacity:1;stroke-width:1.32292"
+             x="6.3598452"
+             y="56.44381"
+             id="text83"><tspan
+               sodipodi:role="line"
+               style="font-weight:bold;fill:#ffffff;stroke-width:1.32292"
+               x="6.3598452"
+               y="56.44381"
+               id="tspan83">Overlapping axis conditions </tspan></text>
+          <text
+             xml:space="preserve"
+             style="font-size:3.70417px;fill:#ff0000;fill-opacity:1;stroke-width:1.32292"
+             x="5.7863588"
+             y="85.351883"
+             id="text84"><tspan
+               sodipodi:role="line"
+               style="font-weight:bold;fill:#ffffff;stroke-width:1.32292"
+               x="5.7863588"
+               y="85.351883"
+               id="tspan84">Non-overlapping axis conditions </tspan></text>
+          <text
+             xml:space="preserve"
+             style="font-size:3.70417px;fill:#ff0000;fill-opacity:1;stroke-width:1.32292"
+             x="6.893589"
+             y="66.106468"
+             id="text89"><tspan
+               sodipodi:role="line"
+               style="fill:#ffffff;stroke-width:1.32292"
+               x="6.893589"
+               y="66.106468"
+               id="tspan89">L: <tspan
+   style="fill:#ff0000"
+   id="tspan85">2.L</tspan> &gt; <tspan
+   style="fill:#00ff00"
+   id="tspan86">1.L</tspan>   AND    <tspan
+   style="fill:#ff0000"
+   id="tspan87">2.L</tspan> &lt; <tspan
+   style="fill:#00ff00"
+   id="tspan88">1.R</tspan></tspan></text>
+          <text
+             xml:space="preserve"
+             style="font-size:3.70417px;fill:#ff0000;fill-opacity:1;stroke-width:1.32292"
+             x="6.4811702"
+             y="69.979134"
+             id="text94"><tspan
+               sodipodi:role="line"
+               style="fill:#ffffff;stroke-width:1.32292"
+               x="6.4811702"
+               y="69.979134"
+               id="tspan94">R: <tspan
+   style="fill:#ff0000"
+   id="tspan90">2.R</tspan> &gt; <tspan
+   style="fill:#00ff00"
+   id="tspan91">1.L</tspan>   AND    <tspan
+   style="fill:#ff0000"
+   id="tspan92">2.R</tspan> &lt; <tspan
+   style="fill:#00ff00"
+   id="tspan93">1.R</tspan></tspan></text>
+          <text
+             xml:space="preserve"
+             style="font-size:3.70417px;fill:#ff0000;fill-opacity:1;stroke-width:1.32292"
+             x="9.9389915"
+             y="90.344887"
+             id="text99"><tspan
+               sodipodi:role="line"
+               style="fill:#ffffff;stroke-width:1.32292"
+               x="9.9389915"
+               y="90.344887"
+               id="tspan99">T: <tspan
+   style="fill:#ff0000"
+   id="tspan95">2.T</tspan> &gt; <tspan
+   style="fill:#00ff00"
+   id="tspan96">1.B</tspan>   AND   <tspan
+   style="fill:#ff0000"
+   id="tspan97">2.T</tspan> &gt; <tspan
+   style="fill:#00ff00"
+   id="tspan98">1.T</tspan> </tspan></text>
+          <text
+             xml:space="preserve"
+             style="font-size:3.70417px;fill:#ff0000;fill-opacity:1;stroke-width:1.32292"
+             x="6.6563382"
+             y="80.089951"
+             id="text104"><tspan
+               sodipodi:role="line"
+               style="fill:#ffffff;stroke-width:1.32292"
+               x="6.6563382"
+               y="80.089951"
+               id="tspan104">B: <tspan
+   style="fill:#ff0000"
+   id="tspan100">2.B</tspan> &gt; <tspan
+   style="fill:#00ff00"
+   id="tspan101">1.B</tspan>   AND   <tspan
+   style="fill:#ff0000"
+   id="tspan102">2.B</tspan> &lt; <tspan
+   style="fill:#00ff00"
+   id="tspan103">1.T </tspan></tspan></text>
+          <text
+             xml:space="preserve"
+             style="font-size:3.70417px;fill:#ffff00;stroke-width:1.32292"
+             x="18.849958"
+             y="61.547958"
+             id="text105"><tspan
+               sodipodi:role="line"
+               id="tspan105"
+               style="fill:#ffff00;stroke-width:1.32292"
+               x="18.849958"
+               y="61.547958">Horizontal Axis (x)</tspan></text>
+          <text
+             xml:space="preserve"
+             style="font-size:3.70417px;fill:#ffff00;stroke-width:1.32292"
+             x="21.482866"
+             y="75.596504"
+             id="text106"><tspan
+               sodipodi:role="line"
+               id="tspan106"
+               style="fill:#ffff00;stroke-width:1.32292"
+               x="21.482866"
+               y="75.596504">Vertical Axis (y)</tspan></text>
+        </g>
+      </g>
+    </g>
+    <g
+       id="g148"
+       inkscape:label="Situation 2"
+       transform="translate(11.847437,102.28593)">
+      <g
+         id="g109"
+         inkscape:label="Outer"
+         transform="matrix(0.99974888,0,0,1.0456943,0.00949318,-0.48200709)"
+         style="stroke-width:0.99988899;stroke-dasharray:none">
+        <rect
+           style="fill:none;stroke:#000000;stroke-width:0.99988899;stroke-opacity:1;stroke-dasharray:none"
+           id="rect108"
+           width="188.69846"
+           height="86.891426"
+           x="-5.5012851"
+           y="15.484161"
+           inkscape:label="Outline" />
+        <text
+           xml:space="preserve"
+           style="font-size:3.70417px;fill:#d7e3f4;stroke-width:0.99988899;stroke-dasharray:none"
+           x="6.3306942"
+           y="19.896469"
+           id="text108"
+           transform="translate(-11.666565,-6.7828869)"
+           inkscape:label="Situation text"><tspan
+             sodipodi:role="line"
+             id="tspan108"
+             style="font-weight:bold;fill:#ffffff;stroke-width:0.99988899;stroke-dasharray:none"
+             x="6.3306942"
+             y="19.896469">Situation 3</tspan></text>
+      </g>
+      <g
+         id="g147"
+         inkscape:label="Inner"
+         transform="translate(3.6175397,1.6278928)">
+        <g
+           id="g123"
+           inkscape:label="Graphic"
+           transform="translate(7.2350793,2.8940317)">
+          <g
+             id="g113"
+             inkscape:label="Rect1">
+            <rect
+               style="fill:#00ff00;stroke-width:0.728694"
+               id="rect109"
+               width="12.661388"
+               height="26.588917"
+               x="22.950993"
+               y="17.583305" />
+            <text
+               xml:space="preserve"
+               style="font-size:3.70417px;fill:#00ff00;fill-opacity:1;stroke-width:1.32292"
+               x="19.118513"
+               y="20.935379"
+               id="text109"><tspan
+                 sodipodi:role="line"
+                 id="tspan109"
+                 style="fill:#00ff00;stroke-width:1.32292"
+                 x="19.118513"
+                 y="20.935379">L</tspan></text>
+            <text
+               xml:space="preserve"
+               style="font-size:3.70417px;fill:#00ff00;fill-opacity:1;stroke-width:1.32292"
+               x="38.124828"
+               y="23.416542"
+               id="text110"><tspan
+                 sodipodi:role="line"
+                 id="tspan110"
+                 style="fill:#00ff00;stroke-width:1.32292"
+                 x="38.124828"
+                 y="23.416542">R</tspan></text>
+            <text
+               xml:space="preserve"
+               style="font-size:3.70417px;fill:#00ff00;fill-opacity:1;stroke-width:1.32292"
+               x="28.232454"
+               y="16.098442"
+               id="text111"><tspan
+                 sodipodi:role="line"
+                 id="tspan111"
+                 style="fill:#00ff00;stroke-width:1.32292"
+                 x="28.232454"
+                 y="16.098442">T</tspan></text>
+            <text
+               xml:space="preserve"
+               style="font-size:3.70417px;fill:#00ff00;fill-opacity:1;stroke-width:1.32292"
+               x="25.516657"
+               y="48.291019"
+               id="text112"><tspan
+                 sodipodi:role="line"
+                 id="tspan112"
+                 style="fill:#00ff00;stroke-width:1.32292"
+                 x="25.516657"
+                 y="48.291019">B</tspan></text>
+            <text
+               xml:space="preserve"
+               style="font-size:5.63157px;fill:#000000;fill-opacity:1;stroke-width:2.01128"
+               x="23.771044"
+               y="22.159866"
+               id="text113"><tspan
+                 sodipodi:role="line"
+                 id="tspan113"
+                 style="fill:#000000;stroke-width:2.01128"
+                 x="23.771044"
+                 y="22.159866">1</tspan></text>
+          </g>
+          <g
+             id="g118"
+             inkscape:label="Rect 2"
+             transform="translate(-22.069197,1.8429229)">
+            <rect
+               style="fill:#ff0000;stroke-width:1.67348"
+               id="rect113"
+               width="21.705236"
+               height="11.888668"
+               x="40.360397"
+               y="26.314615" />
+            <text
+               xml:space="preserve"
+               style="font-size:3.70417px;fill:#ff0000;fill-opacity:1;stroke-width:1.32292"
+               x="37.154758"
+               y="34.660721"
+               id="text114"><tspan
+                 sodipodi:role="line"
+                 id="tspan114"
+                 style="fill:#ff0000;stroke-width:1.32292"
+                 x="37.154758"
+                 y="34.660721">L</tspan></text>
+            <text
+               xml:space="preserve"
+               style="font-size:3.70417px;fill:#ff0000;fill-opacity:1;stroke-width:1.32292"
+               x="64.044922"
+               y="34.28614"
+               id="text115"><tspan
+                 sodipodi:role="line"
+                 id="tspan115"
+                 style="fill:#ff0000;stroke-width:1.32292"
+                 x="64.044922"
+                 y="34.28614">R</tspan></text>
+            <text
+               xml:space="preserve"
+               style="font-size:3.70417px;fill:#ff0000;fill-opacity:1;stroke-width:1.32292"
+               x="50.852497"
+               y="25.6112"
+               id="text116"><tspan
+                 sodipodi:role="line"
+                 id="tspan116"
+                 style="fill:#ff0000;stroke-width:1.32292"
+                 x="50.852497"
+                 y="25.6112">T</tspan></text>
+            <text
+               xml:space="preserve"
+               style="font-size:3.70417px;fill:#ff0000;fill-opacity:1;stroke-width:1.32292"
+               x="50.851742"
+               y="41.17345"
+               id="text117"><tspan
+                 sodipodi:role="line"
+                 id="tspan117"
+                 style="fill:#ff0000;stroke-width:1.32292"
+                 x="50.851742"
+                 y="41.17345">B</tspan></text>
+            <text
+               xml:space="preserve"
+               style="font-size:5.48557px;fill:#000000;fill-opacity:1;stroke-width:1.95913"
+               x="49.967751"
+               y="33.886414"
+               id="text118"><tspan
+                 sodipodi:role="line"
+                 id="tspan118"
+                 style="stroke-width:1.95913"
+                 x="49.967751"
+                 y="33.886414">2</tspan></text>
+          </g>
+          <g
+             id="g122"
+             inkscape:label="Axis">
+            <rect
+               style="fill:#ffffff;fill-opacity:1;stroke-width:1.32292"
+               id="rect118"
+               width="45.128807"
+               height="0.27131546"
+               x="7.1446404"
+               y="49.469852" />
+            <text
+               xml:space="preserve"
+               style="font-size:3.70417px;fill:#ffffff;fill-opacity:1;stroke-width:1.32292"
+               x="2.1705236"
+               y="50.193359"
+               id="text119"><tspan
+                 sodipodi:role="line"
+                 id="tspan119"
+                 style="stroke-width:1.32292"
+                 x="2.1705236"
+                 y="50.193359">-X</tspan></text>
+            <text
+               xml:space="preserve"
+               style="font-size:3.70417px;fill:#ffffff;fill-opacity:1;stroke-width:1.32292"
+               x="52.816078"
+               y="50.91687"
+               id="text120"><tspan
+                 sodipodi:role="line"
+                 id="tspan120"
+                 style="stroke-width:1.32292"
+                 x="52.816078"
+                 y="50.91687">+X</tspan></text>
+            <rect
+               style="fill:#ffffff;fill-opacity:1;stroke-width:1.32292"
+               id="rect120"
+               width="0.27131546"
+               height="24.780146"
+               x="-3.0749087"
+               y="20.891291" />
+            <text
+               xml:space="preserve"
+               style="font-size:3.70417px;fill:#ffffff;fill-opacity:1;stroke-width:1.32292"
+               x="-5.4263091"
+               y="50.193363"
+               id="text121"><tspan
+                 sodipodi:role="line"
+                 id="tspan121"
+                 style="stroke-width:1.32292"
+                 x="-5.4263091"
+                 y="50.193363">-Y</tspan></text>
+            <text
+               xml:space="preserve"
+               style="font-size:3.70417px;fill:#ffffff;fill-opacity:1;stroke-width:1.32292"
+               x="-5.516748"
+               y="19.80603"
+               id="text122"><tspan
+                 sodipodi:role="line"
+                 id="tspan122"
+                 style="stroke-width:1.32292"
+                 x="-5.516748"
+                 y="19.80603">+Y</tspan></text>
+          </g>
+        </g>
+        <g
+           id="g146"
+           inkscape:label="Text"
+           transform="translate(-3.3836851,5.2984101)">
+          <text
+             xml:space="preserve"
+             style="font-size:3.70417px;fill:#ff0000;fill-opacity:1;stroke-width:1.32292"
+             x="-0.33260328"
+             y="56.44381"
+             id="text123"><tspan
+               sodipodi:role="line"
+               style="font-weight:bold;fill:#ffffff;stroke-width:1.32292"
+               x="-0.33260328"
+               y="56.44381"
+               id="tspan123"><tspan
+   style="fill:#ff0000"
+   id="tspan169">Rect 2</tspan> Overlapping axis conditions </tspan></text>
+          <text
+             xml:space="preserve"
+             style="font-size:3.70417px;fill:#ff0000;fill-opacity:1;stroke-width:1.32292"
+             x="1.2644342"
+             y="86.618019"
+             id="text124"><tspan
+               sodipodi:role="line"
+               style="font-weight:bold;fill:#ffffff;stroke-width:1.32292"
+               x="1.2644342"
+               y="86.618019"
+               id="tspan124"><tspan
+   style="fill:#ff0000"
+   id="tspan170">Rect 2</tspan> Non-overlapping axis conditions </tspan></text>
+          <text
+             xml:space="preserve"
+             style="font-size:3.70417px;fill:#ff0000;fill-opacity:1;stroke-width:1.32292"
+             x="8.5214853"
+             y="91.791"
+             id="text129"><tspan
+               sodipodi:role="line"
+               style="fill:#ffffff;stroke-width:1.32292"
+               x="8.5214853"
+               y="91.791"
+               id="tspan129">L: <tspan
+   style="fill:#ff0000"
+   id="tspan125">2.L</tspan> &gt; <tspan
+   style="fill:#00ff00"
+   id="tspan126">1.L</tspan>   AND    <tspan
+   style="fill:#ff0000"
+   id="tspan127">2.L</tspan> &gt; <tspan
+   style="fill:#00ff00"
+   id="tspan128">1.R</tspan></tspan></text>
+          <text
+             xml:space="preserve"
+             style="font-size:3.70417px;fill:#ff0000;fill-opacity:1;stroke-width:1.32292"
+             x="7.9281888"
+             y="95.663666"
+             id="text134"><tspan
+               sodipodi:role="line"
+               style="fill:#ffffff;stroke-width:1.32292"
+               x="7.9281888"
+               y="95.663666"
+               id="tspan134">R: <tspan
+   style="fill:#ff0000"
+   id="tspan130">2.R</tspan> &gt; <tspan
+   style="fill:#00ff00"
+   id="tspan131">1.L</tspan>   AND    <tspan
+   style="fill:#ff0000"
+   id="tspan132">2.R</tspan> &gt; <tspan
+   style="fill:#00ff00"
+   id="tspan133">1.R</tspan></tspan></text>
+          <text
+             xml:space="preserve"
+             style="font-size:3.70417px;fill:#ff0000;fill-opacity:1;stroke-width:1.32292"
+             x="7.5875945"
+             y="79.673141"
+             id="text139"><tspan
+               sodipodi:role="line"
+               style="fill:#ffffff;stroke-width:1.32292"
+               x="7.5875945"
+               y="79.673141"
+               id="tspan139">T: <tspan
+   style="fill:#ff0000"
+   id="tspan135">2.T</tspan> &gt; <tspan
+   style="fill:#00ff00"
+   id="tspan136">1.B</tspan>   AND   <tspan
+   style="fill:#ff0000"
+   id="tspan137">2.T</tspan> &lt; <tspan
+   style="fill:#00ff00"
+   id="tspan138">1.T</tspan> </tspan></text>
+          <text
+             xml:space="preserve"
+             style="font-size:3.70417px;fill:#ff0000;fill-opacity:1;stroke-width:1.32292"
+             x="7.0180922"
+             y="75.387146"
+             id="text144"><tspan
+               sodipodi:role="line"
+               style="fill:#ffffff;stroke-width:1.32292"
+               x="7.0180922"
+               y="75.387146"
+               id="tspan144">B: <tspan
+   style="fill:#ff0000"
+   id="tspan140">2.B</tspan> &gt; <tspan
+   style="fill:#00ff00"
+   id="tspan141">1.B</tspan>   AND   <tspan
+   style="fill:#ff0000"
+   id="tspan142">2.B</tspan> &lt; <tspan
+   style="fill:#00ff00"
+   id="tspan143">1.T </tspan></tspan></text>
+          <text
+             xml:space="preserve"
+             style="font-size:3.70417px;fill:#ffff00;stroke-width:1.32292"
+             x="18.849958"
+             y="61.547958"
+             id="text145"><tspan
+               sodipodi:role="line"
+               id="tspan145"
+               style="fill:#ffff00;stroke-width:1.32292"
+               x="18.849958"
+               y="61.547958">Horizontal Axis (x)</tspan></text>
+          <text
+             xml:space="preserve"
+             style="font-size:3.70417px;fill:#ffff00;stroke-width:1.32292"
+             x="21.121111"
+             y="71.074577"
+             id="text146"><tspan
+               sodipodi:role="line"
+               id="tspan146"
+               style="fill:#ffff00;stroke-width:1.32292"
+               x="21.121111"
+               y="71.074577">Vertical Axis (y)</tspan></text>
+          <text
+             xml:space="preserve"
+             style="font-size:3.70417px;white-space:pre;inline-size:0.262193;fill:#ffffff;stroke:#000000;stroke-width:1.32292;stroke-opacity:1"
+             x="36.031982"
+             y="64.248795"
+             id="text148"><tspan
+               x="36.031982"
+               y="64.248795"
+               id="tspan6">?</tspan></text>
+          <text
+             xml:space="preserve"
+             style="font-size:3.74374px;fill:#ffffff;stroke:none;stroke-width:1.33705;stroke-opacity:1"
+             x="19.025681"
+             y="66.629562"
+             id="text149"><tspan
+               sodipodi:role="line"
+               id="tspan149"
+               style="font-weight:normal;fill:#ffffff;stroke:none;stroke-width:1.33705"
+               x="19.025681"
+               y="66.629562">NONE FOR <tspan
+   style="fill:#ff0000;stroke-width:1.33705"
+   id="tspan150">RECT 2</tspan></tspan></text>
+          <text
+             xml:space="preserve"
+             style="font-size:3.70417px;text-align:center;text-anchor:middle;fill:#ff0000;fill-opacity:1;stroke-width:1.32292"
+             x="144.65613"
+             y="18.360609"
+             id="text123-9"><tspan
+               sodipodi:role="line"
+               style="font-weight:bold;text-align:center;text-anchor:middle;fill:#ffffff;stroke-width:1.32292"
+               x="144.65613"
+               y="18.360609"
+               id="tspan123-2">Rect <tspan
+   style="text-align:center;text-anchor:middle;fill:#00ff00"
+   id="tspan172">1</tspan>&amp;<tspan
+   style="text-align:center;text-anchor:middle;fill:#ff0000"
+   id="tspan171">2</tspan> Combined overlapping </tspan><tspan
+               sodipodi:role="line"
+               style="font-weight:bold;text-align:center;text-anchor:middle;fill:#ffffff;stroke-width:1.32292"
+               x="145.28917"
+               y="22.990822"
+               id="tspan182">axis conditions </tspan></text>
+          <text
+             xml:space="preserve"
+             style="font-size:3.70417px;fill:#ff0000;fill-opacity:1;stroke-width:1.32292"
+             x="117.9358"
+             y="58.282043"
+             id="text139-9"><tspan
+               sodipodi:role="line"
+               style="fill:#ffffff;stroke-width:1.32292"
+               x="117.9358"
+               y="58.282043"
+               id="tspan139-5">T: <tspan
+   style="fill:#ff0000"
+   id="tspan135-8">2.T</tspan> &gt; <tspan
+   style="fill:#00ff00"
+   id="tspan136-5">1.B</tspan>   AND   <tspan
+   style="fill:#ff0000"
+   id="tspan137-8">2.T</tspan> &lt; <tspan
+   style="fill:#00ff00"
+   id="tspan138-7">1.T</tspan> </tspan></text>
+          <text
+             xml:space="preserve"
+             style="font-size:3.70417px;fill:#ff0000;fill-opacity:1;stroke-width:1.32292"
+             x="117.54719"
+             y="53.272541"
+             id="text144-4"><tspan
+               sodipodi:role="line"
+               style="fill:#ffffff;stroke-width:1.32292"
+               x="117.54719"
+               y="53.272541"
+               id="tspan144-8">B: <tspan
+   style="fill:#ff0000"
+   id="tspan140-7">2.B</tspan> &gt; <tspan
+   style="fill:#00ff00"
+   id="tspan141-1">1.B</tspan>   AND   <tspan
+   style="fill:#ff0000"
+   id="tspan142-8">2.B</tspan> &lt; <tspan
+   style="fill:#00ff00"
+   id="tspan143-1">1.T </tspan></tspan></text>
+          <text
+             xml:space="preserve"
+             style="font-size:3.70417px;fill:#ff0000;fill-opacity:1;stroke-width:1.32292"
+             x="116.83224"
+             y="34.011829"
+             id="text144-4-2"><tspan
+               sodipodi:role="line"
+               style="fill:#ffffff;stroke-width:1.32292"
+               x="116.83224"
+               y="34.011829"
+               id="tspan144-8-8">L: <tspan
+   style="fill:#00ff00"
+   id="tspan141-1-5">1.L <tspan
+   style="fill:#ffffff"
+   id="tspan176">&gt;</tspan> </tspan><tspan
+   id="tspan175"
+   style="fill:#ff0000">2.L</tspan>   AND  <tspan
+   style="fill:#00ff00"
+   id="tspan178">1.L</tspan> &lt; <tspan
+   style="fill:#ff0000"
+   id="tspan177">2.R</tspan></tspan></text>
+          <text
+             xml:space="preserve"
+             style="font-size:3.70417px;fill:#ff0000;fill-opacity:1;stroke-width:1.32292"
+             x="116.03088"
+             y="38.206554"
+             id="text144-4-2-1"><tspan
+               sodipodi:role="line"
+               style="fill:#ffffff;stroke-width:1.32292"
+               x="116.03088"
+               y="38.206554"
+               id="tspan144-8-8-2">R: <tspan
+   style="fill:#00ff00"
+   id="tspan141-1-5-4">1.R <tspan
+   style="fill:#ffffff"
+   id="tspan176-1">&gt;</tspan> </tspan><tspan
+   id="tspan175-2"
+   style="fill:#ff0000">2.L</tspan>   AND  <tspan
+   style="fill:#00ff00"
+   id="tspan178-8">1.R</tspan> &lt; <tspan
+   style="fill:#ff0000"
+   id="tspan177-0">2.R</tspan></tspan></text>
+          <text
+             xml:space="preserve"
+             style="font-size:3.70417px;fill:#ffff00;stroke-width:1.32292"
+             x="129.19817"
+             y="28.76161"
+             id="text145-3"><tspan
+               sodipodi:role="line"
+               id="tspan145-3"
+               style="fill:#ffff00;stroke-width:1.32292"
+               x="129.19817"
+               y="28.76161">Horizontal Axis (x)</tspan></text>
+          <text
+             xml:space="preserve"
+             style="font-size:3.70417px;fill:#ffff00;stroke-width:1.32292"
+             x="131.28845"
+             y="46.608574"
+             id="text146-2"><tspan
+               sodipodi:role="line"
+               id="tspan146-5"
+               style="fill:#ffff00;stroke-width:1.32292"
+               x="131.28845"
+               y="46.608574">Vertical Axis (y)</tspan></text>
+          <text
+             xml:space="preserve"
+             style="font-size:3.70417px;fill:#ffffff;stroke:none;stroke-width:1.32292;stroke-opacity:1"
+             x="81.2202"
+             y="26.08596"
+             id="text151"><tspan
+               sodipodi:role="line"
+               id="tspan151"
+               style="fill:#ffffff;stroke-width:1.32292"
+               x="81.2202"
+               y="26.08596" /></text>
+          <path
+             style="fill:none;stroke:#ffffff;stroke-width:0.661996;stroke-linecap:round;stroke-dasharray:none;stroke-opacity:1"
+             d="m 65.744945,64.360885 h 6.790812 l -0.178706,11.894579 h -6.612106"
+             id="path151"
+             sodipodi:nodetypes="cccc" />
+          <text
+             xml:space="preserve"
+             style="font-size:3.70417px;fill:#ffffff;stroke:none;stroke-width:1.32292;stroke-opacity:1"
+             x="74.185722"
+             y="65.853447"
+             id="text159-9"><tspan
+               sodipodi:role="line"
+               style="stroke-width:1.32292"
+               x="74.185722"
+               y="65.853447"
+               id="tspan166">Missing </tspan><tspan
+               sodipodi:role="line"
+               style="stroke-width:1.32292"
+               x="74.185722"
+               y="70.483658"
+               id="tspan168">Horizontal overlap</tspan><tspan
+               sodipodi:role="line"
+               style="font-weight:bold;stroke-width:1.32292"
+               x="74.185722"
+               y="75.113869"
+               id="tspan167">No Collision</tspan></text>
+          <path
+             style="fill:none;stroke:#ffffff;stroke-width:0.740833;stroke-linecap:round;stroke-dasharray:none;stroke-opacity:1"
+             d="m 113.4163,34.225423 h -7.0542 v 20.981728 h 6.87333 -6.87333 v 9.224727 h 36.53715 v 8.501219"
+             id="path178"
+             sodipodi:nodetypes="cccccccc" />
+          <text
+             xml:space="preserve"
+             style="font-size:3.70417px;fill:none;stroke:#ffffff;stroke-width:0.740833;stroke-linecap:round;stroke-dasharray:none;stroke-opacity:1"
+             x="149.08458"
+             y="77.816772"
+             id="text179"><tspan
+               sodipodi:role="line"
+               id="tspan179"
+               style="text-align:center;text-anchor:middle;fill:#ffffff;fill-opacity:1;stroke:none;stroke-width:0.740833"
+               x="149.08458"
+               y="77.816772">When combined, there is at least</tspan><tspan
+               sodipodi:role="line"
+               style="text-align:center;text-anchor:middle;fill:#ffffff;fill-opacity:1;stroke:none;stroke-width:0.740833"
+               x="149.08458"
+               y="82.446983"
+               id="tspan180">1 horizontal and 1 vertical overlap.</tspan><tspan
+               sodipodi:role="line"
+               style="text-align:center;text-anchor:middle;fill:#ffffff;fill-opacity:1;stroke:none;stroke-width:0.740833"
+               x="149.08458"
+               y="87.077194"
+               id="tspan181">There is a collision</tspan></text>
+        </g>
+      </g>
+    </g>
+  </g>
+  <g
+     inkscape:groupmode="layer"
+     id="layer4"
+     inkscape:label="No collisions" />
+</svg>

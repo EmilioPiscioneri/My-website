@@ -178,6 +178,8 @@ function main() {
 
 let gameObjectToMoveToPointer = null;
 let speed = 10; // rect to mouse speed
+let rect1;
+let rect2;
 
 
 // callbacks to remove on unload
@@ -193,7 +195,7 @@ function collisionTestLoad(game) {
     // create rectangle graphics
     let rect1Graphics = new Graphics()
         .rect(0, 0, 3, 2)
-        .fill("#FFFFFF")
+        .fill("white")
 
     // make it interactive
     rect1Graphics.interactive = true;
@@ -209,13 +211,15 @@ function collisionTestLoad(game) {
 
     let rect2Graphics = new Graphics()
         .rect(0, 0, 1, 4)
-        .fill("rgb(255,50,50)")
+        .fill("white")
 
+    rect2Graphics.tint = "rgb(255,50,50)"
     rect2Graphics.interactive = true;
 
-    let rect2 = new GameObject(rect2Graphics, game)
+    rect2 = new GameObject(rect2Graphics, game)
 
-    rect2.position = new Point(10,6)
+    rect2.physicsEnabled = false;
+    rect2.position = new Point(10, 6)
 
     // give it a collider
     rect2Collider = new AABB();
@@ -316,6 +320,14 @@ function collisionTestOnTick(game) {
         let newVelocity = new Point(differenceVec.x * speed, differenceVec.y * speed)
 
         gameObjectToMoveToPointer.velocity = newVelocity;
+    }
+
+    // do collision check
+    if (rect1.collider.DoesCollide(rect2.collider)) {
+        // console.log("Rect1 collides with rect 2")
+        rect1.graphicsObject.tint = "green"
+    }else{
+        rect1.graphicsObject.tint = "white"
     }
 }
 
