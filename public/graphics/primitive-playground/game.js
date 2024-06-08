@@ -528,6 +528,8 @@ class ColliderType {
 class Collider extends EventSystem {
     type = ColliderType.ERROR;
     _gameObject; // a gameObject that the current collider is associated with
+    isEnabled = true;
+
     get gameObject() { return this._gameObject }
     set gameObject(newGameObject) {
         let oldValue = this._gameObject
@@ -640,6 +642,9 @@ class AABB extends Collider {
      * @returns {boolean} Whether or not the collider does collide
      */
     DoesCollide(otherCollider) {
+        // if other collider isn't active then there's no collision
+        if(!otherCollider.isEnabled)
+            return false
         switch (otherCollider.type) {
             case ColliderType.AABB: // this AABB -> other AABB
 
