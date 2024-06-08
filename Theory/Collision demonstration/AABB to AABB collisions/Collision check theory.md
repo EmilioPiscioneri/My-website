@@ -11,7 +11,7 @@ This part will only explain how to check for a collision between two AABBs.
 Figure 1: An image I made to illustrate collisions  
 Situation 1 & 2 show 2 overlaps of axes must be present for collision  
 Situation 3 shows that the two comparisons for each AABB must be combined to always get collisions in certain cases.  
-![alt text](/Theory/Collision%20demonstration/Collision%20demonstration%201%20illustration.png)
+![alt text](Collision%20demonstration%201%20illustration.png)
 
 The above image displays a simple pattern in AABB.  
 In a collision between two AABBs, there is an overlap on the left, right, top or bottom axes/sides. Think of each of the 4 sides of the AABB as their own axis that is limited by the width or height of the AABB.  

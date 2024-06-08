@@ -642,8 +642,8 @@ class AABB extends Collider {
      * @returns {boolean} Whether or not the collider does collide
      */
     DoesCollide(otherCollider) {
-        // if other collider isn't active then there's no collision
-        if(!otherCollider.isEnabled)
+        // if either collider isn't active then there's no collision
+        if(!this.isEnabled || !otherCollider.isEnabled)
             return false
         switch (otherCollider.type) {
             case ColliderType.AABB: // this AABB -> other AABB

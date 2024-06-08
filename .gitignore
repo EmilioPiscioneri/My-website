@@ -4,4 +4,4 @@
 public/.DS_Store
 .env
 /cache/secret/
-/Theory/Collision demonstration 1 illustration.svg
+*.svg
