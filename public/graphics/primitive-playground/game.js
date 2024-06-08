@@ -28,8 +28,8 @@ class EventSystem {
             throw new Error("You didn't pass in a function to the AddEventListener function");
 
         // Make sure the event hasn't already been added
-        if(listenerArray.indexOf(listener) != -1)
-            throw new Error("Tried to add a listener which has already been registered for the "+eventName+" event")
+        if (listenerArray.indexOf(listener) != -1)
+            throw new Error("Tried to add a listener which has already been registered for the " + eventName + " event")
 
         listenerArray.push(listener);
     }
@@ -209,7 +209,7 @@ class Game extends EventSystem {
     }
 
     /**
-     * Removes an object from the game
+     * Removes an object from the game AND CALLS ITS DESTRUCTOR
      * @param {GameObject} objectToRemove Game object to remove
      */
     RemoveGameObject(objectToRemove) {
@@ -218,6 +218,8 @@ class Game extends EventSystem {
             this.gameObjects.splice(this.gameObjects.indexOf(objectToRemove), 1)
             // remove from stage
             this.pixiApplication.stage.removeChild(objectToRemove.graphicsObject)
+            // clean it up
+            objectToRemove.Destruct();
         }
     }
 
@@ -226,9 +228,9 @@ class Game extends EventSystem {
      * @param {Array.<GameObject>} gameObjects Array of game objects to remove
      */
     RemoveGameObjects(gameObjects) {
-        if(!Array.isArray(gameObjects))
+        if (!Array.isArray(gameObjects))
             throw new Error("Passed game objects isn't an array")
-        for(const gameObj of gameObjects){
+        for (const gameObj of gameObjects) {
             this.RemoveGameObject(gameObj);
         }
     }
@@ -237,7 +239,7 @@ class Game extends EventSystem {
      * Remove all objects from the game
      */
     RemoveAllGameObjects() {
-        for(const gameObj of this.gameObjects){
+        for (const gameObj of this.gameObjects) {
             this.RemoveGameObject(gameObj);
         }
     }
@@ -541,6 +543,9 @@ class Collider extends EventSystem {
     constructor() {
         super(); // call inherited class constructor
     }
+
+
+    
 }
 
 /**
@@ -615,6 +620,16 @@ class AABB extends Collider {
         }
     }
 
+    /**
+     * Checks if the current collider collides with another one
+     * @param {Collider} otherCollider Check if this collider, collides with the other one
+     * @returns {boolean} Whether or not the collider does collide
+     */
+    DoesCollide(otherCollider) {
+        
+
+        return true
+    }
 }
 
 

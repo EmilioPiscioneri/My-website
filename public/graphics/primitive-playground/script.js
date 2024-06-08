@@ -161,20 +161,6 @@ function main() {
 
     AddLoader(collisionTestScript); // add to scene and load
 
-    // unload after x seconds
-
-    setTimeout(() => {
-        RemoveLoader(collisionTestScript) // remove from scene and unload
-    }, 250);
-
-    // After script is unloaded, load the next script
-    collisionTestScript.AddEventListener("unloaded", () => {
-        AddLoader(velTstScript)
-    })
-
-
-
-
 
 
     // console.log(game.pixiApplication.stage.getChildAt(null) == null)
@@ -195,7 +181,8 @@ let speed = 10; // rect to mouse speed
 
 
 // callbacks to remove on unload
-let collisionTestPointerDownCbck;
+let collisionTestRect1PointerDownCbck;
+let collisionTestRect2PointerDownCbck;
 let collisionTestPointerUpCbck;
 let collisionTestKeyDwn;
 
@@ -208,34 +195,55 @@ function collisionTestLoad(game) {
         .rect(0, 0, 3, 2)
         .fill("#FFFFFF")
 
+    // make it interactive
+    rect1Graphics.interactive = true;
+
     // create rectangle game object
     rect1 = new GameObject(rect1Graphics, game);
-    // console.log(rect1.graphicsObject)
 
     // give it a collider
     rect1Collider = new AABB();
     rect1.collider = rect1Collider;
 
-    // make it interactive
-    rect1.graphicsObject.interactive = true;
-    // rect1.gravityEnabled = false;
-    // rect1.dragEnabled = false;
+    // create rect 2
 
-    collisionTestPointerDownCbck = (event) => {
+    let rect2Graphics = new Graphics()
+        .rect(0, 0, 1, 4)
+        .fill("rgb(255,50,50)")
+
+    rect2Graphics.interactive = true;
+
+    let rect2 = new GameObject(rect2Graphics, game)
+
+    rect2.position = new Point(10,6)
+
+    // give it a collider
+    rect2Collider = new AABB();
+    rect2.collider = rect2Collider;
+
+
+    collisionTestRect1PointerDownCbck = (event) => {
         gameObjectToMoveToPointer = rect1;
     }
+
+    collisionTestRect2PointerDownCbck = (event) => {
+        gameObjectToMoveToPointer = rect2;
+    }
+
 
     collisionTestPointerUpCbck = (event) => {
         gameObjectToMoveToPointer = null
     }
 
     // pointer is for touch and mouse
-    rect1.graphicsObject.addEventListener("pointerdown", collisionTestPointerDownCbck)
+    rect1.graphicsObject.addEventListener("pointerdown", collisionTestRect1PointerDownCbck)
+    rect2.graphicsObject.addEventListener("pointerdown", collisionTestRect2PointerDownCbck)
 
     document.addEventListener("pointerup", collisionTestPointerUpCbck)
 
-    // Add object to the game
+    // Add objects to the game
     game.AddGameObject(rect1);
+    game.AddGameObject(rect2);
 
     // add objects to remove onm unload
     collisionTestObjsToRmv.push(rect1);
@@ -314,7 +322,8 @@ function collisionTestOnTick(game) {
 function collisionTestUnload() {
     console.log("Unloading collision test")
     game.RemoveGameObjects(collisionTestObjsToRmv)
-    rect1.graphicsObject.removeEventListener("pointerdown", collisionTestPointerDownCbck)
+    rect2.graphicsObject.removeEventListener("pointerdown", collisionTestRect2PointerDownCbck)
+    rect1.graphicsObject.removeEventListener("pointerdown", collisionTestRect1PointerDownCbck)
     document.removeEventListener("pointerup", collisionTestPointerUpCbck)
     game.RemoveEventListener("keyDown", collisionTestKeyDwn)
 }
@@ -337,7 +346,7 @@ function velTstLoad(game) {
         .rect(0, 0, 2, 2)
         .fill("rgb(244, 45, 47)");
 
-        // console.log(launchObjGraphics)
+    // console.log(launchObjGraphics)
     launchObjGraphics.zIndex = 2; // render on top of other object
 
     let launchObj = new GameObject(launchObjGraphics, game);
@@ -373,7 +382,7 @@ function velTstLoad(game) {
         setTimeout(() => {
             launchObj.velocity = new Point(0, 0)
             // record results
-            console.log("Stopped launch object, end position is:",launchObj.position)
+            console.log("Stopped launch object, end position is:", launchObj.position)
 
         }, 1000);
     }, 2000);
