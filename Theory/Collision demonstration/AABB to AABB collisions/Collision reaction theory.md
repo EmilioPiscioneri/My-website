@@ -18,37 +18,41 @@ See [the explanation here](Collision%20check%20theory.md)
     - "An inelastic collision is a collision in which there is a loss of kinetic energy."
     - Basically, some of the velocity is lost whether it be transferring to the other AABB or as heat or sound
     - For this we will ignore the energy being lost as another form, only the transferring between two bodies part
+    - In a perfect inelastic collision things fuse into one object
     
 What do I mean by collision reaction?  
 Basically when two AABBs collide, they have a velocity and that needs to change on a collision.  
 Also, I need to push the objects out of each other as two AABBs should never be inside of each other, it doesnt' make sense.  
 My goal here isn't to emulate reality entirely but get it to a kind of decent point with basic physics and maths.
-
-### Inelastic collisions
+ 
+### Elastic collisions
 In physics they talk about the transfer of energy but in this case we only care about kinetic energy so I will only refer to the transfer of velocity.  
 
-So what we want is an inelastic collision between two bodies. This way if you had a red rectangle that is hardly moving and another green one that is coming in super fast, what should happen is that when they collide there should be a transfer of velocity.  
+So what we want is an elastic collision between two bodies. This way if you had a red rectangle that is hardly moving and another green one that is coming in super fast, what should happen is that when they collide there should be a transfer of velocity.  
 E.g.     
 ![alt text](Basic%20inelastic%20collision.png)  
 You can also think about a golf ball and a club. You swing your club and it gains a lot of velocity, then when it reaches the golf ball the velocity is transferred  
 
 **Formula**  
-According to [this website](https://byjus.com/physics/inelastic-collision/) and others, the formula is:  
-![alt text](image.png)  
+According to [wikipedia](https://en.wikipedia.org/wiki/Elastic_collision#Examples) and others, the formula is:  
+![alt text](image-2.png)  
 Where  
-V = final velocity vector  
-M<sub>1</sub> = Mass of first body  
-M<sub>2</sub> = Mass of second body  
-V<sub>1</sub> = Initial velocity of first body  
-V<sub>2</sub> = Initial velocity of second body  
+M<sub>A</sub> = Mass of first body  
+M<sub>B</sub> = Mass of second body  
+V<sub>A1</sub> = Initial velocity of first body  
+V<sub>B2</sub> = Initial velocity of second body  
 
 In code this is
 ``` Javascript
 let newVelocity = 
-(ScalarMultiplyVec(mass1, velocity1) + ScalarMultiplyVec(mass2, velocity2))
-/
-(mass1+mass2)
-```
+            this.AddVecs(
+                this.ScalarMultiplyVec(firstVelocity, ((firstMass - secondMass) / (firstMass + secondMass))),
+                this.ScalarMultiplyVec(secondVelocity, (2 * secondMass) / (firstMass + secondMass))
+            )
+```  
+In javascript code there's no way to do vector math without a function which makes it messy
+
 
 ### Push-out
 Now that we have a new velocity, we need to push the objects out of each other respective to their velocities.
+

@@ -258,10 +258,40 @@ class Game extends EventSystem {
         //     this.pixiApplication.stage.children.indexOf(objectToFind.graphicsObject) != -1)
     }
 
+    /**
+     * Multiplies a vector using scalar multiplication
+     * @param {Number} scalarValue 
+     * @param {PIXI.Point} vector 
+     * @returns vector * scalarValue
+     */
+    ScalarMultiplyVec(vector, scalarValue) {
+        return new Point(scalarValue * vector.x, scalarValue * vector.y)
+    }
+
+    /**
+     * Divides a vector using scalar division
+     * @param {Number} scalarValue 
+     * @param {PIXI.Point} vector 
+     * @returns The vector divided by scalar value
+     */
+    ScalarDivideVec(vector, scalarValue) {
+        return new Point(vector.x / scalarValue, vector.y / scalarValue)
+    }
+
+    /**
+     * Adds to vectors by adding together each axis independently
+     * @param {PIXI.Point} vector1 
+     * @param {PIXI.Point} vector2 
+     * @returns The addition of both vectors
+     */
+    AddVecs(vector1, vector2) {
+        return new Point(vector1.x + vector2.x, vector1.y + vector2.y)
+    }
+
     // Updates game physics on tick
     PhysicsTickUpdate() {
         let gameStage = this.pixiApplication.stage; // contains all the rendered children
-        // loop through all the children and see if they're physics enabled
+        // First, calculate all velocity updates for objects
         for (const gameObj of this.gameObjects) {
             // console.log(graphicsObj.y )
 
@@ -366,6 +396,86 @@ class Game extends EventSystem {
             }
 
 
+        }
+
+        let calculatedCollisionPairs = [];
+
+        // Then, calculate all collision updates
+        for (const firstGameObj of this.gameObjects) { // loop through game objects once
+            // first check if this object has a collider
+            if (!firstGameObj.collider)
+                continue; // skip if no collider
+            // then for each game object compare it's collision with another
+            for (const secondGameObj of this.gameObjects) {
+                let pairExists = false;
+                for (const pair of calculatedCollisionPairs) {
+                    if ((pair[0] == firstGameObj && pair[1] == secondGameObj)
+                        ||
+                        (pair[0] == secondGameObj && pair[1] == firstGameObj))
+                        pairExists = true;
+                }
+
+                if (pairExists)
+                    continue;
+                // If iterating the same game objects or the other one doesn't have a collider
+                if (firstGameObj == secondGameObj || !secondGameObj.collider)
+                    continue; // skip
+
+
+                let firstCollider = firstGameObj.collider;
+                let firstMass = firstCollider.mass;
+                let firstVelocity = firstGameObj.velocity;
+                let secondCollider = secondGameObj.collider;
+                let secondMass = secondCollider.mass;
+                let secondVelocity = secondGameObj.velocity;
+
+                
+
+
+
+                // check for a collision
+                if (!firstCollider.CollidesWith(secondCollider)) {
+                    // no collision
+                    firstGameObj.graphicsObject.tint = "white"
+                    continue; // skip if no collision
+                }
+                
+                
+
+
+                // From now on, there is a collision
+                firstGameObj.graphicsObject.tint = "red"
+
+                // First push out the game objects from each other
+                // My like trying to visualise this
+                // https://www.desmos.com/calculator/6w6mcabr4o
+
+                // --- New elastic collision velocity handling ---
+
+                // Calculate new velocity for first Game Object
+                //https://en.wikipedia.org/wiki/Elastic_collision#Examples
+                let firstNewVelocity =
+                    this.AddVecs(
+                        this.ScalarMultiplyVec(firstVelocity, ((firstMass - secondMass) / (firstMass + secondMass))),
+                        this.ScalarMultiplyVec(secondVelocity, (2 * secondMass) / (firstMass + secondMass))
+                    )
+                let secondNewVelocity =
+                    this.AddVecs(
+                        this.ScalarMultiplyVec(firstVelocity, (2 * firstMass) / (firstMass + secondMass)),
+                        this.ScalarMultiplyVec(secondVelocity, ((secondMass - firstMass) / (firstMass + secondMass)))
+                    )
+
+                firstGameObj.velocity = firstNewVelocity;
+
+                secondGameObj.velocity = secondNewVelocity
+
+                // We're gonna need 
+                firstVelocity = firstNewVelocity;
+                
+                calculatedCollisionPairs.push([firstGameObj, secondGameObj])
+
+
+            }
         }
 
     }
@@ -529,6 +639,7 @@ class Collider extends EventSystem {
     type = ColliderType.ERROR;
     _gameObject; // a gameObject that the current collider is associated with
     isEnabled = true;
+    mass = 1;
 
     get gameObject() { return this._gameObject }
     set gameObject(newGameObject) {
@@ -641,9 +752,9 @@ class AABB extends Collider {
      * @param {Collider} otherCollider Check if this collider, collides with the other one
      * @returns {boolean} Whether or not the collider does collide
      */
-    DoesCollide(otherCollider) {
+    CollidesWith(otherCollider) {
         // if either collider isn't active then there's no collision
-        if(!this.isEnabled || !otherCollider.isEnabled)
+        if (!this.isEnabled || !otherCollider.isEnabled)
             return false
         switch (otherCollider.type) {
             case ColliderType.AABB: // this AABB -> other AABB

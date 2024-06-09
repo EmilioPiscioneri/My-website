@@ -213,17 +213,20 @@ function collisionTestLoad(game) {
         .rect(0, 0, 1, 4)
         .fill("white")
 
-    rect2Graphics.tint = "rgb(255,50,50)"
+    // rect2Graphics.tint = "rgb(255,50,50)"
     rect2Graphics.interactive = true;
 
     rect2 = new GameObject(rect2Graphics, game)
 
-    rect2.physicsEnabled = false;
+    // rect2.physicsEnabled = false;
     rect2.position = new Point(10, 6)
 
     // give it a collider
     rect2Collider = new AABB();
     rect2.collider = rect2Collider;
+
+    rect2Collider.mass = 5010000;
+    rect1Collider.mass = 10000;
 
 
     collisionTestRect1PointerDownCbck = (event) => {
@@ -323,12 +326,12 @@ function collisionTestOnTick(game) {
     }
 
     // do collision check
-    if (rect1.collider.DoesCollide(rect2.collider)) {
-        // console.log("Rect1 collides with rect 2")
-        rect1.graphicsObject.tint = "green"
-    }else{
-        rect1.graphicsObject.tint = "white"
-    }
+    // if (rect1.collider.CollidesWith(rect2.collider)) {
+    //     // console.log("Rect1 collides with rect 2")
+    //     rect1.graphicsObject.tint = "green"
+    // }else{
+    //     rect1.graphicsObject.tint = "white"
+    // }
 }
 
 function collisionTestUnload() {
