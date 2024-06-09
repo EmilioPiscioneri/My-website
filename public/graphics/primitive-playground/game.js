@@ -1,4 +1,5 @@
 var Point = PIXI.Point;
+let near0 = 0.00048828125; // a value that is near 0, it's a power of 2 which computers like
 
 /**
  * The event system is an abstract class that adds support to a class for listening and firing its own events
@@ -100,6 +101,21 @@ class Game extends EventSystem {
     set pixelsPerUnit(newValue) {
         this._pixelsPerUnit = newValue;
         this.FireListener("pixelsPerUnitChanged")
+    }
+
+    _paused = false;
+    // whether the game is paused, not fully accurate just physics and stuff
+    get paused() {
+        return this._paused
+    }
+    set paused(newValue) {
+        this._paused = newValue
+        if (this.ticker)
+            if (newValue) // if paused
+                this.ticker.speed = 0;
+            else // else resume
+                this.ticker.speed = 1;
+
     }
 
     // I don't need to listen for multiple events so I'll just use the on... functions
@@ -288,8 +304,21 @@ class Game extends EventSystem {
         return new Point(vector1.x + vector2.x, vector1.y + vector2.y)
     }
 
+
+    /**
+     * Returns new vec where both axes of a vector are absolute 
+     * @param {PIXI.Point} vector Vector to do math on 
+     * @returns 
+     */
+    AbsVec(vector) {
+        return new Point(Math.abs(vector.x), Math.abs(vector.y))
+    }
+
     // Updates game physics on tick
     PhysicsTickUpdate() {
+        // don't continue when paused
+        if (this.paused)
+            return;
         let gameStage = this.pixiApplication.stage; // contains all the rendered children
         // First, calculate all velocity updates for objects
         for (const gameObj of this.gameObjects) {
@@ -423,15 +452,7 @@ class Game extends EventSystem {
 
 
                 let firstCollider = firstGameObj.collider;
-                let firstMass = firstCollider.mass;
-                let firstVelocity = firstGameObj.velocity;
                 let secondCollider = secondGameObj.collider;
-                let secondMass = secondCollider.mass;
-                let secondVelocity = secondGameObj.velocity;
-
-                
-
-
 
                 // check for a collision
                 if (!firstCollider.CollidesWith(secondCollider)) {
@@ -439,18 +460,213 @@ class Game extends EventSystem {
                     firstGameObj.graphicsObject.tint = "white"
                     continue; // skip if no collision
                 }
-                
-                
-
 
                 // From now on, there is a collision
                 firstGameObj.graphicsObject.tint = "red"
+                secondGameObj.graphicsObject.tint = "green"
+
+                // Setup initial variables we'll need for the calculations
+                let firstMass = firstCollider.mass;
+                let firstVelocity = new Point(firstGameObj.velocity.x, firstGameObj.velocity.y); // clone velocity as we don't want to change it right now 
+                let firstPosition = firstGameObj.position;
+                let secondMass = secondCollider.mass;
+                let secondVelocity = new Point(secondGameObj.velocity.x, secondGameObj.velocity.y); // clone velocity as we don't want to change it right now 
+                let secondPosition = secondGameObj.position;
+
+                // --- Push out the game objects from each other ---
 
                 // First push out the game objects from each other
                 // My like trying to visualise this
                 // https://www.desmos.com/calculator/6w6mcabr4o
 
+                // When velocity is 0 set it to nearly 0 otherwise it will cause math errors
+
+                if (firstVelocity.x == 0)
+                    firstVelocity.x = near0
+                if (firstVelocity.y == 0)
+                    firstVelocity.y = near0;
+
+                if (secondVelocity.x == 0)
+                    secondVelocity.x = near0
+                if (secondVelocity.y == 0)
+                    secondVelocity.y = near0;
+
+
+                // Seperate the two axes so you only do one at a time
+
+                // - X-axis push out
+
+                // So like we first calculate the ratio of how powerful each velocity is to each other
+
+                let totalXRatio = Math.abs(firstVelocity.x) + Math.abs(secondVelocity.x)
+                let firstXRatio = Math.abs(firstVelocity.x) / totalXRatio;
+                let secondXRatio = Math.abs(secondVelocity.x) / totalXRatio;
+                let firstBounds = firstCollider.GetBounds();
+                let secondBounds = secondCollider.GetBounds()
+
+                // Okay so how the AABB-AABB collision detection works is by checking of there is a collision or overlap
+                // On both the x and y axes. There just needs to be one collision
+                // This means all we need to do is find out which side is colliding per axis on each AABB or rectangle.
+                // You may be wondering there's two sides to check per axis, for now I'm just going to favour one
+
+                // this is the first rect and the value of an x-axis side collision
+                // We run into an issue here when one rect is completely inside another,
+                // only one of the rects will have 2 collision points as the outside rect's sides aren't colliding        
+                // In this situation all we do is just choose the closest side that isn't colliding to the one that is colliding
+                // Also note that the collision check function uses a logic operator like great than or equal to
+                // This means our side detection needs to use an equal to
+
+                let firstXCollision = null;
+
+                // left side is colliding with other rect
+                if (firstBounds.left >= secondBounds.left && firstBounds.left <= secondBounds.right)
+                    firstXCollision = firstBounds.left;
+                // else if right side
+                else if (firstBounds.right >= secondBounds.left && firstBounds.right <= secondBounds.right)
+                    firstXCollision = firstBounds.right
+                else {
+                    // firstXCollision = firstBounds.left
+                }
+
+
+                let secondXCollision = null;
+
+                // left side is colliding with other rect
+                if (secondBounds.left >= firstBounds.left && secondBounds.left <= firstBounds.right)
+                    secondXCollision = secondBounds.left;
+                // else if right side
+                else if (secondBounds.right >= firstBounds.left && secondBounds.right <= firstBounds.right)
+                    secondXCollision = secondBounds.right
+                else
+                // No collision is between sides, just default to left side
+                // TO-DO: Come up with a better method like finding the nearest side using the that's actually interesctingh
+                {
+                    // secondXCollision = firstBounds.left 
+
+                }
+
+
+
+                // first check if we have like a logically breaking bug. Like this just shouldn't happen
+                if (firstXCollision == null && secondXCollision == null)
+                    throw new Error("What the, there is no collision on both x axes?")
+                // else check if we have a situation where only on side is colliding
+                else if (firstXCollision == null) {
+                    console.log("firstXCollision null")
+                    // In this situation all we do is just choose the closest side that isn't colliding to the one that is colliding
+                    let collidingSide = secondXCollision;
+                    //let nonCollidingSides = [firstBounds.left, firstBounds.right];
+
+                    // get the two differences between the colliding and non colliding sides
+                    let leftDifference = Math.abs(firstBounds.left - collidingSide)
+                    let rightDifference = Math.abs(firstBounds.right - collidingSide)
+
+                    // choose the smaller of the two differences (the smaller the distance between two theings the closer they r)
+                    if (leftDifference <= rightDifference)
+                        firstXCollision = leftDifference; // choose smaller
+                    else
+                        firstXCollision = rightDifference; // choose smaller
+
+                } else if (secondXCollision == null) {
+                    console.log("secondXCollision null")
+                    // In this situation all we do is just choose the closest side that isn't colliding to the one that is colliding
+                    let collidingSide = firstXCollision;
+                    //let nonCollidingSides = [firstBounds.left, firstBounds.right];
+
+                    // get the two differences between the colliding and non colliding sides
+                    let leftDifference = Math.abs(secondBounds.left - collidingSide)
+                    let rightDifference = Math.abs(secondBounds.right - collidingSide)
+
+                    // choose the smaller of the two differences (the smaller the distance between two theings the closer they r)
+                    if (leftDifference <= rightDifference)
+                        secondXCollision = leftDifference; // choose smaller
+                    else
+                        secondXCollision = rightDifference; // choose smaller
+                }
+
+                // spacial difference of collision
+                let differenceOfClsn = Math.abs(firstXCollision - secondXCollision)
+
+                // Now we need to determine what the direction represents going from one side to another
+                // This is because the push-out will be pushing in each other inwards to a point where they are 
+                let leftDirection = -1; // left is negative on x-axis
+                let rightDirection = 1;
+
+                let firstMoveDir; // first rect push-out move direction
+                let secondMoveDir; // second rect push-out move direction
+
+                // If first is on left (<=), first moves to right and second moves to left
+                if (firstXCollision <= secondXCollision) {
+                    firstMoveDir = rightDirection;
+                    secondMoveDir = leftDirection;
+                } // else, opposite
+                else {
+                    firstMoveDir = leftDirection;
+                    secondMoveDir = rightDirection;
+                }
+
+                // Note that the directions can be multiplied by a vector's absolute x value to change it's direction
+
+                // see my desmos maybe it'll help
+                let newFirstX = firstXCollision + (firstMoveDir * differenceOfClsn * firstXRatio);
+                
+                let newSecondX = secondXCollision + (secondMoveDir * differenceOfClsn * secondXRatio);
+
+                // If there was a movement twoards the left, you need to subtract the width as well
+                if (firstMoveDir == leftDirection)
+                    newFirstX -= firstGameObj.width;
+                if (secondMoveDir == leftDirection)
+                    newSecondX -= secondGameObj.width;
+
+                firstGameObj.x = newFirstX;
+                secondGameObj.x  = newSecondX
+
+                // -- debugging :( man this is gonna be a pain
+                // console.log("---------------")
+                // console.log("first is red")
+                // console.log("second is green")
+
+                // console.log("firstXVelocity", firstVelocity.x)
+                // console.log("secondXVelocity", secondVelocity.x)
+                // console.log("totalXRatio", totalXRatio)
+                // console.log("firstXRatio", firstXRatio)
+                // console.log("secondXRatio", secondXRatio)
+                // console.log("firstBounds", firstBounds)
+                // console.log("secondBounds", secondBounds)
+                // console.log("firstXCollision", firstXCollision)
+                // console.log("secondXCollision", secondXCollision)
+                // console.log("differenceOfClsn", differenceOfClsn)
+                // console.log("firstMoveDir", firstMoveDir)
+                // console.log("secondMoveDir", secondMoveDir)
+                // console.log("newFirstXMvmnt", (firstMoveDir * differenceOfClsn * firstXRatio))
+                // console.log("newSecondXMvmnt", (secondMoveDir * differenceOfClsn * secondXRatio))
+                // console.log("newFirstX", newFirstX)
+                // console.log("newSecondX", newSecondX)
+
+
+
+                // now pause at the collision, then set the new positions, then wait, then resume physics
+                // this is all to visualise my math that it's not fudged
+
+                // this.paused = true;
+                // setTimeout(() => {
+                //     // set new positions
+                //     firstGameObj.x = newFirstX;
+                //     secondGameObj.x = newSecondX;
+                //     setTimeout(() => {
+                //         this.paused = false;
+                //     }, 1000);
+
+                // }, 1000);
+
+
+
+
                 // --- New elastic collision velocity handling ---
+
+                // Redefine 
+                firstVelocity = new Point(firstGameObj.velocity.x, firstGameObj.velocity.y); // clone velocity as we don't want to change it right now 
+                secondVelocity = new Point(secondGameObj.velocity.x, secondGameObj.velocity.y); // clone velocity as we don't want to change it right now 
 
                 // Calculate new velocity for first Game Object
                 //https://en.wikipedia.org/wiki/Elastic_collision#Examples
@@ -469,9 +685,7 @@ class Game extends EventSystem {
 
                 secondGameObj.velocity = secondNewVelocity
 
-                // We're gonna need 
-                firstVelocity = firstNewVelocity;
-                
+
                 calculatedCollisionPairs.push([firstGameObj, secondGameObj])
 
 

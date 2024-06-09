@@ -225,8 +225,8 @@ function collisionTestLoad(game) {
     rect2Collider = new AABB();
     rect2.collider = rect2Collider;
 
-    rect2Collider.mass = 5010000;
-    rect1Collider.mass = 10000;
+    // rect2Collider.mass = 5010000;
+    // rect1Collider.mass = 10000;
 
 
     collisionTestRect1PointerDownCbck = (event) => {
