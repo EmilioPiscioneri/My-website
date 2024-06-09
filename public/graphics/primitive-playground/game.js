@@ -496,130 +496,137 @@ class Game extends EventSystem {
 
                 // - X-axis push out
 
-                // So like we first calculate the ratio of how powerful each velocity is to each other
+                function pushOutX() {
+                    // So like we first calculate the ratio of how powerful each velocity is to each other
 
-                let totalXRatio = Math.abs(firstVelocity.x) + Math.abs(secondVelocity.x)
-                let firstXRatio = Math.abs(firstVelocity.x) / totalXRatio;
-                let secondXRatio = Math.abs(secondVelocity.x) / totalXRatio;
-                let firstBounds = firstCollider.GetBounds();
-                let secondBounds = secondCollider.GetBounds()
+                    let totalXRatio = Math.abs(firstVelocity.x) + Math.abs(secondVelocity.x)
+                    let firstXRatio = Math.abs(firstVelocity.x) / totalXRatio;
+                    let secondXRatio = Math.abs(secondVelocity.x) / totalXRatio;
+                    let firstBounds = firstCollider.GetBounds();
+                    let secondBounds = secondCollider.GetBounds()
 
-                // Okay so how the AABB-AABB collision detection works is by checking of there is a collision or overlap
-                // On both the x and y axes. There just needs to be one collision
-                // This means all we need to do is find out which side is colliding per axis on each AABB or rectangle.
-                // You may be wondering there's two sides to check per axis, for now I'm just going to favour one
+                    // Okay so how the AABB-AABB collision detection works is by checking of there is a collision or overlap
+                    // On both the x and y axes. There just needs to be one collision
+                    // This means all we need to do is find out which side is colliding per axis on each AABB or rectangle.
+                    // You may be wondering there's two sides to check per axis, for now I'm just going to favour one
 
-                // this is the first rect and the value of an x-axis side collision
-                // We run into an issue here when one rect is completely inside another,
-                // only one of the rects will have 2 collision points as the outside rect's sides aren't colliding        
-                // In this situation all we do is just choose the closest side that isn't colliding to the one that is colliding
-                // Also note that the collision check function uses a logic operator like great than or equal to
-                // This means our side detection needs to use an equal to
+                    // this is the first rect and the value of an x-axis side collision
+                    // We run into an issue here when one rect is completely inside another,
+                    // only one of the rects will have 2 collision points as the outside rect's sides aren't colliding        
+                    // In this situation all we do is just skip the current axis and the other axis will fix it or we skip both and
+                    // the current physics loop figures it out and pushes them out over time
+                    // Also note that the collision check function uses a logic operator like great than or equal to
+                    // This means our side detection needs to use an equal to
 
-                let firstXCollision = null;
+                    let firstXCollision = null;
 
-                // left side is colliding with other rect
-                if (firstBounds.left >= secondBounds.left && firstBounds.left <= secondBounds.right)
-                    firstXCollision = firstBounds.left;
-                // else if right side
-                else if (firstBounds.right >= secondBounds.left && firstBounds.right <= secondBounds.right)
-                    firstXCollision = firstBounds.right
-                else {
-                    // firstXCollision = firstBounds.left
-                }
+                    // left side is colliding with other rect
+                    if (firstBounds.left >= secondBounds.left && firstBounds.left <= secondBounds.right)
+                        firstXCollision = firstBounds.left;
+                    // else if right side
+                    else if (firstBounds.right >= secondBounds.left && firstBounds.right <= secondBounds.right)
+                        firstXCollision = firstBounds.right
+                    else {
+                        // no collision set gets handled
+                        // firstXCollision = firstBounds.left
+                    }
 
+                    let secondXCollision = null;
 
-                let secondXCollision = null;
-
-                // left side is colliding with other rect
-                if (secondBounds.left >= firstBounds.left && secondBounds.left <= firstBounds.right)
-                    secondXCollision = secondBounds.left;
-                // else if right side
-                else if (secondBounds.right >= firstBounds.left && secondBounds.right <= firstBounds.right)
-                    secondXCollision = secondBounds.right
-                else
-                // No collision is between sides, just default to left side
-                // TO-DO: Come up with a better method like finding the nearest side using the that's actually interesctingh
-                {
-                    // secondXCollision = firstBounds.left 
-
-                }
-
-
-
-                // first check if we have like a logically breaking bug. Like this just shouldn't happen
-                if (firstXCollision == null && secondXCollision == null)
-                    throw new Error("What the, there is no collision on both x axes?")
-                // else check if we have a situation where only on side is colliding
-                else if (firstXCollision == null) {
-                    console.log("firstXCollision null")
-                    // In this situation all we do is just choose the closest side that isn't colliding to the one that is colliding
-                    let collidingSide = secondXCollision;
-                    //let nonCollidingSides = [firstBounds.left, firstBounds.right];
-
-                    // get the two differences between the colliding and non colliding sides
-                    let leftDifference = Math.abs(firstBounds.left - collidingSide)
-                    let rightDifference = Math.abs(firstBounds.right - collidingSide)
-
-                    // choose the smaller of the two differences (the smaller the distance between two theings the closer they r)
-                    if (leftDifference <= rightDifference)
-                        firstXCollision = leftDifference; // choose smaller
+                    // left side is colliding with other rect
+                    if (secondBounds.left >= firstBounds.left && secondBounds.left <= firstBounds.right)
+                        secondXCollision = secondBounds.left;
+                    // else if right side
+                    else if (secondBounds.right >= firstBounds.left && secondBounds.right <= firstBounds.right)
+                        secondXCollision = secondBounds.right
                     else
-                        firstXCollision = rightDifference; // choose smaller
+                    {
+                        // no collision set gets handled
+                        // secondXCollision = secondBounds.left
 
-                } else if (secondXCollision == null) {
-                    console.log("secondXCollision null")
-                    // In this situation all we do is just choose the closest side that isn't colliding to the one that is colliding
-                    let collidingSide = firstXCollision;
-                    //let nonCollidingSides = [firstBounds.left, firstBounds.right];
+                    }
 
-                    // get the two differences between the colliding and non colliding sides
-                    let leftDifference = Math.abs(secondBounds.left - collidingSide)
-                    let rightDifference = Math.abs(secondBounds.right - collidingSide)
 
-                    // choose the smaller of the two differences (the smaller the distance between two theings the closer they r)
-                    if (leftDifference <= rightDifference)
-                        secondXCollision = leftDifference; // choose smaller
-                    else
-                        secondXCollision = rightDifference; // choose smaller
+
+                    // first check if we have like a logically breaking bug. Like this just shouldn't happen
+                    if (firstXCollision == null && secondXCollision == null)
+                        throw new Error("What the, there is no collision on both x axes?")
+                    // else check if we have a situation where only on side is colliding
+                    else if(firstXCollision == null || secondXCollision == null){
+                        return; // escape the axis check
+                    }
+                    // else if (firstXCollision == null) {
+                    //     console.log("firstXCollision null")
+                    //     // In this situation all we do is just choose the closest side that isn't colliding to the one that is colliding
+                    //     let collidingSide = secondXCollision;
+                    //     //let nonCollidingSides = [firstBounds.left, firstBounds.right];
+
+                    //     // get the two differences between the colliding and non colliding sides
+                    //     let leftDifference = Math.abs(firstBounds.left - collidingSide)
+                    //     let rightDifference = Math.abs(firstBounds.right - collidingSide)
+
+                    //     // choose the smaller of the two differences (the smaller the distance between two theings the closer they r)
+                    //     if (leftDifference >= rightDifference)
+                    //         firstXCollision = leftDifference; // choose smaller
+                    //     else
+                    //         firstXCollision = rightDifference; // choose smaller
+
+                    // } else if (secondXCollision == null) {
+                    //     console.log("secondXCollision null")
+                    //     // In this situation all we do is just choose the closest side that isn't colliding to the one that is colliding
+                    //     let collidingSide = firstXCollision;
+                    //     //let nonCollidingSides = [firstBounds.left, firstBounds.right];
+
+                    //     // get the two differences between the colliding and non colliding sides
+                    //     let leftDifference = Math.abs(secondBounds.left - collidingSide)
+                    //     let rightDifference = Math.abs(secondBounds.right - collidingSide)
+
+                    //     // choose the smaller of the two differences (the smaller the distance between two theings the closer they r)
+                    //     if (leftDifference >= rightDifference)
+                    //         secondXCollision = leftDifference; // choose smaller
+                    //     else
+                    //         secondXCollision = rightDifference; // choose smaller
+                    // }
+
+                    // spacial difference of collision
+                    let differenceOfClsn = Math.abs(firstXCollision - secondXCollision)
+
+                    // Now we need to determine what the direction represents going from one side to another
+                    // This is because the push-out will be pushing in each other inwards to a point where they are 
+                    let leftDirection = -1; // left is negative on x-axis
+                    let rightDirection = 1;
+
+                    let firstMoveDir; // first rect push-out move direction
+                    let secondMoveDir; // second rect push-out move direction
+
+                    // If first is on left (<=), first moves to right and second moves to left
+                    if (firstXCollision <= secondXCollision) {
+                        firstMoveDir = rightDirection;
+                        secondMoveDir = leftDirection;
+                    } // else, opposite
+                    else {
+                        firstMoveDir = leftDirection;
+                        secondMoveDir = rightDirection;
+                    }
+
+                    // Note that the directions can be multiplied by a vector's absolute x value to change it's direction
+
+                    // see my desmos maybe it'll help
+                    let newFirstX = firstXCollision + (firstMoveDir * differenceOfClsn * firstXRatio);
+
+                    let newSecondX = secondXCollision + (secondMoveDir * differenceOfClsn * secondXRatio);
+
+                    // If there was a movement twoards the left, you need to subtract the width as well
+                    if (firstMoveDir == leftDirection)
+                        newFirstX -= firstGameObj.width;
+                    if (secondMoveDir == leftDirection)
+                        newSecondX -= secondGameObj.width;
+
+                    firstGameObj.x = newFirstX;
+                    secondGameObj.x = newSecondX
                 }
 
-                // spacial difference of collision
-                let differenceOfClsn = Math.abs(firstXCollision - secondXCollision)
-
-                // Now we need to determine what the direction represents going from one side to another
-                // This is because the push-out will be pushing in each other inwards to a point where they are 
-                let leftDirection = -1; // left is negative on x-axis
-                let rightDirection = 1;
-
-                let firstMoveDir; // first rect push-out move direction
-                let secondMoveDir; // second rect push-out move direction
-
-                // If first is on left (<=), first moves to right and second moves to left
-                if (firstXCollision <= secondXCollision) {
-                    firstMoveDir = rightDirection;
-                    secondMoveDir = leftDirection;
-                } // else, opposite
-                else {
-                    firstMoveDir = leftDirection;
-                    secondMoveDir = rightDirection;
-                }
-
-                // Note that the directions can be multiplied by a vector's absolute x value to change it's direction
-
-                // see my desmos maybe it'll help
-                let newFirstX = firstXCollision + (firstMoveDir * differenceOfClsn * firstXRatio);
-                
-                let newSecondX = secondXCollision + (secondMoveDir * differenceOfClsn * secondXRatio);
-
-                // If there was a movement twoards the left, you need to subtract the width as well
-                if (firstMoveDir == leftDirection)
-                    newFirstX -= firstGameObj.width;
-                if (secondMoveDir == leftDirection)
-                    newSecondX -= secondGameObj.width;
-
-                firstGameObj.x = newFirstX;
-                secondGameObj.x  = newSecondX
+                pushOutX();
 
                 // -- debugging :( man this is gonna be a pain
                 // console.log("---------------")
@@ -642,6 +649,90 @@ class Game extends EventSystem {
                 // console.log("newSecondXMvmnt", (secondMoveDir * differenceOfClsn * secondXRatio))
                 // console.log("newFirstX", newFirstX)
                 // console.log("newSecondX", newSecondX)
+
+                function pushOutY() {
+                    // So like we first calculate the ratio of how powerful each velocity is to each other
+
+                    let totalYRatio = Math.abs(firstVelocity.y) + Math.abs(secondVelocity.y)
+                    let firstYRatio = Math.abs(firstVelocity.y) / totalYRatio;
+                    let secondYRatio = Math.abs(secondVelocity.y) / totalYRatio;
+                    let firstBounds = firstCollider.GetBounds();
+                    let secondBounds = secondCollider.GetBounds()
+
+                    // See push out X for reasoning and logic
+
+                    let firstYCollision = null;
+
+                    // bottom side is colliding with other rect
+                    if (firstBounds.bottom >= secondBounds.bottom && firstBounds.bottom <= secondBounds.top)
+                        firstYCollision = firstBounds.bottom;
+                    // else if top side
+                    else if (firstBounds.top >= secondBounds.bottom && firstBounds.top <= secondBounds.top)
+                        firstYCollision = firstBounds.top
+                    else {
+                        // no collision set gets handled
+                    }
+                    
+                    let secondYCollision = null;
+
+                    // left side is colliding with other rect
+                    if (secondBounds.bottom >= firstBounds.bottom && secondBounds.bottom <= firstBounds.top)
+                        secondYCollision = secondBounds.bottom;
+                    // else if top side
+                    else if (secondBounds.top >= firstBounds.left && secondBounds.top <= firstBounds.top)
+                        secondYCollision = secondBounds.top
+                    else
+                    {
+                        // no collision set gets handled
+                    }
+
+                    // first check if we have like a logically breaking bug. Like this just shouldn't happen
+                    if (firstYCollision == null && secondYCollision == null)
+                        throw new Error("What the, there is no collision on both x axes?")
+                    // else check if we have a situation where only on side is colliding
+                    else if(firstYCollision == null || secondYCollision == null){
+                        return; // escape the axis check
+                    }
+
+                    // spacial difference of collision
+                    let differenceOfClsn = Math.abs(firstYCollision - secondYCollision)
+
+                    // Now we need to determine what the direction represents going from one side to another
+                    // This is because the push-out will be pushing in each other inwards to a point where they are 
+                    let bottomDirection = -1; // left is negative on y-axis
+                    let topDirection = 1;
+
+                    let firstMoveDir; // first rect push-out move direction
+                    let secondMoveDir; // second rect push-out move direction
+
+                    // If first is on bottom (<=), first moves to top and second moves to bottom
+                    if (firstYCollision <= secondYCollision) {
+                        firstMoveDir = topDirection;
+                        secondMoveDir = bottomDirection;
+                    } // else, opposite
+                    else {
+                        firstMoveDir = bottomDirection;
+                        secondMoveDir = topDirection;
+                    }
+
+                    // Note that the directions can be multiplied by a vector's absolute x value to change it's direction
+
+                    // see my desmos maybe it'll help
+                    let newFirstY = firstYCollision + (firstMoveDir * differenceOfClsn * firstYRatio);
+
+                    let newSecondY = secondYCollision + (secondMoveDir * differenceOfClsn * secondYRatio);
+
+                    // If there was a movement twoards the left, you need to subtract the width as well
+                    if (firstMoveDir == bottomDirection)
+                        newFirstY -= firstGameObj.height;
+                    if (secondMoveDir == bottomDirection)
+                        newSecondY -= secondGameObj.height;
+
+                    firstGameObj.y = newFirstY;
+                    secondGameObj.y = newSecondY
+                }
+
+                pushOutY();
 
 
 
