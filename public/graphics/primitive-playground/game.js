@@ -315,6 +315,11 @@ class Game extends EventSystem {
         return new Point(vector1.x + vector2.x, vector1.y + vector2.y)
     }
 
+    // v1 -v2
+    SubtractVecs(vector1, vector2) {
+        return new Point(vector1.x - vector2.x, vector1.y - vector2.y)
+    }
+
 
     /**
      * Returns new vec where both axes of a vector are absolute 
@@ -323,6 +328,26 @@ class Game extends EventSystem {
      */
     AbsVec(vector) {
         return new Point(Math.abs(vector.x), Math.abs(vector.y))
+    }
+
+    /**
+     * Returns dot product of two vectors. The addition of each axis of the vector's mulitplied by the same axis
+     * @param {*} vector1 
+     * @param {*} vector2 
+     * @returns 
+     */
+    DotProduct(vector1, vector2) {
+        return vector1.x * vector2.x + vector1.y * vector2.y
+    }
+
+    // returns magnitude of vector
+    Magnitude(vector)
+    {
+        return Math.sqrt(vector.x**2+ vector.y**2)
+    }
+
+    NormaliseVec(vector){
+        return this.ScalarDivideVec(vector, this.Magnitude(vector))
     }
 
     // Updates game physics on tick
@@ -888,7 +913,9 @@ class Game extends EventSystem {
                         // console.log("newNonStaticY", newNonStaticY)
                     }
 
-                    function staticPushOut() {
+                    let collisionNormal; // the normal of the collision as a point (2D)
+
+                    function staticPushOutAndVelocity() {
 
                         let staticBounds;
                         // let staticGameObj;
@@ -969,22 +996,37 @@ class Game extends EventSystem {
                          * @param {Number} x A known X (only 1 x or y is allowed)
                          * @param {Number} c The y-intercept of equation. If you want the equation to be relative to different vertices, this should change each time 
                          * @param {Array<Number>} domain An array of [min, max] values that the x axis can be for solution
+                         * @param {Array<Number>} domain2 An array of [min, max] values that the x axis can be for solution
                          * @param {Array<Number>} range An array of [min, max] values that the y axis can be for solution
+                         * @param {Array<Number>} range2 An array of [min, max] values that the y axis can be for solution
                          */
-                        function solveLinearEquation(y, m, x, c, domain, range) {
-                            console.log("Solving")
+                        function solveLinearEquation(y, m, x, c, domain, domain2, range, range2) {
+                            // console.log("Solving")
                             // I am doing these error checks to make debugging easier if I need to
-                            if (y != null && x != null)
-                                {
-                                    console.log("invalid inputs")
-                                    console.log("x",x)
-                                    console.log("y",y)
-                                    throw new Error("You should only pass in one value to function, it will solve for the other")
-                                }
-                                
+                            if (y != null && x != null) {
+                                console.log("invalid inputs")
+                                console.log("x", x)
+                                console.log("y", y)
+                                throw new Error("You should only pass in one value to function, it will solve for the other")
+                            }
 
-                            if (typeof (m) != "number" || typeof (c) != "number" || !Array.isArray(domain) || !Array.isArray(range))
-                                throw new Error("Invalid data types given for parameters")
+
+                            // if (typeof (m) != "number" || typeof (c) != "number" || !Array.isArray(domain) || !Array.isArray(domain2) || !Array.isArray(range) || !Array.isArray(range2))
+                            //     throw new Error("Invalid data types given for parameters")
+                            if (typeof (m) != "number") {
+                                throw new Error("Invalid data type given for parameter m")
+                            } else if (typeof (c) != "number")
+                                throw new Error("Invalid data type given for parameter c")
+                            else if (!Array.isArray(domain))
+                                throw new Error("Invalid data type given for parameter domain")
+                            else if (!Array.isArray(domain2))
+                                throw new Error("Invalid data type given for parameter domain2")
+                            else if (!Array.isArray(range))
+                                throw new Error("Invalid data type given for parameter range")
+                            else if (!Array.isArray(range2))
+                                throw new Error("Invalid data type given for parameter range2")
+
+
                             // console.log("INPUT x:", x, "y:", y)
 
                             if (y == null) {
@@ -1010,7 +1052,14 @@ class Game extends EventSystem {
 
 
                             // domain or range invalid
-                            if (!(domain[0] <= x && x <= domain[1]) || !(range[0] <= y && y <= range[1]))
+                            if (!(domain[0] <= x && x <= domain[1])
+                                ||
+                                !(domain2[0] <= x && x <= domain2[1])
+                                ||
+                                !(range[0] <= y && y <= range[1])
+                                ||
+                                !(range2[0] <= y && y <= range2[1])
+                            )
                                 return null
                             else
                                 return new Point(x, y)
@@ -1025,7 +1074,7 @@ class Game extends EventSystem {
                             new Point(nonStaticBounds.right, nonStaticBounds.top), // top-right
                         ]
 
-                        console.log("-----------------")
+                        // console.log("-----------------")
 
                         // first check for intersection on x-axis
                         let foundIntercept
@@ -1041,31 +1090,33 @@ class Game extends EventSystem {
                             // let domain = [Math.min(vertex.x, vertex.x + castedInvVelocity.x), Math.max(vertex.x, vertex.x + castedInvVelocity.x)]
                             // let range = [Math.min(vertex.y, vertex.y + castedInvVelocity.y), Math.max(vertex.y, vertex.y + castedInvVelocity.y)]
                             let domain = [staticBounds.left, staticBounds.right]
+                            let domain2 = [Math.min(vertex.x, vertex.x + castedInvVelocity.x), Math.max(vertex.x, vertex.x + castedInvVelocity.x)]
                             let range = [staticBounds.bottom, staticBounds.top]
+                            let range2 = [Math.min(vertex.y, vertex.y + castedInvVelocity.y), Math.max(vertex.y, vertex.y + castedInvVelocity.y)]
                             let intercept = solveLinearEquation(null, m, xSide, c,
-                                domain,
-                                range)
+                                domain, domain2,
+                                range, range2)
                             // let intercept = solveLinearEquation(xSide, m, null, c, 
                             //     [Math.min(vertex.x, xSide), Math.max(vertex.x, xSide)], 
                             //     [Math.min(vertex.y, ySide), Math.max(vertex.y, ySide)])
                             // if x-intercept failed, try y
-                            if(!intercept){
+                            if (!intercept) {
                                 intercept = solveLinearEquation(ySide, m, null, c,
-                                    domain,
-                                    range)
+                                    domain, domain2,
+                                    range, range2)
                             }
 
                             if (intercept) {
                                 foundIntercept = new Point(intercept.x, intercept.y)
-                                console.log("Intercept on vertex", vertex)
-                                console.log("m", m);
-                                console.log("xSide", xSide);
-                                console.log("c", c);
-                                console.log("domain", domain)
-                                console.log("range", range)
-                                console.log("castedInvVelocity", castedInvVelocity)
-                                console.log("---")
-                                console.log("foundIntercept", foundIntercept)
+                                // console.log("Intercept on vertex", vertex)
+                                // console.log("m", m);
+                                // console.log("xSide", xSide);
+                                // console.log("c", c);
+                                // console.log("domain", domain)
+                                // console.log("range", range)
+                                // console.log("castedInvVelocity", castedInvVelocity)
+                                // console.log("---")
+                                // console.log("foundIntercept", foundIntercept)
                                 visualiseVertex = vertex
                                 break;
                             }
@@ -1094,88 +1145,94 @@ class Game extends EventSystem {
                         //         // console.log("y intercept", intercept)
                         //     }
 
-                        if(!foundIntercept)
-                            console.log("foundIntercept = NULL")
-                        console.log("nonStaticBounds", nonStaticBounds)
-                        console.log("staticBounds", staticBounds)
+                        // console.log("nonStaticBounds", nonStaticBounds)
+                        // console.log("staticBounds", staticBounds)
 
-                        console.log("Initial velocity is blue")
-                        console.log("Inverse velocity is black")
+                        // console.log("Initial velocity is blue")
+                        // console.log("Inverse velocity is black")
 
-
-                        // visualise the velocity but shrink it
-
-
-                        let velGraphics = new Graphics()
-                            .rect(0, 0, 0.5, 0.5)
-                            .fill("white")
-                        let velObj = new GameObject(velGraphics, thisGame);
-
-                        velObj.physicsEnabled = false
-                        velObj.position = thisGame.AddVecs(visualiseVertex, thisGame.ScalarDivideVec(nonStaticGameObj.velocity, 10)); // shrink the velocity 10x
-                        velObj.graphicsObject.tint = "blue"
-                        velObj.graphicsObject.zIndex = 6;
-
-                        thisGame.AddGameObject(velObj);
-
-                        // visualise the inverse velocity but shrink it
-
-                        let invVelGraphics = new Graphics()
-                            .rect(0, 0, 0.5, 0.5)
-                            .fill("white")
-                        let invVelObj = new GameObject(invVelGraphics, thisGame);
-
-                        invVelObj.physicsEnabled = false
-                        invVelObj.position = thisGame.AddVecs(visualiseVertex, thisGame.ScalarDivideVec(nonStaticGameObj.velocity, -10)); // shrink the velocity 10x
-                        invVelObj.graphicsObject.tint = "black"
-                        invVelObj.graphicsObject.zIndex = 6;
-
-                        thisGame.AddGameObject(invVelObj);
-
-                        // visualise the intercept
-                        let intGraphics = new Graphics()
-                            .rect(0, 0, 0.5, 0.5)
-                            .fill("white")
-                        let intObj = new GameObject(intGraphics, thisGame);
-
-                        intObj.physicsEnabled = false
-                        intObj.position = foundIntercept;
-                        intObj.graphicsObject.tint = "green"
-                        intObj.graphicsObject.zIndex = 5;
-                        intGraphics.alpha = 0.5
+                        if (!foundIntercept) {
+                            throw new Error("foundIntercept is NULL")
+                        }
 
 
-                        thisGame.AddGameObject(intObj);
+
+                        // // visualise the velocity but shrink it
+
+
+                        // let velGraphics = new Graphics()
+                        //     .rect(0, 0, 0.5, 0.5)
+                        //     .fill("white")
+                        // let velObj = new GameObject(velGraphics, thisGame);
+
+                        // velObj.physicsEnabled = false
+                        // velObj.position = thisGame.AddVecs(visualiseVertex, thisGame.ScalarDivideVec(nonStaticGameObj.velocity, 10)); // shrink the velocity 10x
+                        // velObj.graphicsObject.tint = "blue"
+                        // velObj.graphicsObject.zIndex = 6;
+
+                        // thisGame.AddGameObject(velObj);
+
+                        // // visualise the inverse velocity but shrink it
+
+                        // let invVelGraphics = new Graphics()
+                        //     .rect(0, 0, 0.5, 0.5)
+                        //     .fill("white")
+                        // let invVelObj = new GameObject(invVelGraphics, thisGame);
+
+                        // invVelObj.physicsEnabled = false
+                        // invVelObj.position = thisGame.AddVecs(visualiseVertex, thisGame.ScalarDivideVec(nonStaticGameObj.velocity, -10)); // shrink the velocity 10x
+                        // invVelObj.graphicsObject.tint = "black"
+                        // invVelObj.graphicsObject.zIndex = 6;
+
+                        // thisGame.AddGameObject(invVelObj);
+
+                        // // visualise the intercept
+                        // let intGraphics = new Graphics()
+                        //     .rect(0, 0, 0.5, 0.5)
+                        //     .fill("white")
+                        // let intObj = new GameObject(intGraphics, thisGame);
+
+                        // intObj.physicsEnabled = false
+                        // intObj.position = foundIntercept;
+                        // intObj.graphicsObject.tint = "orange"
+                        // intObj.graphicsObject.zIndex = 5;
+                        // intGraphics.alpha = 0.5
+
+
+                        // thisGame.AddGameObject(intObj);
 
                         // console.log(intObj                        )
 
-
-
-
-
-                        // now pause at the collision, then set the new positions, then wait, then resume physics
-                        // this is all to visualise my math that it's not fudged
-
-                        thisGame.paused = true;
-                        setTimeout(() => {
-                            // set new positions
-                            // nonStaticGameObj.position = new Point(2, 2);
-
+                        let moveRect = () => {
                             // move it relative to each vertex
                             if (visualiseVertex == nonStaticVertices[0]) // bottom-left
                             {
                                 nonStaticGameObj.position = foundIntercept
+
+                                if (foundIntercept.y == staticBounds.bottom) {
+                                    nonStaticGameObj.y -= nonStaticGameObj.height;
+                                }
+                                if (foundIntercept.x == staticBounds.left) {
+                                    nonStaticGameObj.x -= nonStaticGameObj.width;
+                                }
                             }
                             else if (visualiseVertex == nonStaticVertices[1]) // bottom-right
                             {
                                 nonStaticGameObj.position = foundIntercept
 
                                 nonStaticGameObj.x -= nonStaticGameObj.width;
+
+                                if (foundIntercept.y == staticBounds.bottom) {
+                                    nonStaticGameObj.y -= nonStaticGameObj.height;
+                                }
                             }
                             else if (visualiseVertex == nonStaticVertices[2]) // top-left
                             {
                                 nonStaticGameObj.position = foundIntercept
                                 nonStaticGameObj.y -= nonStaticGameObj.height;
+                                if (foundIntercept.x == staticBounds.left) {
+                                    nonStaticGameObj.x -= nonStaticGameObj.width;
+                                }
                             }
                             else if (visualiseVertex == nonStaticVertices[3]) // top-right
                             {
@@ -1183,25 +1240,16 @@ class Game extends EventSystem {
                                 nonStaticGameObj.y -= nonStaticGameObj.height;
                                 nonStaticGameObj.x -= nonStaticGameObj.width;
                             }
-
-
-                            // Only one x and y side shoud exist I think. Anyway only apply it to those ones
-
-                            // if pushing out out to left
-                            if(xSide == staticBounds.left){
-                                nonStaticGameObj.x -= nonStaticGameObj.width;
-                            } else if(xSide == staticBounds.right){
-                                // nonStaticGameObj.x += nonStaticGameObj.width;
-                            }
+                        }
 
 
 
 
+                        moveRect();
+                        // now pause at the collision, then set the new positions, then wait, then resume physics
+                        // this is all to visualise my math that it's not fudged
 
-                            setTimeout(() => {
-                                thisGame.paused = false;
-                            }, 2000);
-                        }, 1000);
+                        
 
 
                         // // -- debugging :( man this is gonna be a pain
@@ -1223,41 +1271,66 @@ class Game extends EventSystem {
                         // // console.log("newSecondXMvmnt", (secondMoveDir * differenceOfClsn * secondXRatio))
                         // // console.log("nonStaticX", newNonStaticX)
                         // // console.log("newSecondX", newSecondX)
+
+                        // Now save the collision normal (the same as xSide or ySide) as we'll need it for later calculation
+                        if (foundIntercept.x == xSide)
+                            collisionNormal = thisGame.NormaliseVec(new Point(xSide, 0))
+                        else if(foundIntercept.y == ySide)
+                            collisionNormal = thisGame.NormaliseVec(new Point(0, ySide))
+
+                        // Now do new velocity calculation based off normal that the non-static collided with on static object
+
+                        // The theory isn't mine but I just converted it to code
+                        // First the collision normal must be well normalised so it's a unit vector
+                        // Basically you get a normal component (dot product of non-static velocity and collision normal)
+                        // Then you calculate a new normal component and then tangential component and combine them
+                        // I'm a programmer not a mathematician and this may be really basic but I've spent far too much time already on this I'm not going to understand
+                        // what each component does, just doing the calculations
+
+                        let normalComponent =thisGame.DotProduct(nonStaticVelocity, collisionNormal); // this is just a real number
+                        let invertedComponent = thisGame.ScalarMultiplyVec(collisionNormal, -(normalComponent)); // no idea what this is
+                        let tangentialComponent = thisGame.AddVecs(nonStaticVelocity, invertedComponent) // collisionNormal * -invertedComponent
+                        let finalNonStaticVelocity = thisGame.AddVecs(tangentialComponent, invertedComponent); // ??
+
+                        nonStaticGameObj.velocity = finalNonStaticVelocity; // update
+
+                        // let finalVelGraphics = new Graphics()
+                        //     .rect(0, 0, 0.5, 0.5)
+                        //     .fill("white")
+                        // let finalVelObj = new GameObject(finalVelGraphics, thisGame);
+
+                        // finalVelObj.physicsEnabled = false
+                        // finalVelObj.position = thisGame.AddVecs(nonStaticGameObj.position, thisGame.ScalarDivideVec(finalNonStaticVelocity, 50)); // shrink the velocity 10x
+                        // finalVelObj.graphicsObject.tint = "brown"
+                        // finalVelObj.graphicsObject.zIndex = 6;
+
+                        // thisGame.AddGameObject(finalVelObj);
+
+                        // console.log("~~~")
+                        // console.log("initialVelocity", nonStaticVelocity)
+                        // console.log("collisionNormal", collisionNormal)
+                        // console.log("normalComponent", normalComponent)
+                        // console.log("newNormalComponent", tangentialComponent)
+                        // console.log("tangentialComponent", invertedComponent)
+                        // console.log("finalNonStaticVelocity", finalNonStaticVelocity)
+
+                        // TODO: fix when coming in -x and +y on roof or -x and -y on floor, it does weird shit
+
+                        // thisGame.paused = true;
+                        // setTimeout(() => {
+                        //     moveRect();
+                        //     setTimeout(() => {
+                        //         thisGame.paused = false;
+                        //     }, 2000);
+                        // }, 1000);
                     }
 
                     // if both are non static
                     if (!firstGameObj.static && !secondGameObj.static) {
                         nonStaticPushOutX();
                         nonStaticPushOutY();
-                    } else {
-                        // else only one is static, call apropriate static functions
-                        // staticPushOutX();
-                        // staticPushOutY();
-                        staticPushOut();
-                    }
+                        // --- New elastic collision velocity handling ---
 
-
-
-
-
-
-
-
-
-                    // --- New elastic collision velocity handling ---
-
-                    // Redefine 
-                    // firstVelocity = new Point(firstGameObj.velocity.x, firstGameObj.velocity.y); // clone velocity as we don't want to change it right now 
-                    // secondVelocity = new Point(secondGameObj.velocity.x, secondGameObj.velocity.y); // clone velocity as we don't want to change it right now 
-
-                    // if first is static (invert second)
-                    if (firstGameObj.static) {
-                        secondGameObj.velocity = this.ScalarMultiplyVec(secondVelocity, -1);
-                    } else if (secondGameObj.static) {
-                        // if second is static (invert first)
-                        firstGameObj.velocity = this.ScalarMultiplyVec(firstVelocity, -1);
-                    } else {
-                        //else, neither are static, do normal elastic collision calculations
 
                         // Calculate new velocity for first Game Object
                         //https://en.wikipedia.org/wiki/Elastic_collision#Examples
@@ -1274,8 +1347,22 @@ class Game extends EventSystem {
 
                         firstGameObj.velocity = firstNewVelocity;
                         secondGameObj.velocity = secondNewVelocity
-
+                    } else {
+                        // else only one is static, call apropriate static functions
+                        // staticPushOutX();
+                        // staticPushOutY();
+                        staticPushOutAndVelocity();
                     }
+
+
+
+
+
+
+
+
+
+
 
 
 

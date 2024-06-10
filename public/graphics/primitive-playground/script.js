@@ -280,12 +280,14 @@ function collisionTestLoad(game) {
 
     // rect2.physicsEnabled = false;
     rect2.position = new Point(10, 6)
-    rect2.gravityEnabled = false;
+    // rect2.gravityEnabled = false;
 
     // give it a collider
     rect2Collider = new AABB();
     rect2.collider = rect2Collider;
-    rect2.velocity = new Point(5,-20)
+    // rect2.velocity = new Point(20,5)
+    rect2.velocity = new Point(-5,20)
+    // rect2.velocity = new Point(5,20)
 
 
 
