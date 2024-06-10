@@ -44,7 +44,7 @@ class ScriptLoader extends EventSystem {
      * Call when you want to load the script. Game is passed in as parameter.
      */
     Load() {
-        if (typeof (this._onTickFunction) == "function")
+        if (typeof (this._loadFunction) == "function")
             this._loadFunction(this.game);
         this.FireListener("loaded");
     }
@@ -153,12 +153,14 @@ function RemoveLoader(loaderToRemove) {
 }
 
 // -- scripts to load --
+let collisionBordersScript = new ScriptLoader(game, collisionBordersLoad);
 let collisionTestScript = new ScriptLoader(game, collisionTestLoad, collisionTestOnTick, collisionTestUnload);
 let velTstScript = new ScriptLoader(game, velTstLoad, velTstOnTick, velTstUnload); // velocity test script
 
 function main() {
     game.AddEventListener("tick", mainTickerHandler);
 
+    AddLoader(collisionBordersScript)
     AddLoader(collisionTestScript); // add to scene and load
 
 
@@ -173,6 +175,64 @@ function main() {
 
 
 // --- The different script functions ---
+
+// #region -- Collision borders script --
+
+function collisionBordersLoad(game) {
+    console.log("loading")
+    // Create 4 walls to keep gameobjects inside
+    let floorGraphics = new Graphics()
+    .rect(0, 0, 0.1, 0.1)
+    .fill("white")
+    let floor = new GameObject(floorGraphics, game);
+    let roof = new GameObject(new Graphics().rect(0,0,0.1,0.1).fill("white"), game);
+    let leftWall = new GameObject(new Graphics().rect(0,0,0.1,0.1).fill("white"), game);
+    let rightWall = new GameObject(new Graphics().rect(0,0,0.1,0.1).fill("white"), game);
+
+    // set up positions and size
+
+    // The size will be static and won't follow resize cos idc abt that rn
+
+    let wallsWidth = 500; // in game units. The length of each side will be the game canvas in game units
+    let innerOffset = 3; // How much to the wall will be visible by
+    floor.width = game.pixiApplication.canvas.width / game.pixelsPerUnit.x;
+    floor.height = wallsWidth;
+    floor.y -= wallsWidth-innerOffset
+
+    roof.width = game.pixiApplication.canvas.width / game.pixelsPerUnit.x;
+    roof.height = wallsWidth;
+    roof.y = game.pixiApplication.canvas.height / game.pixelsPerUnit.y - innerOffset;
+
+    leftWall.width = wallsWidth;
+    leftWall.x = -wallsWidth + innerOffset;
+    leftWall.height = game.pixiApplication.canvas.height / game.pixelsPerUnit.y;
+
+    rightWall.width = wallsWidth;
+    rightWall.x = game.pixiApplication.canvas.width / game.pixelsPerUnit.x-innerOffset;
+    rightWall.height = game.pixiApplication.canvas.height / game.pixelsPerUnit.y;
+
+    // oh and add colliders. The position and size will auto adjust
+    floor.collider = new AABB();
+    roof.collider = new AABB();
+    leftWall.collider = new AABB();
+    rightWall.collider = new AABB();
+
+    // also make the game objects static so they don't move
+    floor.static = true;
+    roof.static = true;
+    leftWall.static = true;
+    rightWall.static = true;
+
+
+    // add to scene
+    game.AddGameObject(floor);
+    game.AddGameObject(roof)
+    game.AddGameObject(leftWall)
+    game.AddGameObject(rightWall)
+    console.log(floor)
+}
+
+//#endregion
 
 // #region -- Collision test script --
 
@@ -220,10 +280,16 @@ function collisionTestLoad(game) {
 
     // rect2.physicsEnabled = false;
     rect2.position = new Point(10, 6)
+    rect2.gravityEnabled = false;
 
     // give it a collider
     rect2Collider = new AABB();
     rect2.collider = rect2Collider;
+    rect2.velocity = new Point(5,-20)
+
+
+
+
 
     // rect2Collider.mass = 5010000;
     // rect1Collider.mass = 10000;
@@ -249,7 +315,7 @@ function collisionTestLoad(game) {
     document.addEventListener("pointerup", collisionTestPointerUpCbck)
 
     // Add objects to the game
-    game.AddGameObject(rect1);
+    // game.AddGameObject(rect1);
     game.AddGameObject(rect2);
 
     // add objects to remove onm unload
