@@ -194,7 +194,8 @@ function collisionBordersLoad(game) {
     // The size will be static and won't follow resize cos idc abt that rn
 
     let wallsWidth = 500; // in game units. The length of each side will be the game canvas in game units
-    let innerOffset = 3; // How much to the wall will be visible by
+    let innerOffset = 0//3; // How much to the wall will be visible by. Just offset it slightly out to avoid weird physics happening at (0,0)
+    game.pixiApplication.stage.position = new Point(300,-300)
     floor.width = game.pixiApplication.canvas.width / game.pixelsPerUnit.x;
     floor.height = wallsWidth;
     floor.y -= wallsWidth-innerOffset
@@ -229,7 +230,7 @@ function collisionBordersLoad(game) {
     game.AddGameObject(roof)
     game.AddGameObject(leftWall)
     game.AddGameObject(rightWall)
-    console.log(floor)
+    // console.log(floor)
 }
 
 //#endregion
@@ -279,16 +280,29 @@ function collisionTestLoad(game) {
     rect2 = new GameObject(rect2Graphics, game)
 
     // rect2.physicsEnabled = false;
-    rect2.position = new Point(10, 6)
+    // rect2.x = 2;
+    // rect2.position = new Point(10, 6)
     // rect2.gravityEnabled = false;
 
     // give it a collider
     rect2Collider = new AABB();
     rect2.collider = rect2Collider;
+    rect2.position = new Point(0.01,0.01)
     // rect2.velocity = new Point(20,5)
-    rect2.velocity = new Point(-5,20)
+    // rect2.velocity = new Point(-5,20)
     // rect2.velocity = new Point(5,20)
 
+    let staticRectGraphics = new Graphics()
+        .rect(0, 0, 5, 4)
+        .fill("white")
+
+    let staticRect = new GameObject(staticRectGraphics, game);
+    staticRect.static = true;
+    staticRect.position = new Point(10,6)
+
+    staticRect.collider = new AABB();
+
+    game.AddGameObject(staticRect)
 
 
 

@@ -341,12 +341,11 @@ class Game extends EventSystem {
     }
 
     // returns magnitude of vector
-    Magnitude(vector)
-    {
-        return Math.sqrt(vector.x**2+ vector.y**2)
+    Magnitude(vector) {
+        return Math.sqrt(vector.x ** 2 + vector.y ** 2)
     }
 
-    NormaliseVec(vector){
+    NormaliseVec(vector) {
         return this.ScalarDivideVec(vector, this.Magnitude(vector))
     }
 
@@ -918,17 +917,19 @@ class Game extends EventSystem {
                     function staticPushOutAndVelocity() {
 
                         let staticBounds;
-                        // let staticGameObj;
+                        let staticGameObj;
                         let nonStaticBounds;
                         let nonStaticGameObj;
                         let nonStaticVelocity;
 
                         if (firstGameObj.static) {
+                            staticGameObj = firstGameObj
                             staticBounds = firstCollider.GetBounds();
                             nonStaticBounds = secondCollider.GetBounds();
                             nonStaticGameObj = secondGameObj;
                             nonStaticVelocity = secondVelocity;
                         } else {
+                            staticGameObj = secondGameObj
                             staticBounds = secondCollider.GetBounds();
                             nonStaticBounds = firstCollider.GetBounds();
                             nonStaticVelocity = firstVelocity;
@@ -1074,11 +1075,11 @@ class Game extends EventSystem {
                             new Point(nonStaticBounds.right, nonStaticBounds.top), // top-right
                         ]
 
-                        // console.log("-----------------")
+                        console.log("-----------------")
 
                         // first check for intersection on x-axis
                         let foundIntercept
-                        let visualiseVertex = nonStaticVertices[3]
+                        let visualiseVertex = nonStaticVertices[0]
                         let castLength = 2 ** 63; // How long the ray that is used as a linear equation is
                         let castedInvVelocity = thisGame.ScalarMultiplyVec(nonStaticInvVel, castLength); // the new casted velocity vertex
 
@@ -1108,7 +1109,7 @@ class Game extends EventSystem {
 
                             if (intercept) {
                                 foundIntercept = new Point(intercept.x, intercept.y)
-                                // console.log("Intercept on vertex", vertex)
+                                console.log("Intercept on vertex", vertex)
                                 // console.log("m", m);
                                 // console.log("xSide", xSide);
                                 // console.log("c", c);
@@ -1116,7 +1117,7 @@ class Game extends EventSystem {
                                 // console.log("range", range)
                                 // console.log("castedInvVelocity", castedInvVelocity)
                                 // console.log("---")
-                                // console.log("foundIntercept", foundIntercept)
+                                console.log("foundIntercept", foundIntercept)
                                 visualiseVertex = vertex
                                 break;
                             }
@@ -1145,46 +1146,74 @@ class Game extends EventSystem {
                         //         // console.log("y intercept", intercept)
                         //     }
 
-                        // console.log("nonStaticBounds", nonStaticBounds)
-                        // console.log("staticBounds", staticBounds)
+                        console.log("xSide", xSide)
+                        console.log("ySide", ySide)
+                        console.log("m", m)
+                        console.log("nonStaticInvVel", nonStaticInvVel)
+                        console.log("castedInvVelocity", castedInvVelocity)
+                        console.log("nonStaticBounds", nonStaticBounds)
+                        console.log("staticBounds", staticBounds)
+                        // console.log("foundIntercept",foundIntercept)
 
-                        // console.log("Initial velocity is blue")
-                        // console.log("Inverse velocity is black")
+
+
 
                         if (!foundIntercept) {
-                            throw new Error("foundIntercept is NULL")
+                            // READ:
+                            
+                            // If there isn't an intercept, the axes of the non-static object are probably the same as the static one
+                            // This means there was no intercept because they are on the same axis and therefore there is no pushout because it is already pushed out but it is
+                            // registered as collision from formula
+
+                            // This could also be an issue where the velocity is set to near 0 when x or y is 0. This means that the near 0 will put it on a very very slight angle
+                            // which may miss the line of intercept for overlap
+                            
+                            // just skip
+                            console.warn("foundIntercept is NULL")
+                            return;
+
+                            // BELOW: debUGGING
+
+                            staticGameObj.graphicsObject.tint = "purple"
+                            console.log("Initial velocity is blue")
+                            console.log("Inverse velocity is black")
+
+
+                            // visualise the velocity but shrink it
+
+
+                            let velGraphics = new Graphics()
+                                .rect(0, 0, 0.5, 0.5)
+                                .fill("white")
+                            let velObj = new GameObject(velGraphics, thisGame);
+
+                            velObj.physicsEnabled = false
+                            velObj.position = thisGame.AddVecs(visualiseVertex, thisGame.ScalarDivideVec(nonStaticGameObj.velocity, 10)); // shrink the velocity 10x
+                            velObj.graphicsObject.tint = "blue"
+                            velObj.graphicsObject.zIndex = 6;
+
+                            thisGame.AddGameObject(velObj);
+
+                            // visualise the inverse velocity but shrink it
+
+                            let invVelGraphics = new Graphics()
+                                .rect(0, 0, 0.5, 0.5)
+                                .fill("white")
+                            let invVelObj = new GameObject(invVelGraphics, thisGame);
+
+                            invVelObj.physicsEnabled = false
+                            invVelObj.position = thisGame.AddVecs(visualiseVertex, thisGame.ScalarDivideVec(nonStaticGameObj.velocity, -10)); // shrink the velocity 10x
+                            invVelObj.graphicsObject.tint = "black"
+                            invVelObj.graphicsObject.zIndex = 6;
+
+                            thisGame.AddGameObject(invVelObj);
+                            // throw new Error("foundIntercept is NULL")
+
                         }
 
 
 
-                        // // visualise the velocity but shrink it
 
-
-                        // let velGraphics = new Graphics()
-                        //     .rect(0, 0, 0.5, 0.5)
-                        //     .fill("white")
-                        // let velObj = new GameObject(velGraphics, thisGame);
-
-                        // velObj.physicsEnabled = false
-                        // velObj.position = thisGame.AddVecs(visualiseVertex, thisGame.ScalarDivideVec(nonStaticGameObj.velocity, 10)); // shrink the velocity 10x
-                        // velObj.graphicsObject.tint = "blue"
-                        // velObj.graphicsObject.zIndex = 6;
-
-                        // thisGame.AddGameObject(velObj);
-
-                        // // visualise the inverse velocity but shrink it
-
-                        // let invVelGraphics = new Graphics()
-                        //     .rect(0, 0, 0.5, 0.5)
-                        //     .fill("white")
-                        // let invVelObj = new GameObject(invVelGraphics, thisGame);
-
-                        // invVelObj.physicsEnabled = false
-                        // invVelObj.position = thisGame.AddVecs(visualiseVertex, thisGame.ScalarDivideVec(nonStaticGameObj.velocity, -10)); // shrink the velocity 10x
-                        // invVelObj.graphicsObject.tint = "black"
-                        // invVelObj.graphicsObject.zIndex = 6;
-
-                        // thisGame.AddGameObject(invVelObj);
 
                         // // visualise the intercept
                         // let intGraphics = new Graphics()
@@ -1249,7 +1278,7 @@ class Game extends EventSystem {
                         // now pause at the collision, then set the new positions, then wait, then resume physics
                         // this is all to visualise my math that it's not fudged
 
-                        
+
 
 
                         // // -- debugging :( man this is gonna be a pain
@@ -1272,11 +1301,30 @@ class Game extends EventSystem {
                         // // console.log("nonStaticX", newNonStaticX)
                         // // console.log("newSecondX", newSecondX)
 
+                        // console.log("collisionNormal", collisionNormal)
                         // Now save the collision normal (the same as xSide or ySide) as we'll need it for later calculation
                         if (foundIntercept.x == xSide)
-                            collisionNormal = thisGame.NormaliseVec(new Point(xSide, 0))
-                        else if(foundIntercept.y == ySide)
-                            collisionNormal = thisGame.NormaliseVec(new Point(0, ySide))
+                            // collisionNormal = thisGame.NormaliseVec(new Point(xSide, 0))
+                            if (xSide == 0)
+                                collisionNormal = new Point(1, 0)
+                            else
+                                collisionNormal = thisGame.NormaliseVec(new Point(xSide, 0))
+                        else if (foundIntercept.y == ySide) {
+                            // if 0, default to (0,1)
+                            if (ySide == 0)
+                                collisionNormal = new Point(0, 1)
+
+                            else
+                                collisionNormal = thisGame.NormaliseVec(new Point(0, ySide))
+                            // collisionNormal = thisGame.NormaliseVec(new Point(0, ySide/Math.abs(ySide)))
+
+                            // collisionNormal = thisGame.NormaliseVec(new Point(0, ySide))
+                            // collisionNormal = new Point(0,0)}
+                        }
+                        else {
+                            // console.log(foundIntercept)
+                        }
+                        // console.log("collisionNormal", collisionNormal)
 
                         // Now do new velocity calculation based off normal that the non-static collided with on static object
 
@@ -1287,7 +1335,7 @@ class Game extends EventSystem {
                         // I'm a programmer not a mathematician and this may be really basic but I've spent far too much time already on this I'm not going to understand
                         // what each component does, just doing the calculations
 
-                        let normalComponent =thisGame.DotProduct(nonStaticVelocity, collisionNormal); // this is just a real number
+                        let normalComponent = thisGame.DotProduct(nonStaticVelocity, collisionNormal); // this is just a real number
                         let invertedComponent = thisGame.ScalarMultiplyVec(collisionNormal, -(normalComponent)); // no idea what this is
                         let tangentialComponent = thisGame.AddVecs(nonStaticVelocity, invertedComponent) // collisionNormal * -invertedComponent
                         let finalNonStaticVelocity = thisGame.AddVecs(tangentialComponent, invertedComponent); // ??
@@ -1307,6 +1355,9 @@ class Game extends EventSystem {
                         // thisGame.AddGameObject(finalVelObj);
 
                         // console.log("~~~")
+                        // console.log("xSide", xSide)
+                        // console.log("ySide", ySide)
+                        // console.log("foundIntercept", foundIntercept)
                         // console.log("initialVelocity", nonStaticVelocity)
                         // console.log("collisionNormal", collisionNormal)
                         // console.log("normalComponent", normalComponent)
@@ -1672,13 +1723,13 @@ class AABB extends Collider {
 
                 // collision x-axis?
                 let collisionX =
-                    (this.position.x + this.width >= otherCollider.position.x
-                        && otherCollider.position.x + otherCollider.width >= this.position.x);
+                    (this.position.x + this.width > otherCollider.position.x
+                        && otherCollider.position.x + otherCollider.width > this.position.x);
 
                 // collision y-axis?
                 let collisionY =
-                    (this.position.y + this.height >= otherCollider.position.y
-                        && otherCollider.position.y + otherCollider.height >= this.position.y);
+                    (this.position.y + this.height > otherCollider.position.y
+                        && otherCollider.position.y + otherCollider.height > this.position.y);
 
                 // collision only if on both axes
                 return collisionX && collisionY;
