@@ -189,13 +189,17 @@ function collisionBordersLoad(game) {
     let leftWall = new GameObject(new Graphics().rect(0,0,0.1,0.1).fill("white"), game);
     let rightWall = new GameObject(new Graphics().rect(0,0,0.1,0.1).fill("white"), game);
 
+    floor.name = "floor"; // add custom name
+    leftWall.name = "leftWall"; // add custom name
+    roof.name = "roof"; // add custom name
+    rightWall.name = "rightWall"; // add custom name
     // set up positions and size
 
     // The size will be static and won't follow resize cos idc abt that rn
 
     let wallsWidth = 500; // in game units. The length of each side will be the game canvas in game units
     let innerOffset = 0//3; // How much to the wall will be visible by. Just offset it slightly out to avoid weird physics happening at (0,0)
-    game.pixiApplication.stage.position = new Point(300,-300)
+    // game.pixiApplication.stage.position = new Point(300,-300)
     floor.width = game.pixiApplication.canvas.width / game.pixelsPerUnit.x;
     floor.height = wallsWidth;
     floor.y -= wallsWidth-innerOffset
@@ -287,9 +291,11 @@ function collisionTestLoad(game) {
     // give it a collider
     rect2Collider = new AABB();
     rect2.collider = rect2Collider;
-    rect2.position = new Point(0.01,0.01)
+    rect2.position = new Point(2.5,5)
+    rect2.name = "rect2"
+    // rect2.velocity = new Point(1,0)
     // rect2.velocity = new Point(20,5)
-    // rect2.velocity = new Point(-5,20)
+    // rect2.velocity = new Point(-20,15)
     // rect2.velocity = new Point(5,20)
 
     let staticRectGraphics = new Graphics()
@@ -331,7 +337,7 @@ function collisionTestLoad(game) {
     document.addEventListener("pointerup", collisionTestPointerUpCbck)
 
     // Add objects to the game
-    // game.AddGameObject(rect1);
+    game.AddGameObject(rect1);
     game.AddGameObject(rect2);
 
     // add objects to remove onm unload

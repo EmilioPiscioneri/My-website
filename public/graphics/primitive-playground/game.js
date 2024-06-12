@@ -1,6 +1,11 @@
 var Point = PIXI.Point;
 let near0 = 0.00048828125; // a value that is near 0, it's a power of 2 which computers like
 
+/*
+    GAME.JS
+    VERSION 0.1 - BASIC GAME CLASS AND AABB PHYSICS WORKING
+*/
+
 /**
  * The event system is an abstract class that adds support to a class for listening and firing its own events
  * @abstract
@@ -445,6 +450,9 @@ class Game extends EventSystem {
             if (firstGameObj.collider)
                 // then for each game object compare it's collision with another
                 for (const secondGameObj of this.gameObjects) {
+                    // don't continue when paused
+                    if (this.paused)
+                        return;
                     let pairExists = false;
                     for (const pair of calculatedCollisionPairs) {
                         if ((pair[0] == firstGameObj && pair[1] == secondGameObj)
@@ -453,7 +461,7 @@ class Game extends EventSystem {
                             pairExists = true;
                     }
 
-                    if (pairExists)
+                    if (pairExists || this.paused)
                         continue;
                     // If iterating the same game objects or the other one doesn't have a collider
                     if (firstGameObj == secondGameObj || !secondGameObj.collider)
@@ -494,15 +502,15 @@ class Game extends EventSystem {
 
                     // When velocity is 0 set it to nearly 0 otherwise it will cause math errors
 
-                    if (firstVelocity.x == 0)
-                        firstVelocity.x = near0
-                    if (firstVelocity.y == 0)
-                        firstVelocity.y = near0;
+                    // if (firstVelocity.x == 0)
+                    //     firstVelocity.x = near0
+                    // if (firstVelocity.y == 0)
+                    //     firstVelocity.y = near0;
 
-                    if (secondVelocity.x == 0)
-                        secondVelocity.x = near0
-                    if (secondVelocity.y == 0)
-                        secondVelocity.y = near0;
+                    // if (secondVelocity.x == 0)
+                    //     secondVelocity.x = near0
+                    // if (secondVelocity.y == 0)
+                    //     secondVelocity.y = near0;
 
 
                     // Seperate the two axes so you only do one at a time
@@ -510,11 +518,26 @@ class Game extends EventSystem {
                     // - X-axis push out
 
                     function nonStaticPushOutX() {
+                        // let firstVelocityX = firstVelocity.x;
+                        // let secondVelocityX = secondVelocity.x;
+                        // if (firstVelocityX)
+                        //     firstVelocityX = near0;
+                        // if (secondVelocityX)
+                        //     secondVelocityX = near0;
                         // So like we first calculate the ratio of how powerful each velocity is to each other
-
                         let totalXRatio = Math.abs(firstVelocity.x) + Math.abs(secondVelocity.x)
+
+                        // if(totalXRatio == 0) // the math won't work n that
+                        //     return;
                         let firstXRatio = Math.abs(firstVelocity.x) / totalXRatio;
                         let secondXRatio = Math.abs(secondVelocity.x) / totalXRatio;
+                        if (totalXRatio == 0) {
+                            // totalXRatio = 1;
+                            // // just do half an half
+                            // firstXRatio = 0.5
+                            // secondXRatio = 0.5;
+                            return;
+                        }
                         let firstBounds = firstCollider.GetBounds();
                         let secondBounds = secondCollider.GetBounds()
 
@@ -633,42 +656,61 @@ class Game extends EventSystem {
                         if (secondMoveDir == leftDirection)
                             newSecondX -= secondGameObj.width;
 
-                        firstGameObj.x = newFirstX;
-                        secondGameObj.x = newSecondX
-                        // -- debugging :( man this is gonna be a pain
-                        // console.log("---------------")
-                        // console.log("first is red")
-                        // console.log("second is green")
+                        function move() {
+                            firstGameObj.x = newFirstX;
+                            secondGameObj.x = newSecondX
+                        }
 
-                        // console.log("firstXVelocity", firstVelocity.x)
-                        // console.log("secondXVelocity", secondVelocity.x)
-                        // console.log("totalXRatio", totalXRatio)
-                        // console.log("firstXRatio", firstXRatio)
-                        // console.log("secondXRatio", secondXRatio)
-                        // console.log("firstBounds", firstBounds)
-                        // console.log("secondBounds", secondBounds)
-                        // console.log("firstXCollision", firstXCollision)
-                        // console.log("secondXCollision", secondXCollision)
-                        // console.log("differenceOfClsn", differenceOfClsn)
-                        // console.log("firstMoveDir", firstMoveDir)
-                        // console.log("secondMoveDir", secondMoveDir)
-                        // console.log("newFirstXMvmnt", (firstMoveDir * differenceOfClsn * firstXRatio))
-                        // console.log("newSecondXMvmnt", (secondMoveDir * differenceOfClsn * secondXRatio))
-                        // console.log("newFirstX", newFirstX)
-                        // console.log("newSecondX", newSecondX)
+                        move();
+
+                        // -- debugging :( man this is gonna be a pain
+                        console.log("---------------")
+                        console.log("first is red")
+                        console.log("second is green")
+
+                        console.log("firstXVelocity", firstVelocity.x)
+                        console.log("secondXVelocity", secondVelocity.x)
+                        console.log("totalXRatio", totalXRatio)
+                        console.log("firstXRatio", firstXRatio)
+                        console.log("secondXRatio", secondXRatio)
+                        console.log("firstBounds", firstBounds)
+                        console.log("secondBounds", secondBounds)
+                        console.log("firstXCollision", firstXCollision)
+                        console.log("secondXCollision", secondXCollision)
+                        console.log("differenceOfClsn", differenceOfClsn)
+                        console.log("firstMoveDir", firstMoveDir)
+                        console.log("secondMoveDir", secondMoveDir)
+                        console.log("newFirstXMvmnt", (firstMoveDir * differenceOfClsn * firstXRatio))
+                        console.log("newSecondXMvmnt", (secondMoveDir * differenceOfClsn * secondXRatio))
+                        console.log("newFirstX", newFirstX)
+                        console.log("newSecondX", newSecondX)
+                        
                     }
 
                     // - Y-axis push out
 
                     function nonStaticPushOutY() {
                         // So like we first calculate the ratio of how powerful each velocity is to each other
-
+                        // let firstVelocityY = firstVelocity.y;
+                        // let secondVelocityY = secondVelocity.y;
+                        // if(firstVelocityY)
+                        //     firstVelocityY = near0;
+                        // if(secondVelocityY)
+                        //     secondVelocityY = near0;
                         let totalYRatio = Math.abs(firstVelocity.y) + Math.abs(secondVelocity.y)
+
                         let firstYRatio = Math.abs(firstVelocity.y) / totalYRatio;
                         let secondYRatio = Math.abs(secondVelocity.y) / totalYRatio;
                         let firstBounds = firstCollider.GetBounds();
                         let secondBounds = secondCollider.GetBounds()
+                        if (totalYRatio == 0) {
+                            //     totalYRatio = 1;
+                            //     // just do half an half
+                            //     firstYRatio = 0.5
+                            //     secondYRatio = 0.5;
+                            return
 
+                        }
                         // See push out X for reasoning and logic
 
                         let firstYCollision = null;
@@ -739,8 +781,27 @@ class Game extends EventSystem {
 
                         firstGameObj.y = newFirstY;
                         secondGameObj.y = newSecondY
+                        // -- debugging :( man this is gonna be a pain
+                        console.log("---------------")
+                        console.log("first is red")
+                        console.log("second is green")
 
-
+                        console.log("firstYVelocity", firstVelocity.y)
+                        console.log("secondYVelocity", secondVelocity.y)
+                        console.log("totalYRatio", totalYRatio)
+                        console.log("firstYRatio", firstYRatio)
+                        console.log("secondYRatio", secondYRatio)
+                        console.log("firstBounds", firstBounds)
+                        console.log("secondBounds", secondBounds)
+                        console.log("firstYCollision", firstYCollision)
+                        console.log("secondYCollision", secondYCollision)
+                        console.log("differenceOfClsn", differenceOfClsn)
+                        console.log("firstMoveDir", firstMoveDir)
+                        console.log("secondMoveDir", secondMoveDir)
+                        console.log("newFirstYMvmnt", (firstMoveDir * differenceOfClsn * firstYRatio))
+                        console.log("newSecondYMvmnt", (secondMoveDir * differenceOfClsn * secondYRatio))
+                        console.log("newFirstY", newFirstY)
+                        console.log("newSecondY", newSecondY)
                     }
 
                     function staticPushOutX() {
@@ -912,7 +973,6 @@ class Game extends EventSystem {
                         // console.log("newNonStaticY", newNonStaticY)
                     }
 
-                    let collisionNormal; // the normal of the collision as a point (2D)
 
                     function staticPushOutAndVelocity() {
 
@@ -953,13 +1013,13 @@ class Game extends EventSystem {
 
                         // Do x-axis
                         // if negative
-                        if (nonStaticInvVel.x <= 0) {
+                        if (nonStaticInvVel.x < 0) {
                             // ppush out of left of oobject
                             // nonStaticGameObj.x = staticBounds.left - nonStaticGameObj.width;
                             xSide = staticBounds.left;
                             invXDirection = Direction.LEFT;
                         }
-                        if (nonStaticInvVel.x > 0) {
+                        else if (nonStaticInvVel.x > 0) {
                             // else positive
                             // ppush out of right of oobject
                             // nonStaticGameObj.x = staticBounds.right;
@@ -969,16 +1029,19 @@ class Game extends EventSystem {
 
 
                         // Do y-axis
-                        if (nonStaticInvVel.y <= 0) {
+                        if (nonStaticInvVel.y < 0) {
                             ySide = staticBounds.bottom;
                             invYDirection = Direction.DOWN;
 
                         }
-
-                        if (nonStaticInvVel.y > 0) {
+                        else if (nonStaticInvVel.y > 0) {
                             ySide = staticBounds.top;
                             invYDirection = Direction.UP;
+                        }
 
+                        // TODO: Deal with (0,0 velocity)
+                        if (nonStaticInvVel.x == 0 && nonStaticInvVel.y == 0) {
+                            throw new Error("Deal with (0,0) velocity smh my head")
                         }
 
                         // Now do linear equation
@@ -989,6 +1052,7 @@ class Game extends EventSystem {
                         // let yAxis = 2;
 
                         /**
+                         * ONLY WORKS IF RUN OR RISE OF SLOPE IS NOT 0. Else just substitute
                          * Returns null if no coordinate is found (or not in range or domain), 
                          * else returns a found intercept coordinate.
                          * You give it a single known y or x (the side you're using for the calculation) and it will solve for unknown
@@ -1075,7 +1139,7 @@ class Game extends EventSystem {
                             new Point(nonStaticBounds.right, nonStaticBounds.top), // top-right
                         ]
 
-                        console.log("-----------------")
+                        // console.log("-----------------")
 
                         // first check for intersection on x-axis
                         let foundIntercept
@@ -1083,45 +1147,57 @@ class Game extends EventSystem {
                         let castLength = 2 ** 63; // How long the ray that is used as a linear equation is
                         let castedInvVelocity = thisGame.ScalarMultiplyVec(nonStaticInvVel, castLength); // the new casted velocity vertex
 
-                        for (const vertex of nonStaticVertices) {
-                            // each vertex is a point
-                            let c = vertex.y - (m * vertex.x); // c = y -mx
+                        if (ySide != null && xSide != null)
+                            // If both of the velocities aren't 0
+                            for (const vertex of nonStaticVertices) {
+                                // each vertex is a point
+                                let c = vertex.y - (m * vertex.x); // c = y -mx
 
-                            // let intercept = solveLinearEquation(xSide, m, null, c, [nonStaticBounds.left, nonStaticBounds.right], [nonStaticBounds.bottom, nonStaticBounds.top])
-                            // let domain = [Math.min(vertex.x, vertex.x + castedInvVelocity.x), Math.max(vertex.x, vertex.x + castedInvVelocity.x)]
-                            // let range = [Math.min(vertex.y, vertex.y + castedInvVelocity.y), Math.max(vertex.y, vertex.y + castedInvVelocity.y)]
-                            let domain = [staticBounds.left, staticBounds.right]
-                            let domain2 = [Math.min(vertex.x, vertex.x + castedInvVelocity.x), Math.max(vertex.x, vertex.x + castedInvVelocity.x)]
-                            let range = [staticBounds.bottom, staticBounds.top]
-                            let range2 = [Math.min(vertex.y, vertex.y + castedInvVelocity.y), Math.max(vertex.y, vertex.y + castedInvVelocity.y)]
-                            let intercept = solveLinearEquation(null, m, xSide, c,
-                                domain, domain2,
-                                range, range2)
-                            // let intercept = solveLinearEquation(xSide, m, null, c, 
-                            //     [Math.min(vertex.x, xSide), Math.max(vertex.x, xSide)], 
-                            //     [Math.min(vertex.y, ySide), Math.max(vertex.y, ySide)])
-                            // if x-intercept failed, try y
-                            if (!intercept) {
-                                intercept = solveLinearEquation(ySide, m, null, c,
+                                // let intercept = solveLinearEquation(xSide, m, null, c, [nonStaticBounds.left, nonStaticBounds.right], [nonStaticBounds.bottom, nonStaticBounds.top])
+                                // let domain = [Math.min(vertex.x, vertex.x + castedInvVelocity.x), Math.max(vertex.x, vertex.x + castedInvVelocity.x)]
+                                // let range = [Math.min(vertex.y, vertex.y + castedInvVelocity.y), Math.max(vertex.y, vertex.y + castedInvVelocity.y)]
+                                let domain = [staticBounds.left, staticBounds.right]
+                                let domain2 = [Math.min(vertex.x, vertex.x + castedInvVelocity.x), Math.max(vertex.x, vertex.x + castedInvVelocity.x)]
+                                let range = [staticBounds.bottom, staticBounds.top]
+                                let range2 = [Math.min(vertex.y, vertex.y + castedInvVelocity.y), Math.max(vertex.y, vertex.y + castedInvVelocity.y)]
+                                let intercept = solveLinearEquation(null, m, xSide, c,
                                     domain, domain2,
                                     range, range2)
-                            }
+                                // let intercept = solveLinearEquation(xSide, m, null, c, 
+                                //     [Math.min(vertex.x, xSide), Math.max(vertex.x, xSide)], 
+                                //     [Math.min(vertex.y, ySide), Math.max(vertex.y, ySide)])
+                                // if x-intercept failed, try y
+                                if (!intercept) {
+                                    intercept = solveLinearEquation(ySide, m, null, c,
+                                        domain, domain2,
+                                        range, range2)
+                                }
 
-                            if (intercept) {
-                                foundIntercept = new Point(intercept.x, intercept.y)
-                                console.log("Intercept on vertex", vertex)
-                                // console.log("m", m);
-                                // console.log("xSide", xSide);
-                                // console.log("c", c);
-                                // console.log("domain", domain)
-                                // console.log("range", range)
-                                // console.log("castedInvVelocity", castedInvVelocity)
-                                // console.log("---")
-                                console.log("foundIntercept", foundIntercept)
-                                visualiseVertex = vertex
-                                break;
+                                if (intercept) {
+                                    foundIntercept = new Point(intercept.x, intercept.y)
+                                    console.log("Intercept on vertex", vertex)
+                                    // console.log("m", m);
+                                    // console.log("xSide", xSide);
+                                    // console.log("c", c);
+                                    // console.log("domain", domain)
+                                    // console.log("range", range)
+                                    // console.log("castedInvVelocity", castedInvVelocity)
+                                    // console.log("---")
+                                    console.log("foundIntercept", foundIntercept)
+                                    visualiseVertex = vertex
+                                    break;
+                                }
+                                // console.log("x intercept", intercept)
+
                             }
-                            // console.log("x intercept", intercept)
+                        else {
+                            // manually do it if one velocity is 0
+                            if (nonStaticVelocity.y != 0) {
+                                foundIntercept = new Point(nonStaticGameObj.x, ySide);
+                            } else {
+                                foundIntercept = new Point(xSide, nonStaticGameObj.y);
+                            }
+                            // console.log("foundIntercept", foundIntercept)
 
                         }
 
@@ -1146,28 +1222,32 @@ class Game extends EventSystem {
                         //         // console.log("y intercept", intercept)
                         //     }
 
-                        console.log("xSide", xSide)
-                        console.log("ySide", ySide)
-                        console.log("m", m)
-                        console.log("nonStaticInvVel", nonStaticInvVel)
-                        console.log("castedInvVelocity", castedInvVelocity)
-                        console.log("nonStaticBounds", nonStaticBounds)
-                        console.log("staticBounds", staticBounds)
-                        // console.log("foundIntercept",foundIntercept)
+                        // console.log("xSide", xSide)
+                        // console.log("ySide", ySide)
+                        // console.log("m", m)
+                        // console.log("")
+                        // console.log("nonStaticVelocity (+, +)", nonStaticVelocity)
+                        // console.log("nonStaticInvVel (-, -)", nonStaticInvVel)
+                        // console.log("castedInvVelocity (-inf,-inf)", castedInvVelocity)
+                        // console.log("")
+                        // console.log("nonStaticBounds", nonStaticBounds)
+                        // console.log("staticBounds", staticBounds)
+                        // console.log("Static is", staticGameObj.name)
+                        // console.log("\n\n")
 
 
 
 
                         if (!foundIntercept) {
                             // READ:
-                            
+
                             // If there isn't an intercept, the axes of the non-static object are probably the same as the static one
                             // This means there was no intercept because they are on the same axis and therefore there is no pushout because it is already pushed out but it is
                             // registered as collision from formula
 
                             // This could also be an issue where the velocity is set to near 0 when x or y is 0. This means that the near 0 will put it on a very very slight angle
                             // which may miss the line of intercept for overlap
-                            
+
                             // just skip
                             console.warn("foundIntercept is NULL")
                             return;
@@ -1216,19 +1296,19 @@ class Game extends EventSystem {
 
 
                         // // visualise the intercept
-                        // let intGraphics = new Graphics()
-                        //     .rect(0, 0, 0.5, 0.5)
-                        //     .fill("white")
-                        // let intObj = new GameObject(intGraphics, thisGame);
+                        let intGraphics = new Graphics()
+                            .rect(0, 0, 0.5, 0.5)
+                            .fill("white")
+                        let intObj = new GameObject(intGraphics, thisGame);
 
-                        // intObj.physicsEnabled = false
-                        // intObj.position = foundIntercept;
-                        // intObj.graphicsObject.tint = "orange"
-                        // intObj.graphicsObject.zIndex = 5;
-                        // intGraphics.alpha = 0.5
+                        intObj.physicsEnabled = false
+                        intObj.position = foundIntercept;
+                        intObj.graphicsObject.tint = "orange"
+                        intObj.graphicsObject.zIndex = 5;
+                        intGraphics.alpha = 0.5
 
 
-                        // thisGame.AddGameObject(intObj);
+                        thisGame.AddGameObject(intObj);
 
                         // console.log(intObj                        )
 
@@ -1238,10 +1318,11 @@ class Game extends EventSystem {
                             {
                                 nonStaticGameObj.position = foundIntercept
 
-                                if (foundIntercept.y == staticBounds.bottom) {
+                                // do velocity 0 check because it should stay the same if the velocity is 0
+                                if (foundIntercept.y == staticBounds.bottom && nonStaticVelocity.y != 0) {
                                     nonStaticGameObj.y -= nonStaticGameObj.height;
                                 }
-                                if (foundIntercept.x == staticBounds.left) {
+                                if (foundIntercept.x == staticBounds.left && nonStaticVelocity.x != 0) {
                                     nonStaticGameObj.x -= nonStaticGameObj.width;
                                 }
                             }
@@ -1269,12 +1350,16 @@ class Game extends EventSystem {
                                 nonStaticGameObj.y -= nonStaticGameObj.height;
                                 nonStaticGameObj.x -= nonStaticGameObj.width;
                             }
+
+                            // console.log("New position", nonStaticGameObj.position)
                         }
 
 
 
 
-                        moveRect();
+                        // moveRect();
+
+
                         // now pause at the collision, then set the new positions, then wait, then resume physics
                         // this is all to visualise my math that it's not fudged
 
@@ -1303,6 +1388,8 @@ class Game extends EventSystem {
 
                         // console.log("collisionNormal", collisionNormal)
                         // Now save the collision normal (the same as xSide or ySide) as we'll need it for later calculation
+                        let collisionNormal; // the normal of the collision as a point (2D)
+
                         if (foundIntercept.x == xSide)
                             // collisionNormal = thisGame.NormaliseVec(new Point(xSide, 0))
                             if (xSide == 0)
@@ -1313,7 +1400,6 @@ class Game extends EventSystem {
                             // if 0, default to (0,1)
                             if (ySide == 0)
                                 collisionNormal = new Point(0, 1)
-
                             else
                                 collisionNormal = thisGame.NormaliseVec(new Point(0, ySide))
                             // collisionNormal = thisGame.NormaliseVec(new Point(0, ySide/Math.abs(ySide)))
@@ -1322,7 +1408,8 @@ class Game extends EventSystem {
                             // collisionNormal = new Point(0,0)}
                         }
                         else {
-                            // console.log(foundIntercept)
+                            console.log("third")
+                            console.log(foundIntercept)
                         }
                         // console.log("collisionNormal", collisionNormal)
 
@@ -1367,19 +1454,36 @@ class Game extends EventSystem {
 
                         // TODO: fix when coming in -x and +y on roof or -x and -y on floor, it does weird shit
 
-                        // thisGame.paused = true;
-                        // setTimeout(() => {
-                        //     moveRect();
+                        moveRect();
+                        // if(nonStaticGameObj.name == "rect2"){
+                        //     thisGame.paused = true;
                         //     setTimeout(() => {
-                        //         thisGame.paused = false;
-                        //     }, 2000);
-                        // }, 1000);
+                        //         moveRect();
+                        //         setTimeout(() => {
+                        //             thisGame.paused = false;
+                        //         }, 2000);
+                        //     }, 1000);
+                        // }else{
+                        //     moveRect();
+                        // }
+
                     }
 
                     // if both are non static
                     if (!firstGameObj.static && !secondGameObj.static) {
                         nonStaticPushOutX();
                         nonStaticPushOutY();
+                        if (firstGameObj.name == "rect2" || secondGameObj.name == "rect2") {
+                            thisGame.paused = true;
+                            setTimeout(() => {
+                                // move();
+                                setTimeout(() => {
+                                    thisGame.paused = false;
+                                }, 1000);
+                            }, 1000);
+                        } else {
+                            move();
+                        }
                         // --- New elastic collision velocity handling ---
 
 
