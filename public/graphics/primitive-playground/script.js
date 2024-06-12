@@ -182,12 +182,12 @@ function collisionBordersLoad(game) {
     console.log("loading")
     // Create 4 walls to keep gameobjects inside
     let floorGraphics = new Graphics()
-    .rect(0, 0, 0.1, 0.1)
-    .fill("white")
+        .rect(0, 0, 0.1, 0.1)
+        .fill("white")
     let floor = new GameObject(floorGraphics, game);
-    let roof = new GameObject(new Graphics().rect(0,0,0.1,0.1).fill("white"), game);
-    let leftWall = new GameObject(new Graphics().rect(0,0,0.1,0.1).fill("white"), game);
-    let rightWall = new GameObject(new Graphics().rect(0,0,0.1,0.1).fill("white"), game);
+    let roof = new GameObject(new Graphics().rect(0, 0, 0.1, 0.1).fill("white"), game);
+    let leftWall = new GameObject(new Graphics().rect(0, 0, 0.1, 0.1).fill("white"), game);
+    let rightWall = new GameObject(new Graphics().rect(0, 0, 0.1, 0.1).fill("white"), game);
 
     floor.name = "floor"; // add custom name
     leftWall.name = "leftWall"; // add custom name
@@ -200,21 +200,22 @@ function collisionBordersLoad(game) {
     let wallsWidth = 500; // in game units. The length of each side will be the game canvas in game units
     let innerOffset = 0//3; // How much to the wall will be visible by. Just offset it slightly out to avoid weird physics happening at (0,0)
     // game.pixiApplication.stage.position = new Point(300,-300)
-    floor.width = game.pixiApplication.canvas.width / game.pixelsPerUnit.x;
+    floor.width = game.pixiApplication.canvas.width / game.pixelsPerUnit.x + wallsWidth;
     floor.height = wallsWidth;
-    floor.y -= wallsWidth-innerOffset
+    floor.y -= wallsWidth - innerOffset
 
-    roof.width = game.pixiApplication.canvas.width / game.pixelsPerUnit.x;
+    roof.width = game.pixiApplication.canvas.width / game.pixelsPerUnit.x + wallsWidth;
     roof.height = wallsWidth;
     roof.y = game.pixiApplication.canvas.height / game.pixelsPerUnit.y - innerOffset;
 
     leftWall.width = wallsWidth;
     leftWall.x = -wallsWidth + innerOffset;
-    leftWall.height = game.pixiApplication.canvas.height / game.pixelsPerUnit.y;
+    leftWall.y-= wallsWidth
+    leftWall.height = game.pixiApplication.canvas.height / game.pixelsPerUnit.y + wallsWidth+wallsWidth;
 
     rightWall.width = wallsWidth;
-    rightWall.x = game.pixiApplication.canvas.width / game.pixelsPerUnit.x-innerOffset;
-    rightWall.height = game.pixiApplication.canvas.height / game.pixelsPerUnit.y;
+    rightWall.x = game.pixiApplication.canvas.width / game.pixelsPerUnit.x - innerOffset ;
+    rightWall.height = game.pixiApplication.canvas.height / game.pixelsPerUnit.y + wallsWidth;
 
     // oh and add colliders. The position and size will auto adjust
     floor.collider = new AABB();
@@ -291,9 +292,9 @@ function collisionTestLoad(game) {
     // give it a collider
     rect2Collider = new AABB();
     rect2.collider = rect2Collider;
-    rect2.position = new Point(2.5,5)
+    rect2.position = new Point(3.5, 2)
     rect2.name = "rect2"
-    // rect2.velocity = new Point(1,0)
+    rect2.velocity = new Point(-20, -10)
     // rect2.velocity = new Point(20,5)
     // rect2.velocity = new Point(-20,15)
     // rect2.velocity = new Point(5,20)
@@ -304,7 +305,7 @@ function collisionTestLoad(game) {
 
     let staticRect = new GameObject(staticRectGraphics, game);
     staticRect.static = true;
-    staticRect.position = new Point(10,6)
+    staticRect.position = new Point(10, 6)
 
     staticRect.collider = new AABB();
 
@@ -340,6 +341,10 @@ function collisionTestLoad(game) {
     game.AddGameObject(rect1);
     game.AddGameObject(rect2);
 
+    // game.pixiApplication.stage.y = -200;
+    // game.pixiApplication.stage.x = 200;
+
+
     // add objects to remove onm unload
     collisionTestObjsToRmv.push(rect1);
 
@@ -348,27 +353,33 @@ function collisionTestLoad(game) {
 
         let keyDown = event.key;
         let movementAmnt = 0.1; // movement amount in game units
+        let pixelMovementAmnt = 25; // movement amount in pixels
 
         switch (keyDown) {
             // movement
             case "w":
                 {
-                    rect1.y += movementAmnt;
+                    game.pixiApplication.stage.y += pixelMovementAmnt;
+
+                    // rect1.y += movementAmnt;
                     break;
                 }
             case "s":
                 {
-                    rect1.y -= movementAmnt;
+                    game.pixiApplication.stage.y -= pixelMovementAmnt;
+                    // rect1.y -= movementAmnt;
                     break;
                 }
             case "a":
                 {
-                    rect1.x -= movementAmnt;
+                    game.pixiApplication.stage.x += pixelMovementAmnt;
+                    // rect1.x -= movementAmnt;
                     break;
                 }
             case "d":
                 {
-                    rect1.x += movementAmnt;
+                    game.pixiApplication.stage.x -= pixelMovementAmnt;
+                    // rect1.x += movementAmnt;
                     break;
                 }
 

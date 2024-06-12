@@ -360,29 +360,40 @@ class Game extends EventSystem {
         if (this.paused)
             return;
         let gameStage = this.pixiApplication.stage; // contains all the rendered children
+        let calculatedCollisionPairs = [];
+        let thisGame = this;
 
+        // No longer doing velocity calculations before collider loop
 
         // #region Velocity calculations
-        for (const gameObj of this.gameObjects) {
+
+
+        // for (const gameObj of this.gameObjects) {
+        //     CalculateNewVelocityAndPos(gameObj);
+        // }
+
+        // Calculates velocity for game object based on current velocity, drag and gravity.
+        // Then sets the new calculated values to the aproppriate ones under game object
+        function CalculateNewVelocityAndPos(gameObj) {
             // First calculate all velocity updates for objects
 
             // check should interact with physics
             if (!gameObj.physicsEnabled)
-                continue;
+                return;
 
             // the position is relative to parent so I'll just make it so only parent can move for now
             if (gameObj.graphicsObject.parent != gameStage)
-                continue;
+                return;
 
             // Don't need to move if static, can't have velocity
             if (gameObj.static)
-                continue;
+                return;
 
 
             // --- apply physics ---
 
             // seconds since last frame, ik division is slower but it's insignificant
-            let deltaSec = this.ticker.deltaMS / 1000;
+            let deltaSec = thisGame.ticker.deltaMS / 1000;
 
             // -- applying velocity --
 
@@ -406,11 +417,11 @@ class Game extends EventSystem {
             // let xAcceleration = (-1*this.drag)*unitVelocity.x;                
 
             // If no drag, default to 0
-            let drag = this.drag;
+            let drag = thisGame.drag;
             if (!gameObj.dragEnabled)
                 drag = 0;
             // Same with gravity
-            let gravity = this.gravity * this.gravityScale;
+            let gravity = thisGame.gravity * thisGame.gravityScale;
             if (!gameObj.gravityEnabled)
                 gravity = 0;
 
@@ -435,17 +446,20 @@ class Game extends EventSystem {
 
 
 
-
-
         // #endregion
 
-        let calculatedCollisionPairs = [];
-        let thisGame = this;
+
 
         // Then, calculate all collision updates
         for (const firstGameObj of this.gameObjects) { // loop through game objects once
-            //#region Calculate collisions
+            // Don't do anything if this object is static. There is nothing to change on this object
+            if (firstGameObj.static)
+                continue;
 
+            // velocity
+            let firstInitialPos = new Point(firstGameObj.x, firstGameObj.y);
+            CalculateNewVelocityAndPos(firstGameObj); // do tha velocity
+            //#region Calculate collisions
             // first check if this object has a collider
             if (firstGameObj.collider)
                 // then for each game object compare it's collision with another
@@ -471,16 +485,21 @@ class Game extends EventSystem {
                     let firstCollider = firstGameObj.collider;
                     let secondCollider = secondGameObj.collider;
 
+
+
                     // check for a collision
                     if (!firstCollider.CollidesWith(secondCollider)) {
                         // no collision
-                        firstGameObj.graphicsObject.tint = "white"
+                        // firstGameObj.graphicsObject.tint = "white"
                         continue; // skip if no collision
                     }
 
                     // From now on, there is a collision
-                    firstGameObj.graphicsObject.tint = "red"
-                    secondGameObj.graphicsObject.tint = "green"
+
+
+
+                    // firstGameObj.graphicsObject.tint = "red"
+                    // secondGameObj.graphicsObject.tint = "green"
 
                     // do nothing if they're both static, neither should move or change velocity
                     if (firstGameObj.static && secondGameObj.static)
@@ -512,6 +531,9 @@ class Game extends EventSystem {
                     // if (secondVelocity.y == 0)
                     //     secondVelocity.y = near0;
 
+                    // function nonStaticVelocity() {
+
+                    // }
 
                     // Seperate the two axes so you only do one at a time
 
@@ -684,7 +706,7 @@ class Game extends EventSystem {
                         console.log("newSecondXMvmnt", (secondMoveDir * differenceOfClsn * secondXRatio))
                         console.log("newFirstX", newFirstX)
                         console.log("newSecondX", newSecondX)
-                        
+
                     }
 
                     // - Y-axis push out
@@ -1469,21 +1491,107 @@ class Game extends EventSystem {
 
                     }
 
+                    function staticVelocity() {
+                        let staticBounds;
+                        let staticGameObj;
+                        let nonStaticBounds;
+                        let nonStaticGameObj;
+                        let nonStaticVelocity;
+
+                        if (firstGameObj.static) {
+                            staticGameObj = firstGameObj
+                            staticBounds = firstCollider.GetBounds();
+                            nonStaticBounds = secondCollider.GetBounds();
+                            nonStaticGameObj = secondGameObj;
+                            nonStaticVelocity = secondVelocity;
+                        } else {
+                            staticGameObj = secondGameObj
+                            staticBounds = secondCollider.GetBounds();
+                            nonStaticBounds = firstCollider.GetBounds();
+                            nonStaticVelocity = firstVelocity;
+                            nonStaticGameObj = firstGameObj;
+                        }
+
+                        // let nonStaticInvVel = thisGame.ScalarMultiplyVec(nonStaticVelocity, -1); // inversed velocity
+
+                        let nonStaticCentre = new Point(nonStaticGameObj.x + nonStaticGameObj.width / 2,
+                            nonStaticGameObj.y + nonStaticGameObj.height / 2);
+                        let staticCentre = new Point(staticGameObj.x + staticGameObj.width / 2,
+                            staticGameObj.y + staticGameObj.height / 2);
+
+                        let xDistance = nonStaticCentre.x - staticCentre.x;
+                        let yDistance = nonStaticCentre.y - staticCentre.y;
+                        let totalWidth = (nonStaticGameObj.width + staticGameObj.width) / 2;
+                        let totalHeight = (nonStaticGameObj.height + staticGameObj.height) / 2;
+                        let overlapX = totalWidth - Math.abs(xDistance);
+                        let overlapY = totalHeight - Math.abs(yDistance);
+
+
+                        let collisionNormal;
+
+                        // Overlap on x and y should never be 0 because it means they are touching and not colliding
+                        // x or y distance may be 0 if the cntres align
+
+                        if (overlapX < overlapY) {
+                            if (xDistance > 0)
+                                collisionNormal = new Point(1, 0)
+                            else if (xDistance < 0)
+                                collisionNormal = new Point(-1, 0)
+                        }
+                        else if (overlapY < overlapX) {
+                            if (yDistance > 0)
+                                collisionNormal = new Point(0, 1)
+                            else if (yDistance < 0)
+                                collisionNormal = new Point(0, -1)
+                        }
+
+                        //in the case that no collision normal is set, just skip this function
+                        if(collisionNormal == null){
+                            console.warn("collision normal == NULL, skipping")
+                        }
+
+
+
+                        // Now do new velocity calculation based off normal that the non-static collided with on static object
+
+                        // The theory isn't mine but I just converted it to code
+                        // First the collision normal must be well normalised so it's a unit vector
+                        // Basically you get a normal component (dot product of non-static velocity and collision normal)
+                        // Then you calculate a new normal component and then tangential component and combine them
+                        // I'm a programmer not a mathematician and this may be really basic but I've spent far too much time already on this I'm not going to understand
+                        // what each component does, just doing the calculations
+
+                        let normalComponent = thisGame.DotProduct(nonStaticVelocity, collisionNormal); // this is just a real number
+                        let invertedComponent = thisGame.ScalarMultiplyVec(collisionNormal, -(normalComponent)); // no idea what this is
+                        let tangentialComponent = thisGame.AddVecs(nonStaticVelocity, invertedComponent) // collisionNormal * -invertedComponent
+                        let finalNonStaticVelocity = thisGame.AddVecs(tangentialComponent, invertedComponent); // ??
+
+                        nonStaticGameObj.velocity = finalNonStaticVelocity; // update
+
+                        // moveRect();
+                    }
+
+                    // If it was static then it's pos won't change
+
+                    // Put the object back to its pos hopefully before collision
+                    firstGameObj.position = firstInitialPos;
+                    // If it's still colliding afterwards, bad luck
+
                     // if both are non static
                     if (!firstGameObj.static && !secondGameObj.static) {
-                        nonStaticPushOutX();
-                        nonStaticPushOutY();
-                        if (firstGameObj.name == "rect2" || secondGameObj.name == "rect2") {
-                            thisGame.paused = true;
-                            setTimeout(() => {
-                                // move();
-                                setTimeout(() => {
-                                    thisGame.paused = false;
-                                }, 1000);
-                            }, 1000);
-                        } else {
-                            move();
-                        }
+                        // nonStaticPushOutX();
+                        // nonStaticPushOutY();
+                        // if (firstGameObj.name == "rect2" || secondGameObj.name == "rect2") {
+                        //     thisGame.paused = true;
+                        //     setTimeout(() => {
+                        //         // move();
+                        //         setTimeout(() => {
+                        //             thisGame.paused = false;
+                        //         }, 1000);
+                        //     }, 1000);
+                        // } else {
+                        //     // move();
+                        // }
                         // --- New elastic collision velocity handling ---
 
 
@@ -1506,7 +1614,8 @@ class Game extends EventSystem {
                         // else only one is static, call apropriate static functions
                         // staticPushOutX();
                         // staticPushOutY();
-                        staticPushOutAndVelocity();
+                        // staticPushOutAndVelocity();
+                        staticVelocity();
                     }
 
 
