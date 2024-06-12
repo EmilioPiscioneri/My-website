@@ -294,7 +294,7 @@ function collisionTestLoad(game) {
     rect2.collider = rect2Collider;
     rect2.position = new Point(3.5, 2)
     rect2.name = "rect2"
-    rect2.velocity = new Point(-20, -10)
+    // rect2.velocity = new Point(-20, -10)
     // rect2.velocity = new Point(20,5)
     // rect2.velocity = new Point(-20,15)
     // rect2.velocity = new Point(5,20)
@@ -392,6 +392,7 @@ function collisionTestLoad(game) {
 }
 
 function collisionTestOnTick(game) {
+    console.log(rect1.velocity)
     if (gameObjectToMoveToPointer) {
 
         // console.log(clickPos)

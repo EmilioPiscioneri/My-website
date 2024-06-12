@@ -1566,6 +1566,10 @@ class Game extends EventSystem {
                         let tangentialComponent = thisGame.AddVecs(nonStaticVelocity, invertedComponent) // collisionNormal * -invertedComponent
                         let finalNonStaticVelocity = thisGame.AddVecs(tangentialComponent, invertedComponent); // ??
 
+                        finalNonStaticVelocity.y *= 0.97; // reduces bouncing problem of up and down from gravity on constant collisions. Kind of a hack fix but eh.
+                        // The fancy name for this fix is coefficient of restitution
+                        //Basically objects don't tend to stop bouncing up and down when above a static object
+
                         nonStaticGameObj.velocity = finalNonStaticVelocity; // update
 
                         // moveRect();
