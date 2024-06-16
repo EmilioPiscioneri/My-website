@@ -252,6 +252,7 @@ let obj3
 // callbacks to remove on unload
 let collisionTestRect1PointerDownCbck;
 let collisionTestRect2PointerDownCbck;
+let collisionTestObj3PointerDownCbck;
 let collisionTestPointerUpCbck;
 let collisionTestKeyDwn;
 
@@ -270,6 +271,7 @@ function collisionTestLoad(game) {
 
     // create rectangle game object
     rect1 = new GameObject(rect1Graphics, game);
+    // rect1.gravityEnabled = false;
 
     // give it a collider
     rect1Collider = new AABB();
@@ -297,6 +299,7 @@ function collisionTestLoad(game) {
     rect2.collider = rect2Collider;
     rect2.position = new Point(3.5, 2)
     rect2.name = "rect2"
+    // rect2.gravityEnabled = false
     // rect2.velocity = new Point(-20, -10)
     // rect2.velocity = new Point(20,5)
     // rect2.velocity = new Point(-20,15)
@@ -307,8 +310,32 @@ function collisionTestLoad(game) {
     //     .fill("white")
     // game.pixiApplication.stage.addChild(obj3Graphics)
     // obj3 = obj3Graphics
-    obj3 = new Circle(0, 0, 2, game)
-    obj3.static = true
+    obj3 = new Circle(0, 0, 0.5, game)
+    // obj3.static = true
+    // obj3.gravityEnabled = false;
+    obj3.name = "circle"
+    // obj3.static = true
+
+    obj3.position = new Point(2,5)
+
+    let obj3Collider = new CircleCollider();
+    obj3.collider = obj3Collider
+
+    let obj4 = new Circle(0, 0, 0.5, game)
+    // obj3.static = true
+    // obj3.gravityEnabled = false;
+    // obj4.name = "circle"
+    // obj3.static = true
+
+    obj4.position = new Point(2,5)
+
+    let obj4Collider = new CircleCollider();
+    obj4.collider = obj4Collider
+    obj4.graphicsObject.tint = "orange"
+
+
+    // Add circle collider
+
     // obj3 = new GameObject(obj3Graphics, game);
     // obj3.static = true; 
 
@@ -344,6 +371,10 @@ function collisionTestLoad(game) {
         gameObjectToMoveToPointer = rect2;
     }
 
+    collisionTestObj3PointerDownCbck = (event) =>{
+        gameObjectToMoveToPointer = obj3;
+    }
+
 
     collisionTestPointerUpCbck = (event) => {
         gameObjectToMoveToPointer = null
@@ -352,6 +383,10 @@ function collisionTestLoad(game) {
     // pointer is for touch and mouse
     rect1.graphicsObject.addEventListener("pointerdown", collisionTestRect1PointerDownCbck)
     rect2.graphicsObject.addEventListener("pointerdown", collisionTestRect2PointerDownCbck)
+    obj3.graphicsObject.addEventListener("pointerdown", collisionTestObj3PointerDownCbck)
+    obj4.graphicsObject.addEventListener("pointerdown", (e)=>{
+        gameObjectToMoveToPointer = obj4; // i got lazy
+    })
 
     document.addEventListener("pointerup", collisionTestPointerUpCbck)
 
@@ -359,6 +394,7 @@ function collisionTestLoad(game) {
     game.AddGameObject(rect1);
     game.AddGameObject(rect2);
     game.AddGameObject(obj3)
+    game.AddGameObject(obj4)
 
     // game.pixiApplication.stage.y = -200;
     // game.pixiApplication.stage.x = 200;
@@ -442,6 +478,9 @@ function collisionTestOnTick(game) {
         let newVelocity = new Point(differenceVec.x * speed, differenceVec.y * speed)
 
         gameObjectToMoveToPointer.velocity = newVelocity;
+        // console.log("New velocity:",newVelocity)
+    }else{
+        // console.log("object",gameObjectToMoveToPointer)
     }
 
     // do collision check
@@ -458,6 +497,7 @@ function collisionTestUnload() {
     game.RemoveGameObjects(collisionTestObjsToRmv)
     rect2.graphicsObject.removeEventListener("pointerdown", collisionTestRect2PointerDownCbck)
     rect1.graphicsObject.removeEventListener("pointerdown", collisionTestRect1PointerDownCbck)
+    obj3.graphicsObject.removeEventListener("pointerdown", collisionTestObj3PointerDownCbck)
     document.removeEventListener("pointerup", collisionTestPointerUpCbck)
     game.RemoveEventListener("keyDown", collisionTestKeyDwn)
 }

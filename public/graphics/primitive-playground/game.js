@@ -97,6 +97,86 @@ class Direction {
     static UP = 4;
 }
 
+/**
+ * Vector math static class
+ */
+class VecMath {
+    /**
+     * Multiplies a vector using scalar multiplication
+     * @param {Number} scalarValue 
+     * @param {PIXI.Point} vector 
+     * @returns vector * scalarValue
+     */
+    static ScalarMultiplyVec(vector, scalarValue) {
+        return new Point(scalarValue * vector.x, scalarValue * vector.y)
+    }
+
+    /**
+     * Divides a vector using scalar division
+     * @param {Number} scalarValue 
+     * @param {PIXI.Point} vector 
+     * @returns The vector divided by scalar value
+     */
+    static ScalarDivideVec(vector, scalarValue) {
+        return new Point(vector.x / scalarValue, vector.y / scalarValue)
+    }
+
+    /**
+     * Adds to vectors by adding together each axis independently
+     * @param {PIXI.Point} vector1 
+     * @param {PIXI.Point} vector2 
+     * @returns The addition of both vectors
+     */
+    static AddVecs(vector1, vector2) {
+        return new Point(vector1.x + vector2.x, vector1.y + vector2.y)
+    }
+
+    // v1 -v2
+    static SubtractVecs(vector1, vector2) {
+        return new Point(vector1.x - vector2.x, vector1.y - vector2.y)
+    }
+
+
+    /**
+     * Returns new vec where both axes of a vector are absolute 
+     * @param {PIXI.Point} vector Vector to do math on 
+     * @returns 
+     */
+    static AbsVec(vector) {
+        return new Point(Math.abs(vector.x), Math.abs(vector.y))
+    }
+
+    /**
+     * Returns dot product of two vectors. The addition of each axis of the vector's mulitplied by the same axis
+     * @param {*} vector1 
+     * @param {*} vector2 
+     * @returns 
+     */
+    static DotProduct(vector1, vector2) {
+        return vector1.x * vector2.x + vector1.y * vector2.y
+    }
+
+    // returns magnitude of vector
+    static Magnitude(vector) {
+        return Math.sqrt(vector.x ** 2 + vector.y ** 2)
+    }
+
+    static NormaliseVec(vector) {
+        return this.ScalarDivideVec(vector, this.Magnitude(vector))
+    }
+}
+
+/**
+ * Clamps a value to the min or max if it is out of the range
+ * @param {Number} value 
+ * @param {Number} min 
+ * @param {Number} max 
+ * @returns {Number} The clamped value
+ */
+function Clamp(value, min, max) {
+    return Math.max(min, Math.min(max, value))
+}
+
 // main class, I included the subclasses in the same file because it is easier 
 class Game extends EventSystem {
     pixiApplication = new PIXI.Application();
@@ -291,153 +371,14 @@ class Game extends EventSystem {
         //     this.pixiApplication.stage.children.indexOf(objectToFind.graphicsObject) != -1)
     }
 
-    /**
-     * Multiplies a vector using scalar multiplication
-     * @param {Number} scalarValue 
-     * @param {PIXI.Point} vector 
-     * @returns vector * scalarValue
-     */
-    ScalarMultiplyVec(vector, scalarValue) {
-        return new Point(scalarValue * vector.x, scalarValue * vector.y)
-    }
 
-    /**
-     * Divides a vector using scalar division
-     * @param {Number} scalarValue 
-     * @param {PIXI.Point} vector 
-     * @returns The vector divided by scalar value
-     */
-    ScalarDivideVec(vector, scalarValue) {
-        return new Point(vector.x / scalarValue, vector.y / scalarValue)
-    }
-
-    /**
-     * Adds to vectors by adding together each axis independently
-     * @param {PIXI.Point} vector1 
-     * @param {PIXI.Point} vector2 
-     * @returns The addition of both vectors
-     */
-    AddVecs(vector1, vector2) {
-        return new Point(vector1.x + vector2.x, vector1.y + vector2.y)
-    }
-
-    // v1 -v2
-    SubtractVecs(vector1, vector2) {
-        return new Point(vector1.x - vector2.x, vector1.y - vector2.y)
-    }
-
-
-    /**
-     * Returns new vec where both axes of a vector are absolute 
-     * @param {PIXI.Point} vector Vector to do math on 
-     * @returns 
-     */
-    AbsVec(vector) {
-        return new Point(Math.abs(vector.x), Math.abs(vector.y))
-    }
-
-    /**
-     * Returns dot product of two vectors. The addition of each axis of the vector's mulitplied by the same axis
-     * @param {*} vector1 
-     * @param {*} vector2 
-     * @returns 
-     */
-    DotProduct(vector1, vector2) {
-        return vector1.x * vector2.x + vector1.y * vector2.y
-    }
-
-    // returns magnitude of vector
-    Magnitude(vector) {
-        return Math.sqrt(vector.x ** 2 + vector.y ** 2)
-    }
-
-    NormaliseVec(vector) {
-        return this.ScalarDivideVec(vector, this.Magnitude(vector))
-    }
 
     // Updates game physics on tick
     PhysicsTickUpdate() {
         // don't continue when paused
         if (this.paused)
             return;
-        let gameStage = this.pixiApplication.stage; // contains all the rendered children
         let calculatedCollisionPairs = [];
-        let thisGame = this;
-
-        // -- NOTE: the function is only defined and is called later. I don't feel the need to define the function outside of this one
-
-        // Calculates velocity for game object based on current velocity, drag and gravity.
-        // Then sets the new calculated values to the aproppriate ones under game object
-        function CalculateNewVelocityAndPos(gameObj) {
-            // First calculate all velocity updates for objects
-
-            // check should interact with physics
-            if (!gameObj.physicsEnabled)
-                return;
-
-            // the position is relative to parent so I'll just make it so only parent can move for now
-            if (gameObj.graphicsObject.parent != gameStage)
-                return;
-
-            // Don't need to move if static, can't have velocity
-            if (gameObj.static)
-                return;
-
-
-            // --- apply physics ---
-
-            // seconds since last frame, ik division is slower but it's insignificant
-            let deltaSec = thisGame.ticker.deltaMS / 1000;
-
-            // -- applying velocity --
-
-            // in units/sec
-            let velocity = gameObj.velocity;
-
-
-            // Linear drag https://www.youtube.com/watch?v=OBq07mCMXlc&t=292s
-            // Use the acceleration (double dot product of each axis) which is the rate of change of velocity and apply that to the current velocity.
-            // Basically acceleration is how much velocity changes over time (1 second in this case)
-            // The time is since last frame
-
-            // let pixelVelocity = this.ConvertUnitsToPixels(physicsData.velocity); // convert from units to pixels
-
-            // calculate acceleration on each axis
-
-
-            // a=acceleration, v=velocity, k=drag (factor of resistance against motion)
-            // a.x = -k * v.x
-            // basically oppose the current velocity by the drag factor (-k*v)
-            // let xAcceleration = (-1*this.drag)*unitVelocity.x;                
-
-            // If no drag, default to 0
-            let drag = thisGame.drag;
-            if (!gameObj.dragEnabled)
-                drag = 0;
-            // Same with gravity
-            let gravity = thisGame.gravity * thisGame.gravityScale;
-            if (!gameObj.gravityEnabled)
-                gravity = 0;
-
-            let xAcceleration = -drag * velocity.x
-
-            // a=acceleration, v=velocity, k=drag (factor of resistance against motion)
-            // Normal formula (treating positive as up for y)
-            // a.y = -k * v.y -g
-
-
-            // let yGravity = this.gravity * this.gravityScale
-            let yAcceleration = -drag * velocity.y - gravity
-
-            // apply acceleration changes to velocity (times by deltaSec to get change since last frame)
-            velocity.x += xAcceleration * deltaSec
-            velocity.y += yAcceleration * deltaSec
-
-            // times velocity by deltaSec (time) to get change since last frame 
-            gameObj.x += deltaSec * velocity.x
-            gameObj.y += deltaSec * velocity.y
-        }
-
 
 
 
@@ -454,7 +395,7 @@ class Game extends EventSystem {
             let firstInitialPos = new Point(firstGameObj.x, firstGameObj.y);
             // Update the position and set new velocity for the first object
             // This will do nothing if the object is static
-            CalculateNewVelocityAndPos(firstGameObj); // do tha velocity
+            this.CalculateNewVelocityAndPos(firstGameObj); // do tha velocity
 
             // NOTE: This will update the position and velocity for each game object because the collision pair check is only done in the second loop down below
 
@@ -516,6 +457,10 @@ class Game extends EventSystem {
         }
 
         // From now on, there is a collision
+        // if (firstGameObj.name == "circle")
+        //     firstGameObj.tint = "green"
+        // else if (secondGameObj.name == "circle")
+        //     secondGameObj.tint = "green"
 
 
 
@@ -541,14 +486,14 @@ class Game extends EventSystem {
             // Calculate new velocity for first Game Object
             //https://en.wikipedia.org/wiki/Elastic_collision#Examples
             let firstNewVelocity =
-                this.AddVecs(
-                    this.ScalarMultiplyVec(firstVelocity, ((firstMass - secondMass) / (firstMass + secondMass))),
-                    this.ScalarMultiplyVec(secondVelocity, (2 * secondMass) / (firstMass + secondMass))
+                VecMath.AddVecs(
+                    VecMath.ScalarMultiplyVec(firstVelocity, ((firstMass - secondMass) / (firstMass + secondMass))),
+                    VecMath.ScalarMultiplyVec(secondVelocity, (2 * secondMass) / (firstMass + secondMass))
                 )
             let secondNewVelocity =
-                this.AddVecs(
-                    this.ScalarMultiplyVec(firstVelocity, (2 * firstMass) / (firstMass + secondMass)),
-                    this.ScalarMultiplyVec(secondVelocity, ((secondMass - firstMass) / (firstMass + secondMass)))
+                VecMath.AddVecs(
+                    VecMath.ScalarMultiplyVec(firstVelocity, (2 * firstMass) / (firstMass + secondMass)),
+                    VecMath.ScalarMultiplyVec(secondVelocity, ((secondMass - firstMass) / (firstMass + secondMass)))
                 )
 
             firstGameObj.velocity = firstNewVelocity;
@@ -619,16 +564,89 @@ class Game extends EventSystem {
 
         // The theory isn't mine but I just converted it to code
 
-        let normalComponent = this.DotProduct(nonStaticVelocity, collisionNormal); // this is just a real number
-        let invertedComponent = this.ScalarMultiplyVec(collisionNormal, -(normalComponent)); // no idea what this is
-        let tangentialComponent = this.AddVecs(nonStaticVelocity, invertedComponent) // collisionNormal * -invertedComponent
-        let finalNonStaticVelocity = this.AddVecs(tangentialComponent, invertedComponent); // ??
+        let normalComponent = VecMath.DotProduct(nonStaticVelocity, collisionNormal); // this is just a real number
+        let invertedComponent = VecMath.ScalarMultiplyVec(collisionNormal, -(normalComponent)); // no idea what this is
+        let tangentialComponent = VecMath.AddVecs(nonStaticVelocity, invertedComponent) // collisionNormal * -invertedComponent
+        let finalNonStaticVelocity = VecMath.AddVecs(tangentialComponent, invertedComponent); // ??
 
         finalNonStaticVelocity.y *= 0.97; // reduces bouncing problem of up and down from gravity on constant collisions. Kind of a hack fix but eh.
         // The fancy name for this fix is coefficient of restitution
         // Basically objects don't tend to stop bouncing up and down when above a static object without the dampening
 
         nonStaticGameObj.velocity = finalNonStaticVelocity; // update
+    }
+
+    // Calculates velocity for game object based on current velocity, drag and gravity.
+    // Then sets the new calculated values to the aproppriate ones under game object
+    CalculateNewVelocityAndPos(gameObj) {
+        // First calculate all velocity updates for objects
+        let gameStage = this.pixiApplication.stage; // contains all the rendered children
+
+        // check should interact with physics
+        if (!gameObj.physicsEnabled)
+            return;
+
+        // the position is relative to parent so I'll just make it so only parent can move for now
+        if (gameObj.graphicsObject.parent != gameStage)
+            return;
+
+        // Don't need to move if static, can't have velocity
+        if (gameObj.static)
+            return;
+
+
+        // --- apply physics ---
+
+        // seconds since last frame, ik division is slower but it's insignificant
+        let deltaSec = this.ticker.deltaMS / 1000;
+
+        // -- applying velocity --
+
+        // in units/sec
+        let velocity = gameObj.velocity;
+
+
+        // Linear drag https://www.youtube.com/watch?v=OBq07mCMXlc&t=292s
+        // Use the acceleration (double dot product of each axis) which is the rate of change of velocity and apply that to the current velocity.
+        // Basically acceleration is how much velocity changes over time (1 second in this case)
+        // The time is since last frame
+
+        // let pixelVelocity = this.ConvertUnitsToPixels(physicsData.velocity); // convert from units to pixels
+
+        // calculate acceleration on each axis
+
+
+        // a=acceleration, v=velocity, k=drag (factor of resistance against motion)
+        // a.x = -k * v.x
+        // basically oppose the current velocity by the drag factor (-k*v)
+        // let xAcceleration = (-1*this.drag)*unitVelocity.x;                
+
+        // If no drag, default to 0
+        let drag = this.drag;
+        if (!gameObj.dragEnabled)
+            drag = 0;
+        // Same with gravity
+        let gravity = this.gravity * this.gravityScale;
+        if (!gameObj.gravityEnabled)
+            gravity = 0;
+
+        let xAcceleration = -drag * velocity.x
+
+        // a=acceleration, v=velocity, k=drag (factor of resistance against motion)
+        // Normal formula (treating positive as up for y)
+        // a.y = -k * v.y -g
+
+
+        // let yGravity = this.gravity * this.gravityScale
+        let yAcceleration = -drag * velocity.y - gravity
+
+        // apply acceleration changes to velocity (times by deltaSec to get change since last frame)
+        velocity.x += xAcceleration * deltaSec
+        velocity.y += yAcceleration * deltaSec
+
+        // times velocity by deltaSec (time) to get change since last frame 
+        gameObj.x += deltaSec * velocity.x
+        gameObj.y += deltaSec * velocity.y
     }
 }
 
@@ -799,6 +817,8 @@ class Circle extends GameObject {
         this.graphicsObject.position = this.game.ConvertUnitsToPixels(newPosition);
     }
 
+    isACircle = true;
+
 
 
     /**
@@ -813,6 +833,8 @@ class Circle extends GameObject {
         let circleGraphicsObject = new PIXI.Graphics()
             .circle(0, 0, radius)
             .fill("white"); // can just change colour with tint
+
+        circleGraphicsObject.interactive = true
 
         super(circleGraphicsObject, game)
 
@@ -832,6 +854,7 @@ class Circle extends GameObject {
 class ColliderType {
     static ERROR = 1;
     static AABB = 2;
+    static CIRCLE = 3;
 }
 
 /**
@@ -855,13 +878,153 @@ class Collider extends EventSystem {
         // console.log("Game object changed to",newGameObject)
 
     }
+    position = new Point(0, 0); // in game units
+
+    // changes on collider shouldn't reflect changes on game object position
+    get x() {return this.position.x}
+    set x(newX){this.position.x = newX}
+
+    get y() {return this.position.y}
+    set y(newY){this.position.y = newY}
 
     constructor() {
         super(); // call inherited class constructor
     }
 
+    /**
+     * Checks if the current collider collides with another one
+     * @param {Collider} otherCollider Check if this collider, collides with the other one
+     * @returns {boolean} Whether or not the collider does collide
+     */
+    CollidesWith(otherCollider) {
+        // if either collider isn't active then there's no collision
+        if (!this.isEnabled || !otherCollider.isEnabled)
+            return false
+
+        // AABB and AABB
+        if (this.type == ColliderType.AABB && otherCollider.type == ColliderType.AABB) {
+            // I already explained it for AABB collision detection, see the theory folder of the website github
+
+            // translated code from leanrOpenGL
+
+            // collision x-axis?
+            let collisionX =
+                (this.position.x + this.width > otherCollider.position.x
+                    && otherCollider.position.x + otherCollider.width > this.position.x);
+
+            // collision y-axis?
+            let collisionY =
+                (this.position.y + this.height > otherCollider.position.y
+                    && otherCollider.position.y + otherCollider.height > this.position.y);
+
+            // collision only if on both axes
+            return collisionX && collisionY;
+            /* My first idea
+                let thisBounds = this.GetBounds();
+                let otherBounds = otherCollider.GetBounds()
+                if (
+                    (
+                        // x-axis collision
+                        (thisBounds.left > otherBounds.left && thisBounds.left < otherBounds.right)
+                        ||
+                        (otherBounds.left > thisBounds.left && otherBounds.left < thisBounds.right)
+                        ||
+                        (thisBounds.right > otherBounds.left && thisBounds.right < otherBounds.right)
+                        ||
+                        (otherBounds.right > thisBounds.left && otherBounds.right < thisBounds.right)
+                    )
+                    &&
+                    (
+                        // y-axis collision
+                        (thisBounds.bottom > otherBounds.bottom && thisBounds.bottom < otherBounds.top)
+                        ||
+                        (otherBounds.bottom > thisBounds.bottom && otherBounds.bottom < thisBounds.top)
+                        ||
+                        (thisBounds.top > otherBounds.bottom && thisBounds.top < otherBounds.top)
+                        ||
+                        (otherBounds.top > thisBounds.bottom && otherBounds.top < thisBounds.top)
+                    )
+                )
+                    return true
+                else
+                    return false*/
+        }
+        // AABB and Circle 
+        else if ((this.type == ColliderType.CIRCLE && otherCollider.type == ColliderType.AABB)
+            ||
+            (this.type == ColliderType.AABB && otherCollider.type == ColliderType.CIRCLE)) {
+            // console.log("Doing circle-AABB collision check")
+
+            
+            // See article https://learnopengl.com/In-Practice/2D-Game/Collisions/Collision-detection
+            // determine which is aabb and which is circle colliders
+            let circle;
+            let aabb;
+            if (this.type == ColliderType.CIRCLE) {
+                circle = this;
+                aabb = otherCollider
+            } else {
+                circle = otherCollider;
+                aabb = this;
+            }
+
+            // get the half extents of aabb(weird ass name)
+            let aabbHalfWidth = aabb.width / 2;
+            let aabbHalfHeight = aabb.height / 2;
+
+            // get centre of each obj
+            let circleCentre = circle.position
+            // let circleCentre = VecMath.AddVecs(circle.position, new Point(circle.radius, circle.radius))
+            let aabbCentre = new Point(
+                aabb.x + aabbHalfWidth,
+                aabb.y + aabbHalfHeight
+            )
 
 
+            // difference between two centres
+            let difference = VecMath.SubtractVecs(circleCentre, aabbCentre)
+            // clamp the difference
+            let clampedDifferenceX = Clamp(difference.x, -aabbHalfWidth, aabbHalfWidth)
+            let clampedDifferenceY = Clamp(difference.y, -aabbHalfHeight, aabbHalfHeight)
+            let clampedDifference = new Point(clampedDifferenceX, clampedDifferenceY)
+            // add clamped value to AABB_center and we get the value of box closest to circle
+            let closestPoint = VecMath.AddVecs(aabbCentre, clampedDifference)
+
+            // retrieve vector between center circle and closest point AABB and check if length <= radius
+            difference = VecMath.SubtractVecs(closestPoint, circleCentre)
+
+            // Then finally do the collision check
+            let result = VecMath.Magnitude(difference) < circle.radius;
+
+            // console.log("--------")
+            // console.log("circleCentre", circleCentre)
+            // console.log("aabbCentre", aabbCentre)
+            // console.log("clampedDifference", clampedDifference)
+            // console.log("difference2", difference)
+            // console.log("closestPoint", closestPoint)
+            // console.log("circle.radius", circle.radius)
+            // console.log("result", result)
+            // console.log(result)
+
+            return result;
+
+
+        }
+        // CIRCLE and CIRCLE
+        else if (this.type == ColliderType.CIRCLE && otherCollider.type == ColliderType.CIRCLE) {
+            // See https://www.youtube.com/watch?v=87Bj4PtgzSc
+
+            let radii = this.radius + otherCollider.radius;
+            let distance = VecMath.Magnitude(VecMath.SubtractVecs(this.position, otherCollider.position))
+            if(distance < radii){
+                // lmao collision
+                return true;
+            }
+
+
+        }
+
+    }
 }
 
 /**
@@ -873,7 +1036,6 @@ class AABB extends Collider {
     type = ColliderType.AABB
     width = 0; // in game units 
     height = 0; // in game units
-    position = new Point(0, 0); // in game units
     shareWidth = true; // whether to share width with parent game object
     shareHeight = true; // whether to share width with parent game object
     sharePosition = true; // whether to share position with parent game object
@@ -950,69 +1112,62 @@ class AABB extends Collider {
 
     }
 
-    /**
-     * Checks if the current collider collides with another one
-     * @param {Collider} otherCollider Check if this collider, collides with the other one
-     * @returns {boolean} Whether or not the collider does collide
-     */
-    CollidesWith(otherCollider) {
-        // if either collider isn't active then there's no collision
-        if (!this.isEnabled || !otherCollider.isEnabled)
-            return false
-        switch (otherCollider.type) {
-            case ColliderType.AABB: // this AABB -> other AABB
 
-                // I already explained it for AABB collision detection, see the theory folder of the website github
+}
 
-                // translated code from leanrOpenGL
+/**
+ * Circle collider
+ */
+class CircleCollider extends Collider {
+    type = ColliderType.CIRCLE
+    radius = 0; // in game units
+    shareRaius = true; // whether to share radius (using width/2) with parent game object
+    sharePosition = true; // whether to share position with parent game object
 
-                // collision x-axis?
-                let collisionX =
-                    (this.position.x + this.width > otherCollider.position.x
-                        && otherCollider.position.x + otherCollider.width > this.position.x);
+    constructor() {
+        super();
+        let thisObject = this; // to keep reference in deeper scoped functions
 
-                // collision y-axis?
-                let collisionY =
-                    (this.position.y + this.height > otherCollider.position.y
-                        && otherCollider.position.y + otherCollider.height > this.position.y);
+        // share width and height with parent game object if it exists
+        this.AddEventListener("gameObjectChanged", function (eventData) {
+            let oldGameObject = eventData.oldValue;
+            let newGameObject = eventData.newValue;
 
-                // collision only if on both axes
-                return collisionX && collisionY;
+            if (oldGameObject) {
+                // remove old listeners, changing game object
+                oldGameObject.RemoveEventListener("widthChanged", thisObject.WidthChangeCallback)
+                oldGameObject.RemoveEventListener("positionChanged", thisObject.PositionChangeCallback)
+            }
 
-                /* My first idea
-                let thisBounds = this.GetBounds();
-                let otherBounds = otherCollider.GetBounds()
-                if (
-                    (
-                        // x-axis collision
-                        (thisBounds.left > otherBounds.left && thisBounds.left < otherBounds.right)
-                        ||
-                        (otherBounds.left > thisBounds.left && otherBounds.left < thisBounds.right)
-                        ||
-                        (thisBounds.right > otherBounds.left && thisBounds.right < otherBounds.right)
-                        ||
-                        (otherBounds.right > thisBounds.left && otherBounds.right < thisBounds.right)
-                    )
-                    &&
-                    (
-                        // y-axis collision
-                        (thisBounds.bottom > otherBounds.bottom && thisBounds.bottom < otherBounds.top)
-                        ||
-                        (otherBounds.bottom > thisBounds.bottom && otherBounds.bottom < thisBounds.top)
-                        ||
-                        (thisBounds.top > otherBounds.bottom && thisBounds.top < otherBounds.top)
-                        ||
-                        (otherBounds.top > thisBounds.bottom && otherBounds.top < thisBounds.top)
-                    )
-                )
-                    return true
-                else
-                    return false*/
-                break;
+            if (newGameObject) {
+                // Fire the callbacks once to update changes
+                thisObject.WidthChangeCallback();
+                thisObject.PositionChangeCallback();
 
-            default:
-                break;
-        }
-
+                // add new listeners, changing game object
+                newGameObject.AddEventListener("widthChanged", thisObject.WidthChangeCallback)
+                newGameObject.AddEventListener("positionChanged", thisObject.PositionChangeCallback)
+            }
+        })
     }
+
+
+    // define like this to preserve the this var
+    WidthChangeCallback = () => {
+        if (this.shareRaius) {
+            let newWidth = this.gameObject.width;
+            this.radius = newWidth / 2;
+            // console.log("Updated collider radius to " + this.radius);
+        }
+    }
+
+    // define like this to preserve the this var
+    PositionChangeCallback = () => {
+        if (this.sharePosition) {
+            let newPosition = this.gameObject.position;
+            this.position = newPosition
+            // console.log("Updated position to", this.position);
+        }
+    }
+
 }
