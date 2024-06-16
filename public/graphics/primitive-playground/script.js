@@ -210,11 +210,11 @@ function collisionBordersLoad(game) {
 
     leftWall.width = wallsWidth;
     leftWall.x = -wallsWidth + innerOffset;
-    leftWall.y-= wallsWidth
-    leftWall.height = game.pixiApplication.canvas.height / game.pixelsPerUnit.y + wallsWidth+wallsWidth;
+    leftWall.y -= wallsWidth
+    leftWall.height = game.pixiApplication.canvas.height / game.pixelsPerUnit.y + wallsWidth + wallsWidth;
 
     rightWall.width = wallsWidth;
-    rightWall.x = game.pixiApplication.canvas.width / game.pixelsPerUnit.x - innerOffset ;
+    rightWall.x = game.pixiApplication.canvas.width / game.pixelsPerUnit.x - innerOffset;
     rightWall.height = game.pixiApplication.canvas.height / game.pixelsPerUnit.y + wallsWidth;
 
     // oh and add colliders. The position and size will auto adjust
@@ -246,6 +246,7 @@ let gameObjectToMoveToPointer = null;
 let speed = 10; // rect to mouse speed
 let rect1;
 let rect2;
+let obj3
 
 
 // callbacks to remove on unload
@@ -265,6 +266,7 @@ function collisionTestLoad(game) {
 
     // make it interactive
     rect1Graphics.interactive = true;
+    rect1Graphics.tint = "red"
 
     // create rectangle game object
     rect1 = new GameObject(rect1Graphics, game);
@@ -281,6 +283,7 @@ function collisionTestLoad(game) {
 
     // rect2Graphics.tint = "rgb(255,50,50)"
     rect2Graphics.interactive = true;
+    rect2Graphics.tint = "green"
 
     rect2 = new GameObject(rect2Graphics, game)
 
@@ -299,6 +302,19 @@ function collisionTestLoad(game) {
     // rect2.velocity = new Point(-20,15)
     // rect2.velocity = new Point(5,20)
 
+    //     let obj3Graphics = new Graphics()
+    //     .circle(0,0,50)
+    //     .fill("white")
+    // game.pixiApplication.stage.addChild(obj3Graphics)
+    // obj3 = obj3Graphics
+    obj3 = new Circle(0, 0, 2, game)
+    obj3.static = true
+    // obj3 = new GameObject(obj3Graphics, game);
+    // obj3.static = true; 
+
+
+
+
     let staticRectGraphics = new Graphics()
         .rect(0, 0, 5, 4)
         .fill("white")
@@ -310,6 +326,8 @@ function collisionTestLoad(game) {
     staticRect.collider = new AABB();
 
     game.AddGameObject(staticRect)
+
+
 
 
 
@@ -340,6 +358,7 @@ function collisionTestLoad(game) {
     // Add objects to the game
     game.AddGameObject(rect1);
     game.AddGameObject(rect2);
+    game.AddGameObject(obj3)
 
     // game.pixiApplication.stage.y = -200;
     // game.pixiApplication.stage.x = 200;

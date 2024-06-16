@@ -164,7 +164,8 @@ class Game extends EventSystem {
             // initialise the graphics object (is done asynchronously)
             this.pixiApplication.init({
                 background: this.defaultBackgroundColour,
-                resizeTo: graphicsContainer
+                resizeTo: graphicsContainer,
+                antialias: true, // make graphics not look so bad
             }).then(() => {
                 // now add the canvas to html
                 graphicsContainer.appendChild(this.pixiApplication.canvas)
@@ -483,7 +484,7 @@ class Game extends EventSystem {
                     if (pairExists || this.paused)
                         continue;
 
-                    this.ResolveCollision(firstGameObj,secondGameObj, firstInitialPos)
+                    this.ResolveCollision(firstGameObj, secondGameObj, firstInitialPos)
 
                     calculatedCollisionPairs.push([firstGameObj, secondGameObj])
 
@@ -524,7 +525,7 @@ class Game extends EventSystem {
         let secondMass = secondCollider.mass;
         let secondVelocity = new Point(secondGameObj.velocity.x, secondGameObj.velocity.y); // clone velocity as we don't want to change it right now 
 
-        
+
 
         // If it was static then it's pos won't change
 
@@ -770,6 +771,58 @@ class GameObject extends EventSystem {
         // this.position = this.graphicsObject.position; // run through the set function
 
     }
+}
+
+/**
+ * A circle game object with graphics already done for you.
+ * A seperate class is needed because different behaviour of position is needed
+ */
+class Circle extends GameObject {
+    // let 
+    // get x() {
+    //     return this._position.x
+    // }
+    // set x(newValue){
+
+    // }
+
+    // overwrite
+    updateGraphicsObjPosition() {
+        // clone to avoid conflicts
+        let newPosition = new Point(this._position.x, this._position.y);
+        let canvasHeight = game.pixiApplication.canvas.height / this.game.pixelsPerUnit.y; // convert from pixels to units
+
+        newPosition.y = newPosition.y * -1 // inverse y
+            + canvasHeight // Move to bottom. Because its a circle its x and y is middle of circle
+
+        // set the new pos, convert to pixel units first
+        this.graphicsObject.position = this.game.ConvertUnitsToPixels(newPosition);
+    }
+
+
+
+    /**
+     * 
+     * @param {Number} x In game units
+     * @param {Number} y In game units
+     * @param {Number} radius 
+     * @param {Game} game 
+     */
+    constructor(x, y, radius, game) {
+        // Create the circle graphics object
+        let circleGraphicsObject = new PIXI.Graphics()
+            .circle(0, 0, radius)
+            .fill("white"); // can just change colour with tint
+
+        super(circleGraphicsObject, game)
+
+        // Initialise position
+        this.x = x;
+        this.y = y;
+
+
+    }
+
 }
 
 /**
