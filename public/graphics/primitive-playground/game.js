@@ -363,14 +363,7 @@ class Game extends EventSystem {
         let calculatedCollisionPairs = [];
         let thisGame = this;
 
-        // No longer doing velocity calculations before collider loop
-
-        // #region Velocity calculations
-
-
-        // for (const gameObj of this.gameObjects) {
-        //     CalculateNewVelocityAndPos(gameObj);
-        // }
+        // -- NOTE: the function is only defined and is called later. I don't feel the need to define the function outside of this one
 
         // Calculates velocity for game object based on current velocity, drag and gravity.
         // Then sets the new calculated values to the aproppriate ones under game object
@@ -446,7 +439,6 @@ class Game extends EventSystem {
 
 
 
-        // #endregion
 
 
 
@@ -456,17 +448,30 @@ class Game extends EventSystem {
             if (firstGameObj.static)
                 continue;
 
-            // velocity
+
+            // Record the current position
             let firstInitialPos = new Point(firstGameObj.x, firstGameObj.y);
+            // Update the position and set new velocity for the first object
+            // This will do nothing if the object is static
             CalculateNewVelocityAndPos(firstGameObj); // do tha velocity
+
+            // NOTE: This will update the position and velocity for each game object because the collision pair check is only done in the second loop down below
+
+
             //#region Calculate collisions
             // first check if this object has a collider
             if (firstGameObj.collider)
                 // then for each game object compare it's collision with another
                 for (const secondGameObj of this.gameObjects) {
-                    // don't continue when paused
+                    // don't do any updates when game is paused
                     if (this.paused)
                         return;
+
+                    // If iterating the same game objects or the other one doesn't have a collider
+                    if (firstGameObj == secondGameObj || !secondGameObj.collider)
+                        continue; // skip
+
+                    // If the collision has already been calculated for two game objects, don't do it again
                     let pairExists = false;
                     for (const pair of calculatedCollisionPairs) {
                         if ((pair[0] == firstGameObj && pair[1] == secondGameObj)
@@ -477,1166 +482,8 @@ class Game extends EventSystem {
 
                     if (pairExists || this.paused)
                         continue;
-                    // If iterating the same game objects or the other one doesn't have a collider
-                    if (firstGameObj == secondGameObj || !secondGameObj.collider)
-                        continue; // skip
 
-
-                    let firstCollider = firstGameObj.collider;
-                    let secondCollider = secondGameObj.collider;
-
-
-
-                    // check for a collision
-                    if (!firstCollider.CollidesWith(secondCollider)) {
-                        // no collision
-                        // firstGameObj.graphicsObject.tint = "white"
-                        continue; // skip if no collision
-                    }
-
-                    // From now on, there is a collision
-
-
-
-                    // firstGameObj.graphicsObject.tint = "red"
-                    // secondGameObj.graphicsObject.tint = "green"
-
-                    // do nothing if they're both static, neither should move or change velocity
-                    if (firstGameObj.static && secondGameObj.static)
-                        continue;
-
-                    // Setup initial variables we'll need for the calculations
-                    let firstMass = firstCollider.mass;
-                    let firstVelocity = new Point(firstGameObj.velocity.x, firstGameObj.velocity.y); // clone velocity as we don't want to change it right now 
-                    // let firstPosition = firstGameObj.position;
-                    let secondMass = secondCollider.mass;
-                    let secondVelocity = new Point(secondGameObj.velocity.x, secondGameObj.velocity.y); // clone velocity as we don't want to change it right now 
-                    // let secondPosition = secondGameObj.position;
-
-                    // --- Push out the game objects from each other ---
-
-                    // First push out the game objects from each other
-                    // My like trying to visualise this
-                    // https://www.desmos.com/calculator/6w6mcabr4o
-
-                    // When velocity is 0 set it to nearly 0 otherwise it will cause math errors
-
-                    // if (firstVelocity.x == 0)
-                    //     firstVelocity.x = near0
-                    // if (firstVelocity.y == 0)
-                    //     firstVelocity.y = near0;
-
-                    // if (secondVelocity.x == 0)
-                    //     secondVelocity.x = near0
-                    // if (secondVelocity.y == 0)
-                    //     secondVelocity.y = near0;
-
-                    // function nonStaticVelocity() {
-
-                    // }
-
-                    // Seperate the two axes so you only do one at a time
-
-                    // - X-axis push out
-
-                    function nonStaticPushOutX() {
-                        // let firstVelocityX = firstVelocity.x;
-                        // let secondVelocityX = secondVelocity.x;
-                        // if (firstVelocityX)
-                        //     firstVelocityX = near0;
-                        // if (secondVelocityX)
-                        //     secondVelocityX = near0;
-                        // So like we first calculate the ratio of how powerful each velocity is to each other
-                        let totalXRatio = Math.abs(firstVelocity.x) + Math.abs(secondVelocity.x)
-
-                        // if(totalXRatio == 0) // the math won't work n that
-                        //     return;
-                        let firstXRatio = Math.abs(firstVelocity.x) / totalXRatio;
-                        let secondXRatio = Math.abs(secondVelocity.x) / totalXRatio;
-                        if (totalXRatio == 0) {
-                            // totalXRatio = 1;
-                            // // just do half an half
-                            // firstXRatio = 0.5
-                            // secondXRatio = 0.5;
-                            return;
-                        }
-                        let firstBounds = firstCollider.GetBounds();
-                        let secondBounds = secondCollider.GetBounds()
-
-                        // Okay so how the AABB-AABB collision detection works is by checking of there is a collision or overlap
-                        // On both the x and y axes. There just needs to be one collision
-                        // This means all we need to do is find out which side is colliding per axis on each AABB or rectangle.
-                        // You may be wondering there's two sides to check per axis, for now I'm just going to favour one
-
-                        // this is the first rect and the value of an x-axis side collision
-                        // We run into an issue here when one rect is completely inside another,
-                        // only one of the rects will have 2 collision points as the outside rect's sides aren't colliding        
-                        // In this situation all we do is just skip the current axis and the other axis will fix it or we skip both and
-                        // the current physics loop figures it out and pushes them out over time
-                        // Also note that the collision check function uses a logic operator like great than or equal to
-                        // This means our side detection needs to use an equal to
-
-                        let firstXCollision = null;
-
-                        // left side is colliding with other rect
-                        if (firstBounds.left >= secondBounds.left && firstBounds.left <= secondBounds.right)
-                            firstXCollision = firstBounds.left;
-                        // else if right side
-                        else if (firstBounds.right >= secondBounds.left && firstBounds.right <= secondBounds.right)
-                            firstXCollision = firstBounds.right
-                        else {
-                            // no collision set gets handled
-                            // firstXCollision = firstBounds.left
-                        }
-
-                        let secondXCollision = null;
-
-                        // left side is colliding with other rect
-                        if (secondBounds.left >= firstBounds.left && secondBounds.left <= firstBounds.right)
-                            secondXCollision = secondBounds.left;
-                        // else if right side
-                        else if (secondBounds.right >= firstBounds.left && secondBounds.right <= firstBounds.right)
-                            secondXCollision = secondBounds.right
-                        else {
-                            // no collision set gets handled
-                            // secondXCollision = secondBounds.left
-                        }
-
-
-
-                        // first check if we have like a logically breaking bug. Like this just shouldn't happen
-                        if (firstXCollision == null && secondXCollision == null)
-                            throw new Error("What the, there is no collision on both x axes?")
-                        // else check if we have a situation where only on side is colliding
-                        else if (firstXCollision == null || secondXCollision == null) {
-                            return; // escape the axis check
-                        }
-                        // else if (firstXCollision == null) {
-                        //     console.log("firstXCollision null")
-                        //     // In this situation all we do is just choose the closest side that isn't colliding to the one that is colliding
-                        //     let collidingSide = secondXCollision;
-                        //     //let nonCollidingSides = [firstBounds.left, firstBounds.right];
-
-                        //     // get the two differences between the colliding and non colliding sides
-                        //     let leftDifference = Math.abs(firstBounds.left - collidingSide)
-                        //     let rightDifference = Math.abs(firstBounds.right - collidingSide)
-
-                        //     // choose the smaller of the two differences (the smaller the distance between two theings the closer they r)
-                        //     if (leftDifference >= rightDifference)
-                        //         firstXCollision = leftDifference; // choose smaller
-                        //     else
-                        //         firstXCollision = rightDifference; // choose smaller
-
-                        // } else if (secondXCollision == null) {
-                        //     console.log("secondXCollision null")
-                        //     // In this situation all we do is just choose the closest side that isn't colliding to the one that is colliding
-                        //     let collidingSide = firstXCollision;
-                        //     //let nonCollidingSides = [firstBounds.left, firstBounds.right];
-
-                        //     // get the two differences between the colliding and non colliding sides
-                        //     let leftDifference = Math.abs(secondBounds.left - collidingSide)
-                        //     let rightDifference = Math.abs(secondBounds.right - collidingSide)
-
-                        //     // choose the smaller of the two differences (the smaller the distance between two theings the closer they r)
-                        //     if (leftDifference >= rightDifference)
-                        //         secondXCollision = leftDifference; // choose smaller
-                        //     else
-                        //         secondXCollision = rightDifference; // choose smaller
-                        // }
-
-                        // spacial difference of collision
-                        let differenceOfClsn = Math.abs(firstXCollision - secondXCollision)
-
-                        // Now we need to determine what the direction represents going from one side to another
-                        // This is because the push-out will be pushing in each other inwards to a point where they are 
-                        let leftDirection = -1; // left is negative on x-axis
-                        let rightDirection = 1;
-
-                        let firstMoveDir; // first rect push-out move direction
-                        let secondMoveDir; // second rect push-out move direction
-
-                        // If first is on left (<=), first moves to right and second moves to left
-                        if (firstXCollision <= secondXCollision) {
-                            firstMoveDir = rightDirection;
-                            secondMoveDir = leftDirection;
-                        } // else, opposite
-                        else {
-                            firstMoveDir = leftDirection;
-                            secondMoveDir = rightDirection;
-                        }
-
-                        // Note that the directions can be multiplied by a vector's absolute x value to change it's direction
-
-                        // see my desmos maybe it'll help
-                        let newFirstX = firstXCollision + (firstMoveDir * differenceOfClsn * firstXRatio);
-
-                        let newSecondX = secondXCollision + (secondMoveDir * differenceOfClsn * secondXRatio);
-
-                        // If there was a movement twoards the left, you need to subtract the width as well
-                        if (firstMoveDir == leftDirection)
-                            newFirstX -= firstGameObj.width;
-                        if (secondMoveDir == leftDirection)
-                            newSecondX -= secondGameObj.width;
-
-                        function move() {
-                            firstGameObj.x = newFirstX;
-                            secondGameObj.x = newSecondX
-                        }
-
-                        move();
-
-                        // -- debugging :( man this is gonna be a pain
-                        console.log("---------------")
-                        console.log("first is red")
-                        console.log("second is green")
-
-                        console.log("firstXVelocity", firstVelocity.x)
-                        console.log("secondXVelocity", secondVelocity.x)
-                        console.log("totalXRatio", totalXRatio)
-                        console.log("firstXRatio", firstXRatio)
-                        console.log("secondXRatio", secondXRatio)
-                        console.log("firstBounds", firstBounds)
-                        console.log("secondBounds", secondBounds)
-                        console.log("firstXCollision", firstXCollision)
-                        console.log("secondXCollision", secondXCollision)
-                        console.log("differenceOfClsn", differenceOfClsn)
-                        console.log("firstMoveDir", firstMoveDir)
-                        console.log("secondMoveDir", secondMoveDir)
-                        console.log("newFirstXMvmnt", (firstMoveDir * differenceOfClsn * firstXRatio))
-                        console.log("newSecondXMvmnt", (secondMoveDir * differenceOfClsn * secondXRatio))
-                        console.log("newFirstX", newFirstX)
-                        console.log("newSecondX", newSecondX)
-
-                    }
-
-                    // - Y-axis push out
-
-                    function nonStaticPushOutY() {
-                        // So like we first calculate the ratio of how powerful each velocity is to each other
-                        // let firstVelocityY = firstVelocity.y;
-                        // let secondVelocityY = secondVelocity.y;
-                        // if(firstVelocityY)
-                        //     firstVelocityY = near0;
-                        // if(secondVelocityY)
-                        //     secondVelocityY = near0;
-                        let totalYRatio = Math.abs(firstVelocity.y) + Math.abs(secondVelocity.y)
-
-                        let firstYRatio = Math.abs(firstVelocity.y) / totalYRatio;
-                        let secondYRatio = Math.abs(secondVelocity.y) / totalYRatio;
-                        let firstBounds = firstCollider.GetBounds();
-                        let secondBounds = secondCollider.GetBounds()
-                        if (totalYRatio == 0) {
-                            //     totalYRatio = 1;
-                            //     // just do half an half
-                            //     firstYRatio = 0.5
-                            //     secondYRatio = 0.5;
-                            return
-
-                        }
-                        // See push out X for reasoning and logic
-
-                        let firstYCollision = null;
-
-                        // bottom side is colliding with other rect
-                        if (firstBounds.bottom >= secondBounds.bottom && firstBounds.bottom <= secondBounds.top)
-                            firstYCollision = firstBounds.bottom;
-                        // else if top side
-                        else if (firstBounds.top >= secondBounds.bottom && firstBounds.top <= secondBounds.top)
-                            firstYCollision = firstBounds.top
-                        else {
-                            // no collision set gets handled
-                        }
-
-                        let secondYCollision = null;
-
-                        // left side is colliding with other rect
-                        if (secondBounds.bottom >= firstBounds.bottom && secondBounds.bottom <= firstBounds.top)
-                            secondYCollision = secondBounds.bottom;
-                        // else if top side
-                        else if (secondBounds.top >= firstBounds.left && secondBounds.top <= firstBounds.top)
-                            secondYCollision = secondBounds.top
-                        else {
-                            // no collision set gets handled
-                        }
-
-                        // first check if we have like a logically breaking bug. Like this just shouldn't happen
-                        if (firstYCollision == null && secondYCollision == null)
-                            throw new Error("What the, there is no collision on both x axes?")
-                        // else check if we have a situation where only on side is colliding
-                        else if (firstYCollision == null || secondYCollision == null) {
-                            return; // escape the axis check
-                        }
-
-                        // spacial difference of collision
-                        let differenceOfClsn = Math.abs(firstYCollision - secondYCollision)
-
-                        // Now we need to determine what the direction represents going from one side to another
-                        // This is because the push-out will be pushing in each other inwards to a point where they are 
-                        let bottomDirection = -1; // left is negative on y-axis
-                        let topDirection = 1;
-
-                        let firstMoveDir; // first rect push-out move direction
-                        let secondMoveDir; // second rect push-out move direction
-
-                        // If first is on bottom (<=), first moves to top and second moves to bottom
-                        if (firstYCollision <= secondYCollision) {
-                            firstMoveDir = topDirection;
-                            secondMoveDir = bottomDirection;
-                        } // else, opposite
-                        else {
-                            firstMoveDir = bottomDirection;
-                            secondMoveDir = topDirection;
-                        }
-
-                        // Note that the directions can be multiplied by a vector's absolute x value to change it's direction
-
-                        // see my desmos maybe it'll help
-                        let newFirstY = firstYCollision + (firstMoveDir * differenceOfClsn * firstYRatio);
-
-                        let newSecondY = secondYCollision + (secondMoveDir * differenceOfClsn * secondYRatio);
-
-                        // If there was a movement twoards the left, you need to subtract the width as well
-                        if (firstMoveDir == bottomDirection)
-                            newFirstY -= firstGameObj.height;
-                        if (secondMoveDir == bottomDirection)
-                            newSecondY -= secondGameObj.height;
-
-                        firstGameObj.y = newFirstY;
-                        secondGameObj.y = newSecondY
-                        // -- debugging :( man this is gonna be a pain
-                        console.log("---------------")
-                        console.log("first is red")
-                        console.log("second is green")
-
-                        console.log("firstYVelocity", firstVelocity.y)
-                        console.log("secondYVelocity", secondVelocity.y)
-                        console.log("totalYRatio", totalYRatio)
-                        console.log("firstYRatio", firstYRatio)
-                        console.log("secondYRatio", secondYRatio)
-                        console.log("firstBounds", firstBounds)
-                        console.log("secondBounds", secondBounds)
-                        console.log("firstYCollision", firstYCollision)
-                        console.log("secondYCollision", secondYCollision)
-                        console.log("differenceOfClsn", differenceOfClsn)
-                        console.log("firstMoveDir", firstMoveDir)
-                        console.log("secondMoveDir", secondMoveDir)
-                        console.log("newFirstYMvmnt", (firstMoveDir * differenceOfClsn * firstYRatio))
-                        console.log("newSecondYMvmnt", (secondMoveDir * differenceOfClsn * secondYRatio))
-                        console.log("newFirstY", newFirstY)
-                        console.log("newSecondY", newSecondY)
-                    }
-
-                    function staticPushOutX() {
-
-                        let staticBounds;
-                        // let staticGameObj;
-                        let nonStaticBounds;
-                        let nonStaticGameObj;
-                        let nonStaticVelocity;
-
-                        if (firstGameObj.static) {
-                            staticBounds = firstCollider.GetBounds();
-                            nonStaticBounds = secondCollider.GetBounds();
-                            nonStaticGameObj = secondGameObj;
-                            nonStaticVelocity = secondVelocity;
-                        } else {
-                            staticBounds = secondCollider.GetBounds();
-                            nonStaticBounds = firstCollider.GetBounds();
-                            nonStaticVelocity = firstVelocity;
-                            nonStaticGameObj = firstGameObj;
-                        }
-
-                        // Theory: So you invert the velocity axis. That gives you the firection to go in. Let's so your inverted velocity direction is negative x
-                        // Then, you go push out of the left bounds of the static rect
-
-                        let nonStaticInvVelX = -nonStaticVelocity.x; // inversed velocity
-
-                        // if negative
-                        if (nonStaticInvVelX <= 0) {
-                            // ppush out of left of oobject
-                            nonStaticGameObj.x = staticBounds.left - nonStaticGameObj.width;
-
-                        }
-                        if (nonStaticInvVelX > 0) {
-                            // else positive
-                            // ppush out of right of oobject
-                            nonStaticGameObj.x = staticBounds.right;
-
-                        }
-
-
-                        // now pause at the collision, then set the new positions, then wait, then resume physics
-                        // this is all to visualise my math that it's not fudged
-
-                        // thisGame.paused = true;
-                        // setTimeout(() => {
-                        //     // set new positions
-                        //     nonStaticGameObj.x = newNonStaticX;
-                        //     setTimeout(() => {
-                        //         thisGame.paused = false;
-                        //     }, 1000);
-
-                        // }, 1000);
-                        // // -- debugging :( man this is gonna be a pain
-                        // console.log("---------------")
-                        // console.log("first is red")
-                        // console.log("second is green")
-                        // // console.log("firstXVelocity", firstVelocity.x)
-                        // // console.log("secondXVelocity", secondVelocity.x)
-                        // // console.log("totalXRatio", totalXRatio)
-                        // // console.log("firstXRatio", firstXRatio)
-                        // // console.log("secondXRatio", secondXRatio)
-                        // console.log("staticBounds", staticBounds)
-                        // console.log("nonStaticBounds", nonStaticBounds)
-                        // console.log("staticXCollision", staticXCollision)
-                        // console.log("nonStaticXCollision", nonStaticXCollision)
-                        // console.log("differenceOfClsn", differenceOfClsn)
-                        // console.log("nonStaticMoveDir", nonStaticMoveDir)
-                        // console.log("non static x mvmnt", (nonStaticMoveDir * differenceOfClsn))
-                        // // console.log("newSecondXMvmnt", (secondMoveDir * differenceOfClsn * secondXRatio))
-                        // console.log("nonStaticX", newNonStaticX)
-                        // // console.log("newSecondX", newSecondX)
-                    }
-
-                    function staticPushOutY() {
-
-                        let staticBounds;
-                        // let staticGameObj;
-                        let nonStaticBounds;
-                        let nonStaticGameObj;
-                        if (firstGameObj.static) {
-                            staticBounds = firstCollider.GetBounds();
-                            nonStaticBounds = secondCollider.GetBounds();
-                            nonStaticGameObj = secondGameObj;
-                        } else {
-                            staticBounds = secondCollider.GetBounds();
-                            nonStaticBounds = firstCollider.GetBounds();
-                            nonStaticGameObj = firstGameObj;
-                        }
-
-                        // just push out to the nearest side of the static object
-
-
-                        let nonStaticYCollision = null;
-
-                        // bottom side is colliding with other rect
-                        if (nonStaticBounds.bottom >= staticBounds.bottom && nonStaticBounds.bottom <= staticBounds.top)
-                            nonStaticYCollision = nonStaticBounds.bottom;
-                        // else if top side
-                        else if (nonStaticBounds.top >= staticBounds.bottom && nonStaticBounds.top <= staticBounds.top)
-                            nonStaticYCollision = nonStaticBounds.top
-
-                        let staticYCollision = null;
-
-                        // static side is colliding with other rect
-                        if (staticBounds.bottom >= nonStaticBounds.bottom && staticBounds.bottom <= nonStaticBounds.top)
-                            staticYCollision = staticBounds.bottom;
-                        // else if top side
-                        else if (staticBounds.top >= nonStaticBounds.bottom && staticBounds.top <= nonStaticBounds.top)
-                            staticYCollision = staticBounds.top
-
-                        // check if we have a situation where only on side is colliding
-                        if (staticYCollision == null || nonStaticYCollision == null) {
-                            return; // escape the axis check
-                        }
-
-                        // spacial difference of collision
-                        let differenceOfClsn = Math.abs(staticYCollision - nonStaticYCollision)
-
-                        // Now we need to determine what the direction represents going from one side to another
-                        // This is because the push-out will be pushing inwards 
-                        let bottomDirection = -1; // left is negative on x-axis
-                        let topDirection = 1;
-
-                        // Only NON static will move
-
-                        let nonStaticMoveDir; // non-static rect push-out move direction
-
-                        // If non-static is on left (<=), non-static moves to top
-                        if (nonStaticYCollision <= staticYCollision) {
-                            nonStaticMoveDir = topDirection;
-                        } // else, opposite
-                        else {
-                            nonStaticMoveDir = bottomDirection;
-                        }
-
-                        // see my desmos maybe it'll help
-                        let newNonStaticY = nonStaticYCollision + (nonStaticMoveDir * differenceOfClsn);
-
-                        // If there was a movement twoards the left, you need to subtract the height as well
-                        if (nonStaticMoveDir == bottomDirection)
-                            newNonStaticY -= nonStaticGameObj.height;
-
-                        nonStaticGameObj.y = newNonStaticY;
-
-                        // now pause at the collision, then set the new positions, then wait, then resume physics
-                        // this is all to visualise my math that it's not fudged
-
-                        // thisGame.paused = true;
-                        // setTimeout(() => {
-                        //     // set new positions
-                        //     nonStaticGameObj.y = newNonStaticY;
-                        //     setTimeout(() => {
-                        //         thisGame.paused = false;
-                        //     }, 1000);
-
-                        // }, 1000);
-                        // // -- debugging :( man this is gonna be a pain
-                        // console.log("---------------")
-                        // console.log("first is red")
-                        // console.log("second is green")
-                        // console.log("staticBounds", staticBounds)
-                        // console.log("nonStaticBounds", nonStaticBounds)
-                        // console.log("staticYCollision", staticYCollision)
-                        // console.log("nonStaticYCollision", nonStaticYCollision)
-                        // console.log("differenceOfClsn", differenceOfClsn)
-                        // console.log("nonStaticMoveDir", nonStaticMoveDir)
-                        // console.log("non static y mvmnt", (nonStaticMoveDir * differenceOfClsn))
-                        // console.log("newNonStaticY", newNonStaticY)
-                    }
-
-
-                    function staticPushOutAndVelocity() {
-
-                        let staticBounds;
-                        let staticGameObj;
-                        let nonStaticBounds;
-                        let nonStaticGameObj;
-                        let nonStaticVelocity;
-
-                        if (firstGameObj.static) {
-                            staticGameObj = firstGameObj
-                            staticBounds = firstCollider.GetBounds();
-                            nonStaticBounds = secondCollider.GetBounds();
-                            nonStaticGameObj = secondGameObj;
-                            nonStaticVelocity = secondVelocity;
-                        } else {
-                            staticGameObj = secondGameObj
-                            staticBounds = secondCollider.GetBounds();
-                            nonStaticBounds = firstCollider.GetBounds();
-                            nonStaticVelocity = firstVelocity;
-                            nonStaticGameObj = firstGameObj;
-                        }
-
-                        // Theory: So you invert the velocity axis. That gives you the direction to go out of. Let's say your inverted velocity direction is negative x and pos y
-                        // Then, you go push out to the the left or top bounds of the static rect
-                        // You check for a solution on both sides you have with the velocity as a linear equation.
-                        // To check if the linear equation is valid, you set a domain or range (the size or position) bounds that it can be in. 
-                        // Therefore, both axes will not be treated seperately
-                        // Also you're going to have to do the linear equation from each vertex so yeah
-
-                        let nonStaticInvVel = thisGame.ScalarMultiplyVec(nonStaticVelocity, -1); // inversed velocity
-                        let xSide; // This is the value of the side to push out of. Think of this as x = xSide if you plotted it on a graph
-                        let ySide; // same with y
-                        // direction that the inverse velocity is heading in
-                        let invXDirection;
-                        let invYDirection;
-
-
-                        // Do x-axis
-                        // if negative
-                        if (nonStaticInvVel.x < 0) {
-                            // ppush out of left of oobject
-                            // nonStaticGameObj.x = staticBounds.left - nonStaticGameObj.width;
-                            xSide = staticBounds.left;
-                            invXDirection = Direction.LEFT;
-                        }
-                        else if (nonStaticInvVel.x > 0) {
-                            // else positive
-                            // ppush out of right of oobject
-                            // nonStaticGameObj.x = staticBounds.right;
-                            xSide = staticBounds.right;
-                            invXDirection = Direction.RIGHT;
-                        }
-
-
-                        // Do y-axis
-                        if (nonStaticInvVel.y < 0) {
-                            ySide = staticBounds.bottom;
-                            invYDirection = Direction.DOWN;
-
-                        }
-                        else if (nonStaticInvVel.y > 0) {
-                            ySide = staticBounds.top;
-                            invYDirection = Direction.UP;
-                        }
-
-                        // TODO: Deal with (0,0 velocity)
-                        if (nonStaticInvVel.x == 0 && nonStaticInvVel.y == 0) {
-                            throw new Error("Deal with (0,0) velocity smh my head")
-                        }
-
-                        // Now do linear equation
-                        let m = nonStaticInvVel.y / nonStaticInvVel.x; // y/x or rise/run
-
-                        // axes enums
-                        // let xAxis = 1;
-                        // let yAxis = 2;
-
-                        /**
-                         * ONLY WORKS IF RUN OR RISE OF SLOPE IS NOT 0. Else just substitute
-                         * Returns null if no coordinate is found (or not in range or domain), 
-                         * else returns a found intercept coordinate.
-                         * You give it a single known y or x (the side you're using for the calculation) and it will solve for unknown
-                         * @param {Number} y A known Y (only 1 x or y is allowed)
-                         * @param {Number} m The slope or gradient of the equation 
-                         * @param {Number} x A known X (only 1 x or y is allowed)
-                         * @param {Number} c The y-intercept of equation. If you want the equation to be relative to different vertices, this should change each time 
-                         * @param {Array<Number>} domain An array of [min, max] values that the x axis can be for solution
-                         * @param {Array<Number>} domain2 An array of [min, max] values that the x axis can be for solution
-                         * @param {Array<Number>} range An array of [min, max] values that the y axis can be for solution
-                         * @param {Array<Number>} range2 An array of [min, max] values that the y axis can be for solution
-                         */
-                        function solveLinearEquation(y, m, x, c, domain, domain2, range, range2) {
-                            // console.log("Solving")
-                            // I am doing these error checks to make debugging easier if I need to
-                            if (y != null && x != null) {
-                                console.log("invalid inputs")
-                                console.log("x", x)
-                                console.log("y", y)
-                                throw new Error("You should only pass in one value to function, it will solve for the other")
-                            }
-
-
-                            // if (typeof (m) != "number" || typeof (c) != "number" || !Array.isArray(domain) || !Array.isArray(domain2) || !Array.isArray(range) || !Array.isArray(range2))
-                            //     throw new Error("Invalid data types given for parameters")
-                            if (typeof (m) != "number") {
-                                throw new Error("Invalid data type given for parameter m")
-                            } else if (typeof (c) != "number")
-                                throw new Error("Invalid data type given for parameter c")
-                            else if (!Array.isArray(domain))
-                                throw new Error("Invalid data type given for parameter domain")
-                            else if (!Array.isArray(domain2))
-                                throw new Error("Invalid data type given for parameter domain2")
-                            else if (!Array.isArray(range))
-                                throw new Error("Invalid data type given for parameter range")
-                            else if (!Array.isArray(range2))
-                                throw new Error("Invalid data type given for parameter range2")
-
-
-                            // console.log("INPUT x:", x, "y:", y)
-
-                            if (y == null) {
-                                // solve for y
-
-                                // console.log("y is null, solving")
-                                // y = mx+c
-                                y = m * x + c
-                            } else // x== null
-                            {
-                                // solve for x
-                                // console.log("x is null, solving")
-                                // x=(y-c)/m
-                                x = (y - c) / m
-                            }
-                            // console.log("OUTPUT x:", x, "y:", y)
-                            // console.log("----")
-                            // check domain and range, if any are invalid then return null
-
-                            // console.log("x", x)
-                            // console.log("y", y)
-                            // console.log("--")
-
-
-                            // domain or range invalid
-                            if (!(domain[0] <= x && x <= domain[1])
-                                ||
-                                !(domain2[0] <= x && x <= domain2[1])
-                                ||
-                                !(range[0] <= y && y <= range[1])
-                                ||
-                                !(range2[0] <= y && y <= range2[1])
-                            )
-                                return null
-                            else
-                                return new Point(x, y)
-
-
-                        }
-
-                        let nonStaticVertices = [
-                            new Point(nonStaticBounds.left, nonStaticBounds.bottom), // btm-left
-                            new Point(nonStaticBounds.right, nonStaticBounds.bottom), // btm-right
-                            new Point(nonStaticBounds.left, nonStaticBounds.top), // top-left
-                            new Point(nonStaticBounds.right, nonStaticBounds.top), // top-right
-                        ]
-
-                        // console.log("-----------------")
-
-                        // first check for intersection on x-axis
-                        let foundIntercept
-                        let visualiseVertex = nonStaticVertices[0]
-                        let castLength = 2 ** 63; // How long the ray that is used as a linear equation is
-                        let castedInvVelocity = thisGame.ScalarMultiplyVec(nonStaticInvVel, castLength); // the new casted velocity vertex
-
-                        if (ySide != null && xSide != null)
-                            // If both of the velocities aren't 0
-                            for (const vertex of nonStaticVertices) {
-                                // each vertex is a point
-                                let c = vertex.y - (m * vertex.x); // c = y -mx
-
-                                // let intercept = solveLinearEquation(xSide, m, null, c, [nonStaticBounds.left, nonStaticBounds.right], [nonStaticBounds.bottom, nonStaticBounds.top])
-                                // let domain = [Math.min(vertex.x, vertex.x + castedInvVelocity.x), Math.max(vertex.x, vertex.x + castedInvVelocity.x)]
-                                // let range = [Math.min(vertex.y, vertex.y + castedInvVelocity.y), Math.max(vertex.y, vertex.y + castedInvVelocity.y)]
-                                let domain = [staticBounds.left, staticBounds.right]
-                                let domain2 = [Math.min(vertex.x, vertex.x + castedInvVelocity.x), Math.max(vertex.x, vertex.x + castedInvVelocity.x)]
-                                let range = [staticBounds.bottom, staticBounds.top]
-                                let range2 = [Math.min(vertex.y, vertex.y + castedInvVelocity.y), Math.max(vertex.y, vertex.y + castedInvVelocity.y)]
-                                let intercept = solveLinearEquation(null, m, xSide, c,
-                                    domain, domain2,
-                                    range, range2)
-                                // let intercept = solveLinearEquation(xSide, m, null, c, 
-                                //     [Math.min(vertex.x, xSide), Math.max(vertex.x, xSide)], 
-                                //     [Math.min(vertex.y, ySide), Math.max(vertex.y, ySide)])
-                                // if x-intercept failed, try y
-                                if (!intercept) {
-                                    intercept = solveLinearEquation(ySide, m, null, c,
-                                        domain, domain2,
-                                        range, range2)
-                                }
-
-                                if (intercept) {
-                                    foundIntercept = new Point(intercept.x, intercept.y)
-                                    console.log("Intercept on vertex", vertex)
-                                    // console.log("m", m);
-                                    // console.log("xSide", xSide);
-                                    // console.log("c", c);
-                                    // console.log("domain", domain)
-                                    // console.log("range", range)
-                                    // console.log("castedInvVelocity", castedInvVelocity)
-                                    // console.log("---")
-                                    console.log("foundIntercept", foundIntercept)
-                                    visualiseVertex = vertex
-                                    break;
-                                }
-                                // console.log("x intercept", intercept)
-
-                            }
-                        else {
-                            // manually do it if one velocity is 0
-                            if (nonStaticVelocity.y != 0) {
-                                foundIntercept = new Point(nonStaticGameObj.x, ySide);
-                            } else {
-                                foundIntercept = new Point(xSide, nonStaticGameObj.y);
-                            }
-                            // console.log("foundIntercept", foundIntercept)
-
-                        }
-
-
-                        // // if haven't found x-intercept do y
-                        // if (!foundIntercept)
-                        //     for (const vertex of nonStaticVertices) {
-                        //         // each vertex is a point
-                        //         let c = vertex.y - (m * vertex.x); // c = y -mx
-
-                        //         // let intercept = solveLinearEquation(null, m, ySide, c, [nonStaticBounds.left, nonStaticBounds.right], [nonStaticBounds.bottom, nonStaticBounds.top])
-                        //         // let intercept = solveLinearEquation(xSide, m, null, c, 
-                        //         //     [Math.min(vertex.x, xSide), Math.max(vertex.x, xSide)], 
-                        //         //     [Math.min(vertex.y, ySide), Math.max(vertex.y, ySide)])
-                        //         let intercept = solveLinearEquation(ySide, m, null, c,
-                        //             [Math.min(vertex.x, vertex.x + castedInvVelocity.x), Math.max(vertex.x, vertex.x + castedInvVelocity.x)],
-                        //             [Math.min(vertex.y, vertex.y + castedInvVelocity.y), Math.max(vertex.y, vertex.y + castedInvVelocity.y)])
-                        //         if (intercept) {
-                        //             foundIntercept = intercept
-                        //             break;
-                        //         }
-                        //         // console.log("y intercept", intercept)
-                        //     }
-
-                        // console.log("xSide", xSide)
-                        // console.log("ySide", ySide)
-                        // console.log("m", m)
-                        // console.log("")
-                        // console.log("nonStaticVelocity (+, +)", nonStaticVelocity)
-                        // console.log("nonStaticInvVel (-, -)", nonStaticInvVel)
-                        // console.log("castedInvVelocity (-inf,-inf)", castedInvVelocity)
-                        // console.log("")
-                        // console.log("nonStaticBounds", nonStaticBounds)
-                        // console.log("staticBounds", staticBounds)
-                        // console.log("Static is", staticGameObj.name)
-                        // console.log("\n\n")
-
-
-
-
-                        if (!foundIntercept) {
-                            // READ:
-
-                            // If there isn't an intercept, the axes of the non-static object are probably the same as the static one
-                            // This means there was no intercept because they are on the same axis and therefore there is no pushout because it is already pushed out but it is
-                            // registered as collision from formula
-
-                            // This could also be an issue where the velocity is set to near 0 when x or y is 0. This means that the near 0 will put it on a very very slight angle
-                            // which may miss the line of intercept for overlap
-
-                            // just skip
-                            console.warn("foundIntercept is NULL")
-                            return;
-
-                            // BELOW: debUGGING
-
-                            staticGameObj.graphicsObject.tint = "purple"
-                            console.log("Initial velocity is blue")
-                            console.log("Inverse velocity is black")
-
-
-                            // visualise the velocity but shrink it
-
-
-                            let velGraphics = new Graphics()
-                                .rect(0, 0, 0.5, 0.5)
-                                .fill("white")
-                            let velObj = new GameObject(velGraphics, thisGame);
-
-                            velObj.physicsEnabled = false
-                            velObj.position = thisGame.AddVecs(visualiseVertex, thisGame.ScalarDivideVec(nonStaticGameObj.velocity, 10)); // shrink the velocity 10x
-                            velObj.graphicsObject.tint = "blue"
-                            velObj.graphicsObject.zIndex = 6;
-
-                            thisGame.AddGameObject(velObj);
-
-                            // visualise the inverse velocity but shrink it
-
-                            let invVelGraphics = new Graphics()
-                                .rect(0, 0, 0.5, 0.5)
-                                .fill("white")
-                            let invVelObj = new GameObject(invVelGraphics, thisGame);
-
-                            invVelObj.physicsEnabled = false
-                            invVelObj.position = thisGame.AddVecs(visualiseVertex, thisGame.ScalarDivideVec(nonStaticGameObj.velocity, -10)); // shrink the velocity 10x
-                            invVelObj.graphicsObject.tint = "black"
-                            invVelObj.graphicsObject.zIndex = 6;
-
-                            thisGame.AddGameObject(invVelObj);
-                            // throw new Error("foundIntercept is NULL")
-
-                        }
-
-
-
-
-
-                        // // visualise the intercept
-                        let intGraphics = new Graphics()
-                            .rect(0, 0, 0.5, 0.5)
-                            .fill("white")
-                        let intObj = new GameObject(intGraphics, thisGame);
-
-                        intObj.physicsEnabled = false
-                        intObj.position = foundIntercept;
-                        intObj.graphicsObject.tint = "orange"
-                        intObj.graphicsObject.zIndex = 5;
-                        intGraphics.alpha = 0.5
-
-
-                        thisGame.AddGameObject(intObj);
-
-                        // console.log(intObj                        )
-
-                        let moveRect = () => {
-                            // move it relative to each vertex
-                            if (visualiseVertex == nonStaticVertices[0]) // bottom-left
-                            {
-                                nonStaticGameObj.position = foundIntercept
-
-                                // do velocity 0 check because it should stay the same if the velocity is 0
-                                if (foundIntercept.y == staticBounds.bottom && nonStaticVelocity.y != 0) {
-                                    nonStaticGameObj.y -= nonStaticGameObj.height;
-                                }
-                                if (foundIntercept.x == staticBounds.left && nonStaticVelocity.x != 0) {
-                                    nonStaticGameObj.x -= nonStaticGameObj.width;
-                                }
-                            }
-                            else if (visualiseVertex == nonStaticVertices[1]) // bottom-right
-                            {
-                                nonStaticGameObj.position = foundIntercept
-
-                                nonStaticGameObj.x -= nonStaticGameObj.width;
-
-                                if (foundIntercept.y == staticBounds.bottom) {
-                                    nonStaticGameObj.y -= nonStaticGameObj.height;
-                                }
-                            }
-                            else if (visualiseVertex == nonStaticVertices[2]) // top-left
-                            {
-                                nonStaticGameObj.position = foundIntercept
-                                nonStaticGameObj.y -= nonStaticGameObj.height;
-                                if (foundIntercept.x == staticBounds.left) {
-                                    nonStaticGameObj.x -= nonStaticGameObj.width;
-                                }
-                            }
-                            else if (visualiseVertex == nonStaticVertices[3]) // top-right
-                            {
-                                nonStaticGameObj.position = foundIntercept
-                                nonStaticGameObj.y -= nonStaticGameObj.height;
-                                nonStaticGameObj.x -= nonStaticGameObj.width;
-                            }
-
-                            // console.log("New position", nonStaticGameObj.position)
-                        }
-
-
-
-
-                        // moveRect();
-
-
-                        // now pause at the collision, then set the new positions, then wait, then resume physics
-                        // this is all to visualise my math that it's not fudged
-
-
-
-
-                        // // -- debugging :( man this is gonna be a pain
-                        // console.log("---------------")
-                        // console.log("first is red")
-                        // console.log("second is green")
-                        // // console.log("firstXVelocity", firstVelocity.x)
-                        // // console.log("secondXVelocity", secondVelocity.x)
-                        // // console.log("totalXRatio", totalXRatio)
-                        // // console.log("firstXRatio", firstXRatio)
-                        // // console.log("secondXRatio", secondXRatio)
-                        // console.log("staticBounds", staticBounds)
-                        // console.log("nonStaticBounds", nonStaticBounds)
-                        // // console.log("staticXCollision", staticXCollision)
-                        // // console.log("nonStaticXCollision", nonStaticXCollision)
-                        // // console.log("differenceOfClsn", differenceOfClsn)
-                        // // console.log("nonStaticMoveDir", nonStaticMoveDir)
-                        // // console.log("non static x mvmnt", (nonStaticMoveDir * differenceOfClsn))
-                        // // console.log("newSecondXMvmnt", (secondMoveDir * differenceOfClsn * secondXRatio))
-                        // // console.log("nonStaticX", newNonStaticX)
-                        // // console.log("newSecondX", newSecondX)
-
-                        // console.log("collisionNormal", collisionNormal)
-                        // Now save the collision normal (the same as xSide or ySide) as we'll need it for later calculation
-                        let collisionNormal; // the normal of the collision as a point (2D)
-
-                        if (foundIntercept.x == xSide)
-                            // collisionNormal = thisGame.NormaliseVec(new Point(xSide, 0))
-                            if (xSide == 0)
-                                collisionNormal = new Point(1, 0)
-                            else
-                                collisionNormal = thisGame.NormaliseVec(new Point(xSide, 0))
-                        else if (foundIntercept.y == ySide) {
-                            // if 0, default to (0,1)
-                            if (ySide == 0)
-                                collisionNormal = new Point(0, 1)
-                            else
-                                collisionNormal = thisGame.NormaliseVec(new Point(0, ySide))
-                            // collisionNormal = thisGame.NormaliseVec(new Point(0, ySide/Math.abs(ySide)))
-
-                            // collisionNormal = thisGame.NormaliseVec(new Point(0, ySide))
-                            // collisionNormal = new Point(0,0)}
-                        }
-                        else {
-                            console.log("third")
-                            console.log(foundIntercept)
-                        }
-                        // console.log("collisionNormal", collisionNormal)
-
-                        // Now do new velocity calculation based off normal that the non-static collided with on static object
-
-                        // The theory isn't mine but I just converted it to code
-                        // First the collision normal must be well normalised so it's a unit vector
-                        // Basically you get a normal component (dot product of non-static velocity and collision normal)
-                        // Then you calculate a new normal component and then tangential component and combine them
-                        // I'm a programmer not a mathematician and this may be really basic but I've spent far too much time already on this I'm not going to understand
-                        // what each component does, just doing the calculations
-
-                        let normalComponent = thisGame.DotProduct(nonStaticVelocity, collisionNormal); // this is just a real number
-                        let invertedComponent = thisGame.ScalarMultiplyVec(collisionNormal, -(normalComponent)); // no idea what this is
-                        let tangentialComponent = thisGame.AddVecs(nonStaticVelocity, invertedComponent) // collisionNormal * -invertedComponent
-                        let finalNonStaticVelocity = thisGame.AddVecs(tangentialComponent, invertedComponent); // ??
-
-                        nonStaticGameObj.velocity = finalNonStaticVelocity; // update
-
-                        // let finalVelGraphics = new Graphics()
-                        //     .rect(0, 0, 0.5, 0.5)
-                        //     .fill("white")
-                        // let finalVelObj = new GameObject(finalVelGraphics, thisGame);
-
-                        // finalVelObj.physicsEnabled = false
-                        // finalVelObj.position = thisGame.AddVecs(nonStaticGameObj.position, thisGame.ScalarDivideVec(finalNonStaticVelocity, 50)); // shrink the velocity 10x
-                        // finalVelObj.graphicsObject.tint = "brown"
-                        // finalVelObj.graphicsObject.zIndex = 6;
-
-                        // thisGame.AddGameObject(finalVelObj);
-
-                        // console.log("~~~")
-                        // console.log("xSide", xSide)
-                        // console.log("ySide", ySide)
-                        // console.log("foundIntercept", foundIntercept)
-                        // console.log("initialVelocity", nonStaticVelocity)
-                        // console.log("collisionNormal", collisionNormal)
-                        // console.log("normalComponent", normalComponent)
-                        // console.log("newNormalComponent", tangentialComponent)
-                        // console.log("tangentialComponent", invertedComponent)
-                        // console.log("finalNonStaticVelocity", finalNonStaticVelocity)
-
-                        // TODO: fix when coming in -x and +y on roof or -x and -y on floor, it does weird shit
-
-                        moveRect();
-                        // if(nonStaticGameObj.name == "rect2"){
-                        //     thisGame.paused = true;
-                        //     setTimeout(() => {
-                        //         moveRect();
-                        //         setTimeout(() => {
-                        //             thisGame.paused = false;
-                        //         }, 2000);
-                        //     }, 1000);
-                        // }else{
-                        //     moveRect();
-                        // }
-
-                    }
-
-                    function staticVelocity() {
-                        let staticBounds;
-                        let staticGameObj;
-                        let nonStaticBounds;
-                        let nonStaticGameObj;
-                        let nonStaticVelocity;
-
-                        if (firstGameObj.static) {
-                            staticGameObj = firstGameObj
-                            staticBounds = firstCollider.GetBounds();
-                            nonStaticBounds = secondCollider.GetBounds();
-                            nonStaticGameObj = secondGameObj;
-                            nonStaticVelocity = secondVelocity;
-                        } else {
-                            staticGameObj = secondGameObj
-                            staticBounds = secondCollider.GetBounds();
-                            nonStaticBounds = firstCollider.GetBounds();
-                            nonStaticVelocity = firstVelocity;
-                            nonStaticGameObj = firstGameObj;
-                        }
-
-                        // let nonStaticInvVel = thisGame.ScalarMultiplyVec(nonStaticVelocity, -1); // inversed velocity
-
-                        let nonStaticCentre = new Point(nonStaticGameObj.x + nonStaticGameObj.width / 2,
-                            nonStaticGameObj.y + nonStaticGameObj.height / 2);
-                        let staticCentre = new Point(staticGameObj.x + staticGameObj.width / 2,
-                            staticGameObj.y + staticGameObj.height / 2);
-
-                        let xDistance = nonStaticCentre.x - staticCentre.x;
-                        let yDistance = nonStaticCentre.y - staticCentre.y;
-                        let totalWidth = (nonStaticGameObj.width + staticGameObj.width) / 2;
-                        let totalHeight = (nonStaticGameObj.height + staticGameObj.height) / 2;
-                        let overlapX = totalWidth - Math.abs(xDistance);
-                        let overlapY = totalHeight - Math.abs(yDistance);
-
-
-                        let collisionNormal;
-
-                        // Overlap on x and y should never be 0 because it means they are touching and not colliding
-                        // x or y distance may be 0 if the cntres align
-
-                        if (overlapX < overlapY) {
-                            if (xDistance > 0)
-                                collisionNormal = new Point(1, 0)
-                            else if (xDistance < 0)
-                                collisionNormal = new Point(-1, 0)
-                        }
-                        else if (overlapY < overlapX) {
-                            if (yDistance > 0)
-                                collisionNormal = new Point(0, 1)
-                            else if (yDistance < 0)
-                                collisionNormal = new Point(0, -1)
-                        }
-
-                        //in the case that no collision normal is set, just skip this function
-                        if(collisionNormal == null){
-                            console.warn("collision normal == NULL, skipping")
-                        }
-
-
-
-                        // Now do new velocity calculation based off normal that the non-static collided with on static object
-
-                        // The theory isn't mine but I just converted it to code
-                        // First the collision normal must be well normalised so it's a unit vector
-                        // Basically you get a normal component (dot product of non-static velocity and collision normal)
-                        // Then you calculate a new normal component and then tangential component and combine them
-                        // I'm a programmer not a mathematician and this may be really basic but I've spent far too much time already on this I'm not going to understand
-                        // what each component does, just doing the calculations
-
-                        let normalComponent = thisGame.DotProduct(nonStaticVelocity, collisionNormal); // this is just a real number
-                        let invertedComponent = thisGame.ScalarMultiplyVec(collisionNormal, -(normalComponent)); // no idea what this is
-                        let tangentialComponent = thisGame.AddVecs(nonStaticVelocity, invertedComponent) // collisionNormal * -invertedComponent
-                        let finalNonStaticVelocity = thisGame.AddVecs(tangentialComponent, invertedComponent); // ??
-
-                        finalNonStaticVelocity.y *= 0.97; // reduces bouncing problem of up and down from gravity on constant collisions. Kind of a hack fix but eh.
-                        // The fancy name for this fix is coefficient of restitution
-                        //Basically objects don't tend to stop bouncing up and down when above a static object
-
-                        nonStaticGameObj.velocity = finalNonStaticVelocity; // update
-
-                        // moveRect();
-                    }
-
-                    // If it was static then it's pos won't change
-
-                    // Put the object back to its pos hopefully before collision
-                    firstGameObj.position = firstInitialPos;
-                    // If it's still colliding afterwards, bad luck
-
-                    // if both are non static
-                    if (!firstGameObj.static && !secondGameObj.static) {
-                        // nonStaticPushOutX();
-                        // nonStaticPushOutY();
-                        // if (firstGameObj.name == "rect2" || secondGameObj.name == "rect2") {
-                        //     thisGame.paused = true;
-                        //     setTimeout(() => {
-                        //         // move();
-                        //         setTimeout(() => {
-                        //             thisGame.paused = false;
-                        //         }, 1000);
-                        //     }, 1000);
-                        // } else {
-                        //     // move();
-                        // }
-                        // --- New elastic collision velocity handling ---
-
-
-                        // Calculate new velocity for first Game Object
-                        //https://en.wikipedia.org/wiki/Elastic_collision#Examples
-                        let firstNewVelocity =
-                            this.AddVecs(
-                                this.ScalarMultiplyVec(firstVelocity, ((firstMass - secondMass) / (firstMass + secondMass))),
-                                this.ScalarMultiplyVec(secondVelocity, (2 * secondMass) / (firstMass + secondMass))
-                            )
-                        let secondNewVelocity =
-                            this.AddVecs(
-                                this.ScalarMultiplyVec(firstVelocity, (2 * firstMass) / (firstMass + secondMass)),
-                                this.ScalarMultiplyVec(secondVelocity, ((secondMass - firstMass) / (firstMass + secondMass)))
-                            )
-
-                        firstGameObj.velocity = firstNewVelocity;
-                        secondGameObj.velocity = secondNewVelocity
-                    } else {
-                        // else only one is static, call apropriate static functions
-                        // staticPushOutX();
-                        // staticPushOutY();
-                        // staticPushOutAndVelocity();
-                        staticVelocity();
-                    }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+                    this.ResolveCollision(firstGameObj,secondGameObj, firstInitialPos)
 
                     calculatedCollisionPairs.push([firstGameObj, secondGameObj])
 
@@ -1646,14 +493,142 @@ class Game extends EventSystem {
 
 
         }
-
-
-
-
-
-
     }
 
+    // Resolves a collision between two bodies. It may update velocities or positions
+    // It does a collision check between the two objects 
+    ResolveCollision(firstGameObj, secondGameObj, firstInitialPos) {
+        // do nothing if they're both static, neither should move or change velocity
+        // Just don't bother calculating anything between them
+        if (firstGameObj.static && secondGameObj.static)
+            return;
+
+        let firstCollider = firstGameObj.collider;
+        let secondCollider = secondGameObj.collider;
+
+
+
+        // check for a collision
+        if (!firstCollider.CollidesWith(secondCollider)) {
+            // no collision
+            return; // skip if no collision
+        }
+
+        // From now on, there is a collision
+
+
+
+        // Setup initial variables we'll need for the calculations
+        let firstMass = firstCollider.mass;
+        let firstVelocity = new Point(firstGameObj.velocity.x, firstGameObj.velocity.y); // clone velocity as we don't want to change it right now 
+        let secondMass = secondCollider.mass;
+        let secondVelocity = new Point(secondGameObj.velocity.x, secondGameObj.velocity.y); // clone velocity as we don't want to change it right now 
+
+        
+
+        // If it was static then it's pos won't change
+
+        // Put the object back to its pos hopefully before collision
+        firstGameObj.position = firstInitialPos;
+        // If it's still colliding afterwards, bad luck
+
+        // if both are non static
+        if (!firstGameObj.static && !secondGameObj.static) {
+            // --- New elastic collision velocity handling ---
+
+
+            // Calculate new velocity for first Game Object
+            //https://en.wikipedia.org/wiki/Elastic_collision#Examples
+            let firstNewVelocity =
+                this.AddVecs(
+                    this.ScalarMultiplyVec(firstVelocity, ((firstMass - secondMass) / (firstMass + secondMass))),
+                    this.ScalarMultiplyVec(secondVelocity, (2 * secondMass) / (firstMass + secondMass))
+                )
+            let secondNewVelocity =
+                this.AddVecs(
+                    this.ScalarMultiplyVec(firstVelocity, (2 * firstMass) / (firstMass + secondMass)),
+                    this.ScalarMultiplyVec(secondVelocity, ((secondMass - firstMass) / (firstMass + secondMass)))
+                )
+
+            firstGameObj.velocity = firstNewVelocity;
+            secondGameObj.velocity = secondNewVelocity
+        } else {
+            // else only one is static, call apropriate function
+            this.CalcNewNonStaticVelocity(firstGameObj, secondGameObj, firstVelocity, secondVelocity);
+        }
+    }
+
+    // For resolve, collision
+    // This calculates new non static velocity when one game object is static
+    CalcNewNonStaticVelocity(firstGameObj, secondGameObj, firstVelocity, secondVelocity) {
+        let staticGameObj;
+        let nonStaticGameObj;
+        let nonStaticVelocity;
+
+        if (firstGameObj.static) {
+            staticGameObj = firstGameObj
+            nonStaticGameObj = secondGameObj;
+            nonStaticVelocity = secondVelocity;
+        } else {
+            staticGameObj = secondGameObj
+            nonStaticVelocity = firstVelocity;
+            nonStaticGameObj = firstGameObj;
+        }
+
+
+        let nonStaticCentre = new Point(nonStaticGameObj.x + nonStaticGameObj.width / 2,
+            nonStaticGameObj.y + nonStaticGameObj.height / 2);
+        let staticCentre = new Point(staticGameObj.x + staticGameObj.width / 2,
+            staticGameObj.y + staticGameObj.height / 2);
+
+        let xDistance = nonStaticCentre.x - staticCentre.x;
+        let yDistance = nonStaticCentre.y - staticCentre.y;
+        let totalWidth = (nonStaticGameObj.width + staticGameObj.width) / 2;
+        let totalHeight = (nonStaticGameObj.height + staticGameObj.height) / 2;
+        let overlapX = totalWidth - Math.abs(xDistance);
+        let overlapY = totalHeight - Math.abs(yDistance);
+
+
+        let collisionNormal;
+
+        // Overlap on x and y should never be 0 because it means they are touching and not colliding
+        // x or y distance may be 0 if the cntres align
+
+        if (overlapX < overlapY) {
+            if (xDistance > 0)
+                collisionNormal = new Point(1, 0)
+            else if (xDistance < 0)
+                collisionNormal = new Point(-1, 0)
+        }
+        else if (overlapY < overlapX) {
+            if (yDistance > 0)
+                collisionNormal = new Point(0, 1)
+            else if (yDistance < 0)
+                collisionNormal = new Point(0, -1)
+        }
+
+        //in the case that no collision normal is set, just skip this function
+        if (collisionNormal == null) {
+            console.warn("collision normal == NULL, skipping")
+        }
+
+
+
+        // Now do new velocity calculation based off normal that the non-static collided with on static object
+
+        // The theory isn't mine but I just converted it to code
+
+        let normalComponent = this.DotProduct(nonStaticVelocity, collisionNormal); // this is just a real number
+        let invertedComponent = this.ScalarMultiplyVec(collisionNormal, -(normalComponent)); // no idea what this is
+        let tangentialComponent = this.AddVecs(nonStaticVelocity, invertedComponent) // collisionNormal * -invertedComponent
+        let finalNonStaticVelocity = this.AddVecs(tangentialComponent, invertedComponent); // ??
+
+        finalNonStaticVelocity.y *= 0.97; // reduces bouncing problem of up and down from gravity on constant collisions. Kind of a hack fix but eh.
+        // The fancy name for this fix is coefficient of restitution
+        // Basically objects don't tend to stop bouncing up and down when above a static object without the dampening
+
+        nonStaticGameObj.velocity = finalNonStaticVelocity; // update
+    }
 }
 
 

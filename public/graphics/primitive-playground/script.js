@@ -392,7 +392,7 @@ function collisionTestLoad(game) {
 }
 
 function collisionTestOnTick(game) {
-    console.log(rect1.velocity)
+    // console.log(rect1.velocity)
     if (gameObjectToMoveToPointer) {
 
         // console.log(clickPos)
