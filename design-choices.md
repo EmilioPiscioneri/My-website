@@ -37,3 +37,5 @@ a
 - graphics/primitive-playgound: I use a specific downloaded version of pixi.js (not the latest release) to ensure compatability later 
 
 - graphics/primitive-playgound: I have decided to use the library pixi.js and its UI plugin for graphics rendering. It uses WebGL at times which means it's faster and is much more practical to use than making everything on my own. I mean the more I try to make on my own, the closer I get to the straight WIN32 API and assembly and machine code and so on
+
+- graphics/primitive-playgound: For different values that use points (game.pixelsPerUnits or gameobject.position or collider.position) they will only update their values if you change the point itself and don't just reassign their x and y values. This is because the setter and getter is on the point itself and I didn't want to add another point class just with events that's the exact same as pixi
