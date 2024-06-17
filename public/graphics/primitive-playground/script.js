@@ -327,11 +327,12 @@ function collisionTestLoad(game) {
     // obj4.name = "circle"
     // obj3.static = true
 
-    obj4.position = new Point(2,5)
+    obj4.position = new Point(2,10)
 
     let obj4Collider = new CircleCollider();
     obj4.collider = obj4Collider
     obj4.graphicsObject.tint = "orange"
+    obj4.static = true
 
 
     // Add circle collider
