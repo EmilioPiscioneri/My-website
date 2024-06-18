@@ -103,7 +103,7 @@ function getCanvasScreenPosition() {
 }
 
 // converts a pointer event position to one relative to canvas pixels
-function getCanvasPosFromPointerPos(position) {
+function getPointerPosFromCanvasPos(position) {
     // Don't ask me why it's like this but it is
     let canvasRealPos = getCanvasRealPosition();
     let canvasScreenPos = getCanvasScreenPosition();
@@ -189,55 +189,40 @@ function GetCanvasSize() {
     }
 }
 
-// balls connect to line scrit 
+// balls connect to line script
+
+let objectsToDestroy = [];
+// events to destroy
 
 function BallsConnectToLineLoad(game) {
-    let testBall = new Circle(2,2,0.25, game);
 
-    let testBallCollider = new CircleCollider();
-    testBall.collider = testBallCollider;
-    testBall.gravityEnabled = false;
-    testBall.dragEnabled = false;
+    // line coords
+    let startPoint = game.ConvertUnitsToRawPixels(new Point(1,1))
+    let endPoint = game.ConvertUnitsToRawPixels(new Point(5,5))
 
-    testBall.velocity = new Point(10,14)
+    // create line graphics
+    let lineGraphics = new Graphics()
+    .moveTo(startPoint.x, startPoint.y)
+    .lineTo(endPoint.x, endPoint.y)
+    .stroke({width: 6,color: "grey"})
 
-    game.AddGameObject(testBall);
+    // console.log(game.ConvertUnitsToRawPixels(new Point(1,1)))
+    // console.log(game.ConvertUnitsToRawPixels(new Point(5,5)))
 
-    testBall = new Circle(2,3,0.25, game);
+    // lineGraphics.alpha = 0.5
 
-    testBallCollider = new CircleCollider();
-    testBall.collider = testBallCollider;
-    testBall.gravityEnabled = false;
-    testBall.dragEnabled = false;
+    // game.pixiApplication.stage.addChild(lineGraphics)
+    
+    // disable the share pos and size to avoid weird stuff
+    let line = new GameObject(lineGraphics, game, false, false);
+    line.gravityEnabled = false;
 
-    testBall.velocity = new Point(10,14)
-    testBall.graphicsObject.tint = "red"
+    
 
-    game.AddGameObject(testBall);
+    document.lineGraphics = lineGraphics;
+    document.line = line;
 
-    testBall = new Circle(2,4,0.25, game);
-
-    testBallCollider = new CircleCollider();
-    testBall.collider = testBallCollider;
-    testBall.gravityEnabled = false;
-    testBall.dragEnabled = false;
-
-    testBall.velocity = new Point(10,14)
-
-    testBall.graphicsObject.tint = "orange"
-
-    game.AddGameObject(testBall);
-
-    testBall = new Circle(2,5,0.25, game);
-
-    testBallCollider = new CircleCollider();
-    testBall.collider = testBallCollider;
-    testBall.gravityEnabled = false;
-    testBall.dragEnabled = false;
-
-    testBall.velocity = new Point(10,14)
-
-    game.AddGameObject(testBall);
+    game.AddGameObject(line)
 }
 
 function BallsConnectToLineOnTick(game) {

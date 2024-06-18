@@ -278,6 +278,37 @@ class Game extends EventSystem {
         return new PIXI.Point(pixelPoint.x / this.pixelsPerUnit.x, pixelPoint.y / this.pixelsPerUnit.y);
     }
 
+    // Converts screen pixels to units and also cartesian 
+    ConvertRawPixelsToUnits(pixelPoint) {
+        // convert to unit then cartesian
+        return this.ConvertToCartesian(this.ConvertPixelsToUnits(pixelPoint))
+    }
+
+    // Converts cartesian units to screen pixels 
+    ConvertUnitsToRawPixels(unitPoint) {
+        // convert to unit then cartesian
+        return this.ConvertPixelsToNonCartesian(this.ConvertUnitsToPixels(unitPoint))
+    }
+
+    ConvertArrayOfUnitsToPixels(arrayOfUnits) {
+        let finalArray = [];
+
+        // clone but convert
+        for (const unit of arrayOfUnits) {
+            finalArray.push(this.ConvertUnitsToPixels(unit))
+        }
+        return finalArray;
+    }
+    ConvertArrayOfPixelsToUnits(arrayOfPixels) {
+        let finalArray = [];
+
+        // clone but convert
+        for (const pixel of arrayOfPixels) {
+            finalArray.push(this.ConvertPixelsToUnits(pixel))
+        }
+        return finalArray;
+    }
+
     /**
      * Converts the weird coordinates to ones that behave like cartesian coords
      * @param {PIXI.Point} oldPos In GAME UNITS, the old position that you want to convert to 
@@ -286,6 +317,16 @@ class Game extends EventSystem {
         let canvasHeight = game.pixiApplication.canvas.height / this.pixelsPerUnit.y; // convert from pixels to units
 
         return new Point(oldPos.x, oldPos.y * -1 + canvasHeight)
+    }
+
+    /**
+     * Converts the cartesion coords to weird coordinates 
+     * @param {PIXI.Point} oldPos In PIXELS, the old position that you want to convert to 
+     */
+    ConvertPixelsToNonCartesian(oldPos) {
+        let canvasHeight = game.pixiApplication.canvas.height;
+
+        return new Point(oldPos.x, -oldPos.y + canvasHeight)
     }
 
 
@@ -671,6 +712,10 @@ class GameObject extends EventSystem {
         this.graphicsObject.visible = newVisibility; // also set graphics visibility
     }
 
+    sharePosition = true; // whether or not setting position of game object will affect graphics object
+    shareSize = true; // whether or not setting size (width and height) of game object will affect graphics object
+
+
     // -- Physics stuff --
     velocity = new Point(0, 0); // in game units/second 
     physicsEnabled = true; // Whether the 
@@ -687,6 +732,10 @@ class GameObject extends EventSystem {
 
 
     updateGraphicsObjPosition() {
+        // only if shared pos
+        if (!this.sharePosition)
+            return;
+
         // clone to avoid conflicts
         let newPosition = new Point(this._position.x, this._position.y);
         let canvasHeight = game.pixiApplication.canvas.height / this.game.pixelsPerUnit.y; // convert from pixels to units
@@ -696,6 +745,8 @@ class GameObject extends EventSystem {
 
         // set the new pos, convert to pixel units first
         this.graphicsObject.position = this.game.ConvertUnitsToPixels(newPosition);
+
+
     }
 
     _position = new Point(0, 0);
@@ -710,7 +761,8 @@ class GameObject extends EventSystem {
         // set to original pos 
         this._position = newPosition;
         // make changes
-        this.updateGraphicsObjPosition();
+        if (this.sharePosition)
+            this.updateGraphicsObjPosition();
 
         this.FireListener("positionChanged") // fire changed event
 
@@ -739,7 +791,8 @@ class GameObject extends EventSystem {
     }
     set width(newWidth) {
         this._width = newWidth;
-        this.graphicsObject.width = newWidth * this.game.pixelsPerUnit.x;// convert units to pixels
+        if (this.shareSize)
+            this.graphicsObject.width = newWidth * this.game.pixelsPerUnit.x;// convert units to pixels
         this.FireListener("widthChanged") // fire changed event
         // this.updateGraphicsObjPosition();
     }
@@ -749,8 +802,10 @@ class GameObject extends EventSystem {
     }
     set height(newHeight) {
         this._height = newHeight;
-        this.graphicsObject.height = newHeight * this.game.pixelsPerUnit.y;// convert units to pixels
-        this.updateGraphicsObjPosition();
+        if (this.shareSize)
+            this.graphicsObject.height = newHeight * this.game.pixelsPerUnit.y;// convert units to pixels
+        if (this.sharePosition)
+            this.updateGraphicsObjPosition();
         this.FireListener("heightChanged") // fire changed event
     }
 
@@ -758,8 +813,11 @@ class GameObject extends EventSystem {
      * Creates a game object, make sure to add it to the game after creation
      * @param {Graphics} graphicsObject A PIXI JS graphics object which holds all the render data. Is automatically added to game stage
      * @param {Game} game The current game the object is under
+     * @param {Boolean} sharePosition whether or not setting position of game object will affect graphics object
+     * @param {Boolean} shareSize whether or not setting size (width and height) of game object will affect graphics object
+     * 
      */
-    constructor(graphicsObject, game) {
+    constructor(graphicsObject, game, sharePosition = true, shareSize = true) {
         super(); // calls constructor for inherited object
 
         if (graphicsObject == null)
@@ -769,9 +827,15 @@ class GameObject extends EventSystem {
         this.graphicsObject = graphicsObject;
         this.game = game;
 
+        this.sharePosition = sharePosition;
+        this.shareSize = shareSize;
+
         // -- initialise values --
-        this.width = this.graphicsObject.width;
-        this.height = this.graphicsObject.height;
+        if (shareSize) {
+            this.width = this.graphicsObject.width;
+            this.height = this.graphicsObject.height;
+        }
+
 
         // -- setup listeners --
 
@@ -793,8 +857,8 @@ class GameObject extends EventSystem {
 
 // The circle graphics context is shared for all circles. This presents recalcualting the vertices each time, maybe redunadant but eh
 let circleGraphicsContext = new PIXI.GraphicsContext()
-.circle(0,0,100)
-.fill("white");
+    .circle(0, 0, 100)
+    .fill("white");
 
 /**
  * A circle game object with graphics already done for you.
@@ -841,8 +905,8 @@ class Circle extends GameObject {
 
         let circleGraphicsObject = new PIXI.Graphics(circleGraphicsContext)
 
-        circleGraphicsObject.width = radius*2;
-        circleGraphicsObject.height = radius*2;
+        circleGraphicsObject.width = radius * 2;
+        circleGraphicsObject.height = radius * 2;
 
         circleGraphicsObject.interactive = true
 
@@ -891,11 +955,11 @@ class Collider extends EventSystem {
     position = new Point(0, 0); // in game units
 
     // changes on collider shouldn't reflect changes on game object position
-    get x() {return this.position.x}
-    set x(newX){this.position.x = newX}
+    get x() { return this.position.x }
+    set x(newX) { this.position.x = newX }
 
-    get y() {return this.position.y}
-    set y(newY){this.position.y = newY}
+    get y() { return this.position.y }
+    set y(newY) { this.position.y = newY }
 
     constructor() {
         super(); // call inherited class constructor
@@ -965,7 +1029,7 @@ class Collider extends EventSystem {
             (this.type == ColliderType.AABB && otherCollider.type == ColliderType.CIRCLE)) {
             // console.log("Doing circle-AABB collision check")
 
-            
+
             // See article https://learnopengl.com/In-Practice/2D-Game/Collisions/Collision-detection
             // determine which is aabb and which is circle colliders
             let circle;
@@ -1026,7 +1090,7 @@ class Collider extends EventSystem {
 
             let radii = this.radius + otherCollider.radius;
             let distance = VecMath.Magnitude(VecMath.SubtractVecs(this.position, otherCollider.position))
-            if(distance < radii){
+            if (distance < radii) {
                 // lmao collision
                 return true;
             }
