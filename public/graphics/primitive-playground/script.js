@@ -7,6 +7,9 @@ const game = new Game();
 var Graphics = PIXI.Graphics; // graphics library
 var Rectangle = PIXI.Rectangle;
 var Point = PIXI.Point;
+
+//#region Script code
+
 let loaders = []; // an array of loader objects that are active in the current script. This ensures their onTick function is fired correctly
 
 /**
@@ -152,6 +155,8 @@ function RemoveLoader(loaderToRemove) {
 
 }
 
+
+
 // -- scripts to load --
 let collisionBordersScript = new ScriptLoader(game, collisionBordersLoad);
 let collisionTestScript = new ScriptLoader(game, collisionTestLoad, collisionTestOnTick, collisionTestUnload);
@@ -173,6 +178,7 @@ function main() {
 
 }
 
+// #endregion
 
 // --- The different script functions ---
 

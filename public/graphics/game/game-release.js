@@ -791,6 +791,11 @@ class GameObject extends EventSystem {
     }
 }
 
+// The circle graphics context is shared for all circles. This presents recalcualting the vertices each time, maybe redunadant but eh
+let circleGraphicsContext = new PIXI.GraphicsContext()
+.circle(0,0,100)
+.fill("white");
+
 /**
  * A circle game object with graphics already done for you.
  * A seperate class is needed because different behaviour of position is needed
@@ -830,9 +835,14 @@ class Circle extends GameObject {
      */
     constructor(x, y, radius, game) {
         // Create the circle graphics object
-        let circleGraphicsObject = new PIXI.Graphics()
-            .circle(0, 0, radius)
-            .fill("white"); // can just change colour with tint
+        // let circleGraphicsObject = new PIXI.Graphics()
+        //     .circle(0, 0, radius)
+        //     .fill("white"); // can just change colour with tint
+
+        let circleGraphicsObject = new PIXI.Graphics(circleGraphicsContext)
+
+        circleGraphicsObject.width = radius*2;
+        circleGraphicsObject.height = radius*2;
 
         circleGraphicsObject.interactive = true
 

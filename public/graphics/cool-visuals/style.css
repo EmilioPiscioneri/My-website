@@ -1,0 +1,8 @@
+/* Site specific stylesheet */
+
+div.graphics-container {
+    width: 60vw;
+    margin: 0 auto 0 auto;
+    height: 45vw;
+    outline: none;
+}
