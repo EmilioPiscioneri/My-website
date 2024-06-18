@@ -267,13 +267,13 @@ function BallsConnectToLineLoad(game) {
     // just generate for now
     let gridSegments = GenerateGridSegments();
 
-    let ballsPerSegment = 6; // arbitrary number for now
+    let ballsPerSegment = 106; // arbitrary number for now
 
     let ballsInScene = []; // array of game objects of balls
 
     let ballMagnitudeRange = [2, 5]; // range of a ball's magnitude. First unit vector is generated and then this magnitude is applied
 
-    let ballRadiusRange = [0.2,0.3]; // range of a ball's radius
+    let ballRadiusRange = [0.01,0.1]; // range of a ball's radius
 
     // removes all previous balls, for when you want to change ball count and redraw all of them
     function RemovePreviousBalls() {
@@ -329,7 +329,7 @@ function BallsConnectToLineLoad(game) {
                     let ball = new Circle(ballPos.x, ballPos.y, GetRandomRange(ballRadiusRange[0], ballRadiusRange[1]), game)
 
                     // add collider to ball
-                    ball.collider = new CircleCollider();
+                    // ball.collider = new CircleCollider();
 
                     // turn off gravity and drag
                     ball.gravityEnabled = false;
@@ -341,6 +341,7 @@ function BallsConnectToLineLoad(game) {
                     // Now add to scene and list of balls array
                     ballsInScene.push(ball);
                     game.AddGameObject(ball);
+
                 }
             }
 
@@ -362,7 +363,7 @@ function BallsConnectToLineOnTick(game) {
 
     }
 
-    
+
 }
 
 // #endregion
