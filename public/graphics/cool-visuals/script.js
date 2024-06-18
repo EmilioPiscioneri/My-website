@@ -181,7 +181,7 @@ function main() {
  * 
  * @returns Canvas size in game units
  */
-function GetCanvasSize() {
+function GetCanvasSizeInUnits() {
     // convert to pixels per unit
     return {
         width: game.pixiApplication.canvas.width / game.pixelsPerUnit.x,
@@ -189,45 +189,118 @@ function GetCanvasSize() {
     }
 }
 
-// balls connect to line script
+//#region balls to line script
 
 let objectsToDestroy = [];
 // events to destroy
 
 function BallsConnectToLineLoad(game) {
 
-    // line coords
-    let startPoint = game.ConvertUnitsToRawPixels(new Point(1,1))
-    let endPoint = game.ConvertUnitsToRawPixels(new Point(5,5))
+    // // line coords
+    // let startPoint = game.ConvertUnitsToRawPixels(new Point(1,1))
+    // let endPoint = game.ConvertUnitsToRawPixels(new Point(5,5))
 
-    // create line graphics
-    let lineGraphics = new Graphics()
-    .moveTo(startPoint.x, startPoint.y)
-    .lineTo(endPoint.x, endPoint.y)
-    .stroke({width: 6,color: "grey"})
+    // // create line graphics
+    // let lineGraphics = new Graphics()
+    // .moveTo(startPoint.x, startPoint.y)
+    // .lineTo(endPoint.x, endPoint.y)
+    // .stroke({width: 6,color: "grey"})
 
-    // console.log(game.ConvertUnitsToRawPixels(new Point(1,1)))
-    // console.log(game.ConvertUnitsToRawPixels(new Point(5,5)))
+    // // console.log(game.ConvertUnitsToRawPixels(new Point(1,1)))
+    // // console.log(game.ConvertUnitsToRawPixels(new Point(5,5)))
 
-    // lineGraphics.alpha = 0.5
+    // // lineGraphics.alpha = 0.5
 
-    // game.pixiApplication.stage.addChild(lineGraphics)
-    
-    // disable the share pos and size to avoid weird stuff
-    let line = new GameObject(lineGraphics, game, false, false);
-    line.gravityEnabled = false;
+    // // game.pixiApplication.stage.addChild(lineGraphics)
 
-    
+    // // disable the share pos and size to avoid weird stuff
+    // let line = new GameObject(lineGraphics, game, false, false);
+    // line.gravityEnabled = false;
 
-    document.lineGraphics = lineGraphics;
-    document.line = line;
 
-    game.AddGameObject(line)
+
+    // document.lineGraphics = lineGraphics;
+    // document.line = line;
+
+    // game.AddGameObject(line)
 }
 
 function BallsConnectToLineOnTick(game) {
     // Just push game objects inwards if out of screen bounds. Easier than dealing with static objects
+
+    // #region Create a grid
+
+    /**
+     * - grid theory -
+     * A 2D array of grid segments, indexed by [row][column] or [y][x]
+     * Each index contains a point which represents the bottom-left of the segment. 
+     * The grid is basically divided so a certain amount of balls will generate in each segment to keep things consistent and spread out.
+     * The bounds of a segment can be gotten because the size of each segment is fixed among them all
+     */
+
+    // get size in units
+    let canvasSize = GetCanvasSizeInUnits();
+
+    // How many segments the grid will be divided to among each axis. Each number must be greater than 0
+    // E.g. 1 rows means just the whole screen on y axis while 3 columns means 3 different sections with 2 dividing lines in total on x axis
+    let segmentQuantities = {
+        rows: 3,
+        columns: 2
+    };
+
+    // error check
+    if (segmentQuantities.x <= 0)
+        throw new Error("Need to have at least 1 grid segments on x axis")
+    if (segmentQuantities.y <= 0)
+        throw new Error("Need to have at least 1 grid segments on y axis")
+
+    // Get the size of each segment
+    let segmentSize = new Point(
+        canvasSize.width / segmentQuantities.columns,
+        canvasSize.height / segmentQuantities.rows)
+
+    // populate grid segments
+
+    // grid is generated from bottom to top nad left to right
+
+    // returns created grid segments array
+    function GenerateGridSegments() {
+        let gridSegments = [];
+
+        for (let rowIndex = 0; rowIndex < segmentQuantities.rows; rowIndex++) {
+            let rowSegments = []; // the row segments to add to grid segments array
+
+            // the y position of each segment on this row
+            // remember it's generated top down and each segment is bottom-left
+            // so bottom will be 0 y and top will be canvas height - segmentSize.y
+            let yPosition = segmentSize.y * rowIndex; 
+
+            // then for this row, do columns
+            for (let columnIndex = 0; columnIndex < segmentQuantities.columns; columnIndex++) {
+                // now add 
+                let segmentPos = new Point(segmentSize.x * columnIndex, yPosition)
+                rowSegments.push(segmentPos)
+            }
+
+            gridSegments.push(rowSegments)
+        }
+
+        return gridSegments
+    }
+
+    // just generate for now
+    let gridSegments = GenerateGridSegments();
+
+    // console.log(gridSegments)
+
+
+
+
+
+    // #endregion
 }
+
+// #endregion
 
 // screen borders scrtipt
 
@@ -239,7 +312,7 @@ function ScreenBordersOnTick(game) {
     // loop through all game objects if they're not static then make sure they're inside the screen bounds 
     let gameObjectsInScene = game.gameObjects;
 
-    let canvasSize = GetCanvasSize();
+    let canvasSize = GetCanvasSizeInUnits();
 
     for (const gameObject of gameObjectsInScene) {
         // do nothing when static (not moving)
@@ -252,9 +325,9 @@ function ScreenBordersOnTick(game) {
         let objectY = gameObject.y;
 
         // the x and y are the centres so offset them by width and height because this function is made for rects
-        if(gameObject.isACircle){
-            objectX -= gameObject.width/2;
-            objectY -= gameObject.height/2;
+        if (gameObject.isACircle) {
+            objectX -= gameObject.width / 2;
+            objectY -= gameObject.height / 2;
 
         }
 
