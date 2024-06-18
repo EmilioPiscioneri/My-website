@@ -189,44 +189,20 @@ function GetCanvasSizeInUnits() {
     }
 }
 
+//https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Math/random
+
+// Returns a random number between the specified values. The returned value is no lower than (and may possibly equal) min, and is less than (and not equal) max.
+function GetRandomRange(min, max) {
+    return Math.random() * (max - min) + min;
+}
+
 //#region balls to line script
 
 let objectsToDestroy = [];
 // events to destroy
 
 function BallsConnectToLineLoad(game) {
-
-    // // line coords
-    // let startPoint = game.ConvertUnitsToRawPixels(new Point(1,1))
-    // let endPoint = game.ConvertUnitsToRawPixels(new Point(5,5))
-
-    // // create line graphics
-    // let lineGraphics = new Graphics()
-    // .moveTo(startPoint.x, startPoint.y)
-    // .lineTo(endPoint.x, endPoint.y)
-    // .stroke({width: 6,color: "grey"})
-
-    // // console.log(game.ConvertUnitsToRawPixels(new Point(1,1)))
-    // // console.log(game.ConvertUnitsToRawPixels(new Point(5,5)))
-
-    // // lineGraphics.alpha = 0.5
-
-    // // game.pixiApplication.stage.addChild(lineGraphics)
-
-    // // disable the share pos and size to avoid weird stuff
-    // let line = new GameObject(lineGraphics, game, false, false);
-    // line.gravityEnabled = false;
-
-
-
-    // document.lineGraphics = lineGraphics;
-    // document.line = line;
-
-    // game.AddGameObject(line)
-}
-
-function BallsConnectToLineOnTick(game) {
-    // Just push game objects inwards if out of screen bounds. Easier than dealing with static objects
+// Just push game objects inwards if out of screen bounds. Easier than dealing with static objects
 
     // #region Create a grid
 
@@ -273,7 +249,7 @@ function BallsConnectToLineOnTick(game) {
             // the y position of each segment on this row
             // remember it's generated top down and each segment is bottom-left
             // so bottom will be 0 y and top will be canvas height - segmentSize.y
-            let yPosition = segmentSize.y * rowIndex; 
+            let yPosition = segmentSize.y * rowIndex;
 
             // then for this row, do columns
             for (let columnIndex = 0; columnIndex < segmentQuantities.columns; columnIndex++) {
@@ -291,13 +267,102 @@ function BallsConnectToLineOnTick(game) {
     // just generate for now
     let gridSegments = GenerateGridSegments();
 
-    // console.log(gridSegments)
+    let ballsPerSegment = 6; // arbitrary number for now
 
+    let ballsInScene = []; // array of game objects of balls
 
+    let ballMagnitudeRange = [2, 5]; // range of a ball's magnitude. First unit vector is generated and then this magnitude is applied
+
+    let ballRadiusRange = [0.2,0.3]; // range of a ball's radius
+
+    // removes all previous balls, for when you want to change ball count and redraw all of them
+    function RemovePreviousBalls() {
+
+    }
+
+    // generates balls and puts them on the canvas, gives them a velocity too
+    // This isn't done inside the generate segments loop because you may want to keep the same grid but just generate new balls u feel me
+    function GenerateBalls(gridSegments) {
+        // mm balls
+
+        // loop through grid
+        for (let rowIndex = 0; rowIndex < segmentQuantities.rows; rowIndex++) {
+            // then for this row, do columns
+            for (let columnIndex = 0; columnIndex < segmentQuantities.columns; columnIndex++) {
+                // Get the bottom-left position of this segment
+                let segmentPos = gridSegments[rowIndex][columnIndex];
+
+                // Generate x amount of balls
+                for (let ballIndex = 0; ballIndex < ballsPerSegment; ballIndex++) {
+                    let ballPos = new Point(
+                        // generate a random x value for the new ball pos inside the segment between left and right side
+                        GetRandomRange(segmentPos.x, segmentPos.x + segmentSize.x),
+                        // generate a random y value for the new ball pos inside the segment between bottom and top side
+                        GetRandomRange(segmentPos.y, segmentPos.y + segmentSize.y)
+                    )
+
+                    // Get unit vector (value from -1 to 1)
+                    let ballVelocity = new Point(
+                        GetRandomRange(-1,1),
+                        GetRandomRange(-1,1)
+                    )
+
+                    // if velocity came out to be 0
+                    if(ballVelocity == new Point(0,0))
+                        {
+                            // either be (-1,0) or (1,0) or (0,-1) or (0,1)
+                            let roll = Math.random();
+                            if(roll >= 0 && roll < 0.25)
+                                ballVelocity = new Point(-1,0)
+                            else if(roll >= 0.25 && roll < 0.5)
+                                ballVelocity = new Point(1,0)
+                            else if(roll >= 0.5 && roll > 0.75)
+                                ballVelocity = new Point(0,-1)
+                            else
+                                ballVelocity = new Point(0,1)
+                        }
+
+                    // Times unit vector by randomly generated magnitude in a certain range
+                    ballVelocity = VecMath.ScalarMultiplyVec(ballVelocity, GetRandomRange(ballMagnitudeRange[0], ballMagnitudeRange[1]));
+
+                    // Now actually create the game object
+                    let ball = new Circle(ballPos.x, ballPos.y, GetRandomRange(ballRadiusRange[0], ballRadiusRange[1]), game)
+
+                    // add collider to ball
+                    ball.collider = new CircleCollider();
+
+                    // turn off gravity and drag
+                    ball.gravityEnabled = false;
+                    ball.dragEnabled = false;
+
+                    // set velocity
+                    ball.velocity = ballVelocity;
+
+                    // Now add to scene and list of balls array
+                    ballsInScene.push(ball);
+                    game.AddGameObject(ball);
+                }
+            }
+
+        }
+    }
+
+    // mm balls
+    GenerateBalls(gridSegments);
 
 
 
     // #endregion
+}
+
+function BallsConnectToLineOnTick(game) {
+    let linesInScene = [];
+    // maybe take defining functions out of on tick and cache em
+    function RemovePreviousLines(){
+
+    }
+
+    
 }
 
 // #endregion
@@ -334,19 +399,22 @@ function ScreenBordersOnTick(game) {
         // check x-axis is out of left
         if (objectX < 0) {
             objectX = 0
-            gameObject.velocity.x *= -1;
+            // force right
+            gameObject.velocity.x = Math.abs(gameObject.velocity.x);
         } else if (objectX > canvasSize.width - gameObject.width) { // out right
             objectX = canvasSize.width - gameObject.width
-            gameObject.velocity.x *= -1;
+            // force left
+            gameObject.velocity.x = -Math.abs(gameObject.velocity.x);
         }
 
         // check y-axis is out bottom
         if (objectY < 0) {
             objectY = 0
-            gameObject.velocity.y *= -1;
+            // force up
+            gameObject.velocity.y = Math.abs(gameObject.velocity.y);
         } else if (objectY > canvasSize.height - gameObject.height) { // out top
             objectY = canvasSize.height - gameObject.height
-            gameObject.velocity.y *= -1;
+            gameObject.velocity.y = -Math.abs(gameObject.velocity.y);
         }
     }
 
