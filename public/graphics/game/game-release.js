@@ -363,40 +363,42 @@ class Game extends EventSystem {
     }
 
     /**
-     * Removes an object from the game AND CALLS ITS DESTRUCTOR (deletes graphics object)
+     * Removes an object from the game  
      * @param {GameObject} objectToRemove Game object to remove
+     * @param {Boolean} callDestructor After gameobject is removed, whether to call its destruct function (deletes graphics object too)
      * 
      */
-    RemoveGameObject(objectToRemove) {
+    RemoveGameObject(objectToRemove, callDestructor) {
         if (this.DoesGameObjectExist(objectToRemove)) {
             // remove from array
             this.gameObjects.splice(this.gameObjects.indexOf(objectToRemove), 1)
             // remove from stage
             this.pixiApplication.stage.removeChild(objectToRemove.graphicsObject)
             // clean it up
-            objectToRemove.Destruct();
+            if(callDestructor) 
+                objectToRemove.Destruct();
         }
     }
 
     /**
      * Removes an array of object from the game
      * @param {Array.<GameObject>} gameObjects Array of game objects to remove
+     * @param {Boolean} callDestructor After gameobject is removed, whether to call its destruct function (deletes graphics object too)
      */
-    RemoveGameObjects(gameObjects) {
+    RemoveGameObjects(gameObjects, callDestructor) {
         if (!Array.isArray(gameObjects))
             throw new Error("Passed game objects isn't an array")
         for (const gameObj of gameObjects) {
-            this.RemoveGameObject(gameObj);
+            this.RemoveGameObject(gameObj, callDestructor);
         }
     }
 
     /**
      * Remove all objects from the game
+     * @param {Boolean} callDestructor After gameobject is removed, whether to call its destruct function (deletes graphics object too)
      */
-    RemoveAllGameObjects() {
-        for (const gameObj of this.gameObjects) {
-            this.RemoveGameObject(gameObj);
-        }
+    RemoveAllGameObjects(callDestructor) {
+        this.RemoveGameObjects(this.gameObjects, callDestructor)
     }
 
     /**
