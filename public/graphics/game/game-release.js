@@ -12,6 +12,11 @@ let near0 = 0.00048828125; // a value that is near 0, it's a power of 2 which co
  */
 class EventSystem {
     listeners = {}; // object where key is event name and value is an array of listeners
+    hasEventSystem = true; // whether or not a class has inherited form event system
+    // object where key is event name and value is an array of 2 element arrays of [listener, gameObjectTheListenerIsRegisteredTo]
+    // The registered listeners are those which this event system has subscribed to on other event systems. This will be cleared out on destruct to prevent memory leaks
+    // they work backwards so when you add an event if u give it an object it will see if that object can register event listener and do so
+    _registeredListeners = {}; 
 
     constructor() {
     }
@@ -21,7 +26,8 @@ class EventSystem {
      * @param {string} eventName 
      * @param {Function} listener a function that will be called when event is fired. It may pass in data
      */
-    AddEventListener(eventName, listener) {
+    AddEventListener(eventName, listener, objectOfListener) {
+        // console.log("Added listener for "+eventName)
         // The associated array with the current event name and all its listeners
         let listenerArray = this.listeners[eventName];
         // if hasn't been intialised, do so
@@ -34,11 +40,14 @@ class EventSystem {
             throw new Error("You didn't pass in a function to the AddEventListener function");
 
         // Make sure the event hasn't already been added
-        console.log(listenerArray.length)
+        // console.log(listenerArray.length)
         if (listenerArray.indexOf(listener) != -1)
             throw new Error("Tried to add a listener which has already been registered for the " + eventName + " event")
 
         listenerArray.push(listener);
+
+        if(objectOfListener && objectOfListener.hasEventSystem)
+            objectOfListener.AddRegisteredListener(this, eventName,listener)
     }
 
     /**
@@ -47,14 +56,50 @@ class EventSystem {
      * @param {Function} listener a function that will be called when event is fired. It may pass in data
      */
     RemoveEventListener(eventName, listener) {
+        // console.log("removing event "+eventName)
         let listenerArray = this.listeners[eventName];
         // There is no array for listener with associated name
         if (!listenerArray)
             return;
 
         let listenerIndex = listenerArray.indexOf(listener);
-        listenerArray.splice(listenerIndex, 1); // remove the listener
+        // remove if exists
+        if(listenerIndex != -1)
+            listenerArray.splice(listenerIndex, 1); // remove the listener
     }
+
+    /**
+     * Adds to registered listeners
+     * @param {*} object The object that the listener was subscribed to
+     * @param {*} eventName the name of event
+     * @param {*} listener the listener
+     */
+    AddRegisteredListener(object, eventName, listener){
+        // The associated array with the current event name and all its listeners
+        let listenerArray = this._registeredListeners[eventName];
+        // if hasn't been intialised, do so
+        if (!listenerArray) {
+            listenerArray = [];
+            this._registeredListeners[eventName] = listenerArray;
+        }
+        listenerArray.push([listener, object]); // add registered listener
+    }
+
+    // Not needed really, unless you don't want registered listeners to stack
+
+    // RemoveRegisteredListener(object, eventName, listener){
+    //     let listenerArray = this._registeredListeners[eventName];
+    //     if(!listenerArray)
+    //         return;
+
+    //     // checl for listener in array
+    //     let regIndex = listenerArray.indexOf([listener, object])
+
+    //     // if found
+    //     if(regIndex != -1){
+    //         listenerArray.splice(regIndex, 1) // delete
+    //     }
+    // }
 
     /**
      * Removes an existing listener from object
@@ -76,12 +121,29 @@ class EventSystem {
      * Prepares the object for getting destroyed later by the garbage collector
      */
     Destruct() {
+        // console.log("Destructing event system")
         // loop thru all listener arrays
+        // console.log(this.listeners)
+        // console.log(this)
         for (const listenerArray of Object.values(this.listeners)) {
+            // console.log("---------")
+            // console.log(listenerArray)
             // keep removing until empty
             while (listenerArray.length != 0) {
                 listenerArray.pop(); // remove last element
             }
+            // console.log(listenerArray)
+        }
+
+        // Remove all for registered
+        for (const [eventName, regListenerArray] of Object.entries(this._registeredListeners)) {
+            while (regListenerArray.length != 0) {
+                let listenerArr = regListenerArray[0];
+                // remove from object
+                listenerArr[1].RemoveEventListener(eventName,listenerArr[0])
+                regListenerArray.shift(); // remove first element
+            }
+            // console.log(regListenerArray)
         }
 
     }
@@ -334,11 +396,14 @@ class Game extends EventSystem {
 
     // need to be defined like this to keep "this" to the Game object under ticker listener
     OnTick = () => {
+        if(this.paused)
+            return
         if (this.globalPhysicsEnabled) {
             this.PhysicsTickUpdate();
-            // fire on tick event
-            this.FireListener("tick");
+                
         }
+        // fire on tick event
+        this.FireListener("tick");
     }
 
     // Handler for when key is pressed down
@@ -849,7 +914,7 @@ class GameObject extends EventSystem {
             this.height = this.height;
             this.position = this.position;
 
-        })
+        }, this)
 
         // console.log("current pos is "+this.graphicsObject.position.x, +" " + this.graphicsObject.position.y)
 
