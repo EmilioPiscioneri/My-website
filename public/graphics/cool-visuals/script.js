@@ -205,7 +205,7 @@ let ballsInScene = []; // array of game objects of balls
 
 
 function BallsConnectToLineLoad(game) {
-// Just push game objects inwards if out of screen bounds. Easier than dealing with static objects
+    // Just push game objects inwards if out of screen bounds. Easier than dealing with static objects
 
     // #region Create a grid
 
@@ -275,7 +275,7 @@ function BallsConnectToLineLoad(game) {
 
     let ballMagnitudeRange = [2, 5]; // range of a ball's magnitude. First unit vector is generated and then this magnitude is applied
 
-    let ballRadiusRange = [0.1,0.2]; // range of a ball's radius
+    let ballRadiusRange = [0.1, 0.2]; // range of a ball's radius
 
     // removes all previous balls, for when you want to change ball count and redraw all of them
     function RemovePreviousBalls() {
@@ -305,24 +305,23 @@ function BallsConnectToLineLoad(game) {
 
                     // Get unit vector (value from -1 to 1)
                     let ballVelocity = new Point(
-                        GetRandomRange(-1,1),
-                        GetRandomRange(-1,1)
+                        GetRandomRange(-1, 1),
+                        GetRandomRange(-1, 1)
                     )
 
                     // if velocity came out to be 0
-                    if(ballVelocity == new Point(0,0))
-                        {
-                            // either be (-1,0) or (1,0) or (0,-1) or (0,1)
-                            let roll = Math.random();
-                            if(roll >= 0 && roll < 0.25)
-                                ballVelocity = new Point(-1,0)
-                            else if(roll >= 0.25 && roll < 0.5)
-                                ballVelocity = new Point(1,0)
-                            else if(roll >= 0.5 && roll > 0.75)
-                                ballVelocity = new Point(0,-1)
-                            else
-                                ballVelocity = new Point(0,1)
-                        }
+                    if (ballVelocity == new Point(0, 0)) {
+                        // either be (-1,0) or (1,0) or (0,-1) or (0,1)
+                        let roll = Math.random();
+                        if (roll >= 0 && roll < 0.25)
+                            ballVelocity = new Point(-1, 0)
+                        else if (roll >= 0.25 && roll < 0.5)
+                            ballVelocity = new Point(1, 0)
+                        else if (roll >= 0.5 && roll > 0.75)
+                            ballVelocity = new Point(0, -1)
+                        else
+                            ballVelocity = new Point(0, 1)
+                    }
 
                     // Times unit vector by randomly generated magnitude in a certain range
                     ballVelocity = VecMath.ScalarMultiplyVec(ballVelocity, GetRandomRange(ballMagnitudeRange[0], ballMagnitudeRange[1]));
@@ -359,14 +358,90 @@ function BallsConnectToLineLoad(game) {
 }
 
 let linesInScene = [];
+let lineWidth = 1; // in pixels
+function RemovePreviousLines() {
+
+    while (linesInScene.length > 0) {
+        let line = linesInScene[0];
+        // remove from scene and call destructor
+        game.RemoveGameObject(line, true)
+        linesInScene.shift() // clear out array
+    }
+}
+
+// creates line graphics from two points and returns it
+
+/**
+ * Create line graphics to add to scene
+ * @param {*} point1 point 1 of line in GAME UNITS
+ * @param {*} point2 point 2 of line in GAME UNITS
+ * @param {Number} strokeWidth stroke width in PIXELS 
+ * @returns The created line graphics
+ */
+function CreateLineGraphics(point1, point2, strokeWidth) {
+    // convert points into pixel points
+    let pixelP1 = game.ConvertUnitsToRawPixels(point1);
+    let pixelP2 = game.ConvertUnitsToRawPixels(point2);
+    let newLineGraphics = new Graphics()
+        .moveTo(pixelP1.x, pixelP1.y)
+        .lineTo(pixelP2.x, pixelP2.y)
+        .stroke({
+            color: "white",
+            width: strokeWidth
+        })
+
+
+    return newLineGraphics;
+}
+
+// draws all lines for a scene between all balls.
+// Alpha depends on distance between each ball
+function DrawAllLines() {
+    // first remove any previously rendered ones
+    RemovePreviousLines();
+
+    // have a list of pairs that have had a line drawn to them already, then skip if the pair has already been done
+    // the array will be full of arrays with two ball gameObjects (they are just stored as references so it won't be a burden on memory)
+    let drawnPairs = [];
+    for (let ball1Index = 0; ball1Index < ballsInScene.length; ball1Index++) {
+        let ball1 = ballsInScene[ball1Index];
+        for (let ball2Index = 0; ball2Index < ballsInScene.length; ball2Index++) {
+            let ball2 = ballsInScene[ball2Index];
+
+            // don't draw line if it has already been drawn
+            let pairExists = false;
+            for (const pair of drawnPairs) {
+                // If pair exists
+                if (pair[0] == ball1 && pair[1] == ball2
+                    ||
+                    pair[0] == ball2 && pair[1] == ball1) {
+                    pairExists = true;
+                }
+            }
+
+            if (pairExists)
+                continue; // skip this iteration if pair has been drawn already
+
+            // Create the line
+            let lineGraphics = CreateLineGraphics(ball1.position, ball2.position, lineWidth)
+
+            // game object
+            let line = new GameObject(lineGraphics, game, false, false); // don't share size and pos
+
+            // add to scene
+            game.AddGameObject(line);
+            // add to list of created lines
+            linesInScene.push(line);
+
+            // add pairs to list of drawn ones
+            drawnPairs.push([ball1, ball2])
+        }
+    }
+}
 
 function BallsConnectToLineOnTick(game) {
-    // maybe take defining functions out of on tick and cache em
-    function RemovePreviousLines(){
-        
-
-    }
-
+    // draw new ones (removes old)
+    DrawAllLines();
 
 }
 

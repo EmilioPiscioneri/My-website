@@ -34,6 +34,7 @@ class EventSystem {
             throw new Error("You didn't pass in a function to the AddEventListener function");
 
         // Make sure the event hasn't already been added
+        console.log(listenerArray.length)
         if (listenerArray.indexOf(listener) != -1)
             throw new Error("Tried to add a listener which has already been registered for the " + eventName + " event")
 
