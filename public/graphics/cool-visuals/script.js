@@ -205,6 +205,7 @@ let ballsInScene = []; // array of game objects of balls
 
 
 function BallsConnectToLineLoad(game) {
+    game.backgroundColour = "#353535"; // set better colour for contrast
     // Just push game objects inwards if out of screen bounds. Easier than dealing with static objects
 
     // #region Create a grid
@@ -270,12 +271,12 @@ function BallsConnectToLineLoad(game) {
     // just generate for now
     let gridSegments = GenerateGridSegments();
 
-    let ballsPerSegment = 5; // arbitrary number for now
+    let ballsPerSegment = 25; // arbitrary number for now
 
 
-    let ballMagnitudeRange = [2, 5]; // range of a ball's magnitude. First unit vector is generated and then this magnitude is applied
+    let ballMagnitudeRange = [0.75, 1]; // range of a ball's magnitude. First unit vector is generated and then this magnitude is applied
 
-    let ballRadiusRange = [0.1, 0.2]; // range of a ball's radius
+    let ballRadiusRange = [0.075, 0.1]; // range of a ball's radius
 
     // removes all previous balls, for when you want to change ball count and redraw all of them
     function RemovePreviousBalls() {
@@ -396,46 +397,82 @@ function CreateLineGraphics(point1, point2, strokeWidth) {
 
 // draws all lines for a scene between all balls.
 // Alpha depends on distance between each ball
+
+// The range of squared distance that a ball can be in, the closer it is to minimum the brighter it is, the closer it is to maximum the less visible it is
+let ballSqrDistanceRange = [0.2**2, 2**2];
 function DrawAllLines() {
     // first remove any previously rendered ones
     RemovePreviousLines();
 
-    // have a list of pairs that have had a line drawn to them already, then skip if the pair has already been done
-    // the array will be full of arrays with two ball gameObjects (they are just stored as references so it won't be a burden on memory)
-    let drawnPairs = [];
+    // // have a list of pairs that have had a line calculated to them already, then skip if the pair has already been done
+    // // the array will be full of arrays with two ball gameObjects (they are just stored as references so it won't be a burden on memory)
+    // let calculatedPairs = [];
+
+    
     for (let ball1Index = 0; ball1Index < ballsInScene.length; ball1Index++) {
         let ball1 = ballsInScene[ball1Index];
         for (let ball2Index = 0; ball2Index < ballsInScene.length; ball2Index++) {
             let ball2 = ballsInScene[ball2Index];
+            if (ball1 == ball2)
+                continue; // don't draw to self
 
-            // don't draw line if it has already been drawn
-            let pairExists = false;
-            for (const pair of drawnPairs) {
-                // If pair exists
-                if (pair[0] == ball1 && pair[1] == ball2
-                    ||
-                    pair[0] == ball2 && pair[1] == ball1) {
-                    pairExists = true;
-                }
-            }
+            // // don't draw line if it has already been calculated
+            // let pairExists = false;
+            // for (const pair of calculatedPairs) {
+            //     // If pair exists
+            //     if (pair[0] == ball1 && pair[1] == ball2
+            //         ||
+            //         pair[0] == ball2 && pair[1] == ball1) {
+            //         pairExists = true;
+            //     }
+            // }
 
-            if (pairExists)
-                continue; // skip this iteration if pair has been drawn already
+            // if (pairExists)
+            //     continue; // skip this iteration if pair has been calculated already
+
+
+
+            // add pairs to list of drawn ones
+            // calculatedPairs.push([ball1, ball2])
+
+            // ok so get distance, if this ball is in range for distances with other balls, draw
+
+            let distanceSquared = VecMath.SqrDistance(ball1.position, ball2.position)
+            
+            // if the distance is higher than or equal to max range, don't render it's too far away
+            if(distanceSquared >= ballSqrDistanceRange[1])
+                continue; // skip
+
+            // This is the percentage of the distance squared that it is inside of the range. E.g. if range is 0 to 10 and distance is a 2. Then it's percentage would be 80%
+            // That's why I do 1- because it's like the inversepercentage from 1 and the percentage of the range is basically how you get brightness
+            // also do max-min for range because I want it to clamp properly to bounds of range
+            let distancePercentage = (distanceSquared/(ballSqrDistanceRange[1]- ballSqrDistanceRange[0]))
+
+            // not you inner wolf, this is the brightness of line n that yo
+            let alpha = 1 - Clamp(distancePercentage, ballSqrDistanceRange[0], ballSqrDistanceRange[1])
+            // console.log(distancePercentage, ballSqrDistanceRange, alpha)
+
+            
 
             // Create the line
             let lineGraphics = CreateLineGraphics(ball1.position, ball2.position, lineWidth)
 
+            lineGraphics.alpha = alpha;
+
+            // Make sure that the line is behind the ball
+            lineGraphics.zIndex = -1
+
             // game object
             let line = new GameObject(lineGraphics, game, false, false); // don't share size and pos
+            line.gravityEnabled = false;
 
             // add to scene
             game.AddGameObject(line);
             // add to list of created lines
             linesInScene.push(line);
-
-            // add pairs to list of drawn ones
-            drawnPairs.push([ball1, ball2])
         }
+
+
     }
 }
 

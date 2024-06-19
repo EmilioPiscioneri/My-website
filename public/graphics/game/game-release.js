@@ -224,6 +224,16 @@ class VecMath {
         return Math.sqrt(vector.x ** 2 + vector.y ** 2)
     }
 
+    // returns squared magnitude of vector (just don't do final sqrt part)
+    static SqrMagnitude(vector) {
+        return vector.x ** 2 + vector.y ** 2
+    }
+
+    // returns squared distance of two points (just don't do final sqrt part)
+    static SqrDistance(vector1, vector2) {
+        return (vector1.x-vector2.x) ** 2 + (vector1.y-vector2.y) ** 2
+    }
+
     static NormaliseVec(vector) {
         return this.ScalarDivideVec(vector, this.Magnitude(vector))
     }
@@ -244,7 +254,7 @@ function Clamp(value, min, max) {
 class Game extends EventSystem {
     pixiApplication = new PIXI.Application();
     graphicsContainer = null; // a div where graphics go 
-    defaultBackgroundColour = "#4f4f4f"
+    // defaultBackgroundColour = "#4f4f4f"
     gameObjects = []; // an array of all game objects in scene 
     ticker; // a PIXI ticker object that is for this game obvject
     globalPhysicsEnabled = true; // Maybe you don't want physics idk
@@ -254,12 +264,21 @@ class Game extends EventSystem {
     gravityScale = 1; // how much force gravity will apply to objects (lower is less pull and higher is more pull)
     drag = 0.125; // opposing force on velocity of object in game units/sec 
     _pixelsPerUnit = new PIXI.Point(50, 50); // each game unit is a certain amount of pixels in x and y 
+    initialised = false; // whether the pixi application has been initialised
 
     // each game unit is a certain amount of pixels in x and y 
     get pixelsPerUnit() { return this._pixelsPerUnit };
     set pixelsPerUnit(newValue) {
         this._pixelsPerUnit = newValue;
         this.FireListener("pixelsPerUnitChanged")
+    }
+
+    _backgroundColour = "#353535"
+    get backgroundColour(){return this._backgroundColour}
+    set backgroundColour(newColour){
+        this._backgroundColour = newColour;
+        if(this.initialised)
+            this.pixiApplication.renderer.background.color = newColour
     }
 
     _paused = false;
@@ -306,7 +325,7 @@ class Game extends EventSystem {
         return new Promise((resolve, reject) => {
             // initialise the graphics object (is done asynchronously)
             this.pixiApplication.init({
-                background: this.defaultBackgroundColour,
+                background: this._backgroundColour,
                 resizeTo: graphicsContainer,
                 antialias: true, // make graphics not look so bad
             }).then(() => {
@@ -315,6 +334,7 @@ class Game extends EventSystem {
                 graphicsContainer.onkeydown = this.OnKeyDown;
                 this.ticker.add(this.OnTick); // attach to ticker event system
                 this.pixiApplication.canvas.addEventListener("pointermove", this.HandleMouseMove)
+                this.initialised = true;
 
 
                 resolve(); // resolve the game promise
