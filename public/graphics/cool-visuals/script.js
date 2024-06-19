@@ -201,6 +201,9 @@ function GetRandomRange(min, max) {
 let objectsToDestroy = [];
 // events to destroy
 
+let ballsInScene = []; // array of game objects of balls
+
+
 function BallsConnectToLineLoad(game) {
 // Just push game objects inwards if out of screen bounds. Easier than dealing with static objects
 
@@ -267,13 +270,12 @@ function BallsConnectToLineLoad(game) {
     // just generate for now
     let gridSegments = GenerateGridSegments();
 
-    let ballsPerSegment = 106; // arbitrary number for now
+    let ballsPerSegment = 5; // arbitrary number for now
 
-    let ballsInScene = []; // array of game objects of balls
 
     let ballMagnitudeRange = [2, 5]; // range of a ball's magnitude. First unit vector is generated and then this magnitude is applied
 
-    let ballRadiusRange = [0.01,0.1]; // range of a ball's radius
+    let ballRadiusRange = [0.1,0.2]; // range of a ball's radius
 
     // removes all previous balls, for when you want to change ball count and redraw all of them
     function RemovePreviousBalls() {
@@ -356,10 +358,12 @@ function BallsConnectToLineLoad(game) {
     // #endregion
 }
 
+let linesInScene = [];
+
 function BallsConnectToLineOnTick(game) {
-    let linesInScene = [];
     // maybe take defining functions out of on tick and cache em
     function RemovePreviousLines(){
+        
 
     }
 

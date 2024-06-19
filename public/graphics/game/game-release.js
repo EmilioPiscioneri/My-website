@@ -363,8 +363,9 @@ class Game extends EventSystem {
     }
 
     /**
-     * Removes an object from the game AND CALLS ITS DESTRUCTOR
+     * Removes an object from the game AND CALLS ITS DESTRUCTOR (deletes graphics object)
      * @param {GameObject} objectToRemove Game object to remove
+     * 
      */
     RemoveGameObject(objectToRemove) {
         if (this.DoesGameObjectExist(objectToRemove)) {
@@ -852,6 +853,17 @@ class GameObject extends EventSystem {
         // intialising position doesn't work?
         // this.position = this.graphicsObject.position; // run through the set function
 
+    }
+
+    Destruct(){
+        // Called the inherited class's destruct class
+        super.Destruct();
+
+        // Destroy the graphics object
+        if(this.graphicsObject)
+            {
+                this.graphicsObject.destroy();
+            }
     }
 }
 
