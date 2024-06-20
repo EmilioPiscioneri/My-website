@@ -208,7 +208,7 @@ let eventsToDestroy = []; // Has an array of arrays each with [objectSubscribedT
 let ballsInScene = []; // array of game objects of balls
 
 // UI
-let lineCountText;
+let lineCountTextLbl;
 let lineCountTextDefault = "Line count: "
 
 function BallsConnectToLineLoad(game) {
@@ -398,8 +398,29 @@ function BallsConnectToLineLoad(game) {
     // Do all the UI stuff
 
     // BitmapText is a whole lot faster for constantly changing text
-    let lineCountTextVisual = new PIXI.Text({
-        text: lineCountTextDefault,
+    // let lineCountTextVisual = new PIXI.Text({
+    //     text: lineCountTextDefault,
+    //     style: {
+    //         fontFamily: 'Arial',
+    //         fontSize: 22,
+    //         fill: "white",
+    //         stroke:{
+    //             color:"black",
+    //             width: 4,
+    //         },
+    //         align: 'left',
+    //     },
+    // })
+    // lineCountTextLbl = new TextLabel(lineCountTextVisual, game); // create new game text game object
+    // lineCountTextLbl.position = new Point(0.25,canvasSize.height-lineCountTextLbl.height-0.25) // top left
+    // // console.log(lineCountTextLbl)
+    // // console.log(lineCountTextLbl.position)
+
+    // // add to scene
+    // game.AddGameObject(lineCountTextLbl);
+
+    let txt = new PIXI.Text({
+        text: "Button1",
         style: {
             fontFamily: 'Arial',
             fontSize: 22,
@@ -411,13 +432,19 @@ function BallsConnectToLineLoad(game) {
             align: 'left',
         },
     })
-    lineCountText = new GameText(lineCountTextVisual, game); // create new game text game object
-    lineCountText.position = new Point(0.25,canvasSize.height-lineCountText.height-0.25) // top left
-    console.log(lineCountText)
-    console.log(lineCountText.position)
 
-    // add to scene
-    game.AddGameObject(lineCountText);
+    let background = new PIXI.Graphics()
+    .rect(0,0,2,1)
+    .fill("red")
+
+
+    let btn = new Button(background,txt,game);
+    btn.position = new Point(5,4)
+    // btn.zIndex = 5
+    // btn.height = 2;
+
+    game.AddGameObject(btn)
+    // game.RemoveGameObject(btn)
 
 
 
@@ -618,7 +645,8 @@ function ProcessUserInputs(game) {
 }
 
 function UpdateText(game){
-    lineCountText.text = lineCountTextDefault+linesInScene.length
+    if(lineCountTextLbl)
+        lineCountTextLbl.text = lineCountTextDefault+linesInScene.length
 }
 
 function BallsConnectToLineOnTick(game) {

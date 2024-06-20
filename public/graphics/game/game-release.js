@@ -451,6 +451,21 @@ class Game extends EventSystem {
 
         this.gameObjects.push(objectToAdd)
         this.pixiApplication.stage.addChild(objectToAdd.graphicsObject)
+        // if others, add them too
+        if (objectToAdd.otherGameObjects)
+            this.AddGameObjects(objectToAdd.otherGameObjects);
+    }
+
+    /**
+     * Adds array of game objects to scene
+     * @param {Array.<GameObject>} gameObjects The game object to add to scene
+     */
+    AddGameObjects(gameObjects) {
+        if (!Array.isArray(gameObjects))
+            throw new Error("Passed game objects isn't an array")
+        for (const gameObj of gameObjects) {
+            this.AddGameObject(gameObj);
+        }
     }
 
     /**
@@ -463,11 +478,15 @@ class Game extends EventSystem {
         if (this.DoesGameObjectExist(objectToRemove)) {
             // remove from array
             this.gameObjects.splice(this.gameObjects.indexOf(objectToRemove), 1)
+
             // remove from stage
             this.pixiApplication.stage.removeChild(objectToRemove.graphicsObject)
             // clean it up
             if (callDestructor)
                 objectToRemove.Destruct();
+            // if the object has others to remove
+            if (objectToRemove.otherGameObjects)
+                this.RemoveGameObjects(objectToRemove.otherGameObjects); // remove the others
         }
     }
 
@@ -857,7 +876,7 @@ class GameObject extends EventSystem {
     set position(newPosition) {
         // console.log("Set pos to ",newPosition)
         // set to original pos 
-        this._position = newPosition;
+        this._position = new Point(newPosition.x, newPosition.y); // avoid conflicts with referenced pos
         // make changes
         if (this.sharePosition)
             this.updateGraphicsObjPosition();
@@ -956,8 +975,8 @@ class GameObject extends EventSystem {
         // Called the inherited class's destruct class
         super.Destruct();
 
-        // Destroy the graphics object
-        if (this.graphicsObject) {
+        // Destroy the graphics object if it exists and has destory function
+        if (this.graphicsObject && this.graphicsObject.destroy) {
             this.graphicsObject.destroy();
         }
     }
@@ -1030,25 +1049,20 @@ class Circle extends GameObject {
 }
 
 /**
- * A text game object with graphics already done for you.
- * A seperate class is needed because different behaviour of properties is needed
- * .textObject is the same as graphics object btw 
+ * A UI element game object
  */
-class GameText extends GameObject {
-    get textObject() { return this.graphicsObject }
-    set textObject(newTextObject) {
-        this.graphicsObject = newTextObject
-    }
-
+class UIElement extends GameObject {
     _position = new Point(0, 0);
     get position() {
         return this._position
     }
     set position(newPosition) {
-        this._position = newPosition;
+        console.log("Position changed on UI to", newPosition)
+        this._position = new Point(newPosition.x, newPosition.y);
         let pixelPos = this.game.ConvertUnitsToRawPixels(newPosition)
-        pixelPos.y -= this.textObject.height;
-        this.textObject.position = pixelPos;
+        pixelPos.y -= this.graphicsObject.height;
+        this.graphicsObject.position = pixelPos;
+        this.FireListener("positionChanged") // fire changed event
     }
     // overwrite pos functions
     get x() {
@@ -1064,23 +1078,140 @@ class GameText extends GameObject {
         this.position = new Point(this.position.x, newY)
     }
 
-    get text(){return this.textObject.text}
-    set text(newText){this.textObject.text = newText}
+    get height() { return this.graphicsObject.height / this.game.pixelsPerUnit.y };
+    set height(newVal) {
+        this.graphicsObject.height = newVal * this.game.pixelsPerUnit.y
+        this.FireListener("heightChanged") // fire changed event
+    };
 
-    get height(){return this.textObject.height/this.game.pixelsPerUnit.y};
-    set height(newVal){this.textObject.height = newVal*this.game.pixelsPerUnit.y};
+    get width() { return this.graphicsObject.width / this.game.pixelsPerUnit.x };
+    set width(newVal) {
+        this.graphicsObject.width = newVal * this.game.pixelsPerUnit.x
+        this.FireListener("widthChanged") // fire changed event
 
-    get width(){return this.textObject.width/this.game.pixelsPerUnit.x};
-    set width(newVal){this.textObject.width = newVal*this.game.pixelsPerUnit.x};
+    };
+
 
     /**
      * 
-     * @param {PIXI.Text} x PIXI Text or BitMap Text object
+     * @param {PIXI.Graphics} graphicsObject PIXI graphics object
+     * @param {Game} game 
+     */
+    constructor(graphicsObject, game) {
+        super(graphicsObject, game, false, false); // turn off share pos and size
+        this.physicsEnabled = false;
+        this.interactive = true; // Just make all UI elements interactive
+    }
+}
+
+/**
+ * A text game object with graphics already done for you.
+ * A seperate class is needed because different behaviour of properties is needed
+ * .textObject is the same as graphics object btw 
+ */
+class TextLabel extends UIElement {
+    get textObject() { return this.graphicsObject }
+    set textObject(newTextObject) {
+        this.graphicsObject = newTextObject
+    }
+
+    get text() { return this.textObject.text }
+    set text(newText) { this.textObject.text = newText }
+
+    /**
+     * 
+     * @param {PIXI.Text} textObject PIXI Text or BitMap Text object
      * @param {Game} game 
      */
     constructor(textObject, game) {
         super(textObject, game, false, false); // turn off share pos and size
-        this.physicsEnabled = false;
+
+        // -- initialise values --
+        this.position = this.graphicsObject.position;
+    }
+}
+
+/**
+ * Static class
+ */
+class HorizontalAlignment {
+    static LEFT = 1;
+    static MIDDLE = 2;
+    static RIGHT = 3;
+}
+
+class VerticalAlignment {
+    static BOTTOM = 1;
+    static MIDDLE = 2;
+    static TOP = 3;
+}
+
+/**
+ * A button game object with graphics already done for you.
+ */
+class Button extends UIElement {
+
+
+    get text() { return this.textObject.text }
+    set text(newText) { this.textObject.text = newText }
+
+    get backgroundGraphics() { return this.graphicsObject }
+    set backgroundGraphics(newVal) {
+        this.graphicsObject = newVal
+    }
+    // corresponding label for text object
+    textObject;
+
+    // array of other game objects that correspond to this button. These will need to be destroyed by game when this button is destroyed
+    otherGameObjects = [];
+
+    // keep old getter and setter but add new stuff
+    get position() {
+        return super.position;
+    }
+    set position(newPosition) {
+        super.position = newPosition; // keep the set function for UI element
+        console.log("Position changed on btn to", newPosition)
+        // inject extra code
+        this.textObject.position = newPosition;
+    }
+
+    get zIndex() { return this.backgroundGraphics.zIndex }
+    set zIndex(newVal) { 
+        // text should be 1 zindex above background
+        this.backgroundGraphics.zIndex = newVal;
+        this.textObject.graphicsObject.zIndex = newVal + 1; 
+    }
+
+    /**
+     * 
+     * @param {PIXI.Text} graphicsObject PIXI Text or BitMap Text object
+     * @param {Game} game 
+     */
+    constructor(backgroundGraphics, textGraphics, game) {
+
+        // Going to have two game objects, one for background and one for text  
+        super(backgroundGraphics, game);
+        this.textObject = new TextLabel(textGraphics, game);
+        this.otherGameObjects.push(this.textObject);
+
+
+
+
+        // -- initialise values --
+        this.width = backgroundGraphics.width;
+        this.height = backgroundGraphics.height;
+        this.position = backgroundGraphics.position;
+        this.zIndex = backgroundGraphics.zIndex
+
+        // console.log(this)
+
+
+    }
+
+    Destruct() {
+        super.Destruct();
+        // destroy both objects is done in game remove object
     }
 }
 
