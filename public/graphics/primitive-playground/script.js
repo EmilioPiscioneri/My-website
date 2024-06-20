@@ -474,7 +474,8 @@ function collisionTestOnTick(game) {
         //
         // let rectVelocity = gameObjectToMoveToPointer.velocity;
         let rectPos = gameObjectToMoveToPointer.position;
-        let mousePos = game.ConvertToCartesian(game.ConvertPixelsToUnits(game.mousePos));
+        let mousePos = game.pointerPos;
+        // let mousePos = game.ConvertToCartesian(game.ConvertPixelsToUnits(game.mousePos));
 
         // (m-r)
         let differenceVec = new Point(mousePos.x - rectPos.x, mousePos.y - rectPos.y)

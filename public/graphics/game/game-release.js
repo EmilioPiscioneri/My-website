@@ -234,6 +234,11 @@ class VecMath {
         return (vector1.x - vector2.x) ** 2 + (vector1.y - vector2.y) ** 2
     }
 
+    // returns distance of two points 
+    static Distance(vector1, vector2) {
+        return Math.sqrt((vector1.x - vector2.x) ** 2 + (vector1.y - vector2.y) ** 2)
+    }
+
     static NormaliseVec(vector) {
         return this.ScalarDivideVec(vector, this.Magnitude(vector))
     }
@@ -299,7 +304,7 @@ class Game extends EventSystem {
     // I don't need to listen for multiple events so I'll just use the on... functions
     //onTick; //a function that fires whenever the game ticks (new frame)
 
-    mousePos = new Point(0, 0); // mouse position, updates every move of mouse or pointer
+    pointerPos = new Point(0, 0); // pointer position, updates every move of pointer
 
     // game constructor, pass in a div container for game graphics
     constructor() {
@@ -309,13 +314,13 @@ class Game extends EventSystem {
 
     }
 
-    // handles mouse movement anywhere on canvas
-    HandleMouseMove = (event) => {
+    // handles pointer movement anywhere on canvas
+    HandlePointerMove = (event) => {
         // console.log(event)
         let canvasBounds = this.pixiApplication.canvas.getBoundingClientRect();
 
-        let mousePos = new Point(event.clientX - canvasBounds.x, event.clientY - canvasBounds.y)
-        this.mousePos = mousePos
+        let pointerPos = this.ConvertRawPixelsToUnits(new Point(event.clientX - canvasBounds.x, event.clientY - canvasBounds.y)); // convert to vectior that is cartesian and uses game units  
+        this.pointerPos = pointerPos
     }
 
     Initialise(graphicsContainer) {
@@ -333,7 +338,7 @@ class Game extends EventSystem {
                 graphicsContainer.appendChild(this.pixiApplication.canvas)
                 graphicsContainer.onkeydown = this.OnKeyDown;
                 this.ticker.add(this.OnTick); // attach to ticker event system
-                this.pixiApplication.canvas.addEventListener("pointermove", this.HandleMouseMove)
+                this.pixiApplication.canvas.addEventListener("pointermove", this.HandlePointerMove)
                 this.initialised = true;
 
 

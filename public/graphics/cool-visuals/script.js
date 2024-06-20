@@ -154,7 +154,7 @@ function RemoveLoader(loaderToRemove) {
 
 
 // -- scripts to load --
-let ballsConnectToLineScript = new ScriptLoader(game, BallsConnectToLineLoad, BallsConnectToLineOnTick)
+let ballsConnectToLineScript = new ScriptLoader(game, BallsConnectToLineLoad, BallsConnectToLineOnTick, BallsConnectToLineUnload)
 let screenBordersScript = new ScriptLoader(game, ScreenBordersLoad, ScreenBordersOnTick)
 
 function main() {
@@ -199,8 +199,10 @@ function GetRandomRange(min, max) {
 //#region balls to line script
 
 let objectsToDestroy = [];
+let leftPointerDown = false; // If left mouse or pointer is down on screen
+let rightPointerDown = false; // If right mouse or pointer is down on screen
 // events to destroy
-
+let eventsToDestroy = []; // Has an array of arrays each with [objectSubscribedTo, eventName, eventListener]
 let ballsInScene = []; // array of game objects of balls
 
 
@@ -280,12 +282,19 @@ function BallsConnectToLineLoad(game) {
 
     // removes all previous balls, for when you want to change ball count and redraw all of them
     function RemovePreviousBalls() {
-
+        while (ballsInScene.length > 0) {
+            let line = linesInScene[0];
+            // remove from scene and call destructor
+            game.RemoveGameObject(line, true)
+            linesInScene.shift() // clear out array
+        }
     }
 
     // generates balls and puts them on the canvas, gives them a velocity too
     // This isn't done inside the generate segments loop because you may want to keep the same grid but just generate new balls u feel me
     function GenerateBalls(gridSegments) {
+        RemovePreviousBalls();
+
         // mm balls
 
         // loop through grid
@@ -353,6 +362,33 @@ function BallsConnectToLineLoad(game) {
     // mm balls
     GenerateBalls(gridSegments);
 
+    // handle pointer down and up
+
+    // Pointer.button 0 is left mouse, 1 is middle mouse, 2 is right mouse 
+    // Weird behaviour will happen if you touch the screen multiple times but what do you expect.
+    // Also this will fire even if buttons are pressed
+    function HandlePointerDown(pointerEvent) {
+        console.log(pointerEvent)
+        if (pointerEvent.button == 0) // left
+            leftPointerDown = true;
+        else if (pointerEvent.button == 2) // right
+            rightPointerDown = true;
+
+    }
+    function HandlePointerUp(pointerEvent) {
+        console.log(pointerEvent)
+        if (pointerEvent.button == 0) // left
+            leftPointerDown = false;
+        else if (pointerEvent.button == 2) // right
+            rightPointerDown = false;
+    }
+
+    game.pixiApplication.canvas.addEventListener("pointerdown", HandlePointerDown);
+    game.pixiApplication.canvas.addEventListener("pointerup", HandlePointerUp);
+
+    // register pointer to be destroyed later
+    eventsToDestroy.push([game.pixiApplication.canvas, "pointerdown", HandlePointerDown])
+    eventsToDestroy.push([game.pixiApplication.canvas, "pointerup", HandlePointerUp])
 
 
     // #endregion
@@ -399,7 +435,8 @@ function CreateLineGraphics(point1, point2, strokeWidth) {
 // Alpha depends on distance between each ball
 
 // The range of squared distance that a ball can be in, the closer it is to minimum the brighter it is, the closer it is to maximum the less visible it is
-let ballSqrDistanceRange = [0.2**2, 2**2];
+let ballSqrDistanceRange = [0.2 ** 2, 2 ** 2];
+let maxLinesPerBall = 6; // maximum number of lines that can be drawn per ball
 function DrawAllLines() {
     // first remove any previously rendered ones
     RemovePreviousLines();
@@ -408,10 +445,14 @@ function DrawAllLines() {
     // // the array will be full of arrays with two ball gameObjects (they are just stored as references so it won't be a burden on memory)
     // let calculatedPairs = [];
 
-    
+
     for (let ball1Index = 0; ball1Index < ballsInScene.length; ball1Index++) {
         let ball1 = ballsInScene[ball1Index];
+        let linesDrawn = 0;
         for (let ball2Index = 0; ball2Index < ballsInScene.length; ball2Index++) {
+            if(linesDrawn > maxLinesPerBall)
+                break; // go onto the next ball, skip this loop
+
             let ball2 = ballsInScene[ball2Index];
             if (ball1 == ball2)
                 continue; // don't draw to self
@@ -438,21 +479,21 @@ function DrawAllLines() {
             // ok so get distance, if this ball is in range for distances with other balls, draw
 
             let distanceSquared = VecMath.SqrDistance(ball1.position, ball2.position)
-            
+
             // if the distance is higher than or equal to max range, don't render it's too far away
-            if(distanceSquared >= ballSqrDistanceRange[1])
+            if (distanceSquared >= ballSqrDistanceRange[1])
                 continue; // skip
 
             // This is the percentage of the distance squared that it is inside of the range. E.g. if range is 0 to 10 and distance is a 2. Then it's percentage would be 80%
             // That's why I do 1- because it's like the inversepercentage from 1 and the percentage of the range is basically how you get brightness
             // also do max-min for range because I want it to clamp properly to bounds of range
-            let distancePercentage = (distanceSquared/(ballSqrDistanceRange[1]- ballSqrDistanceRange[0]))
+            let distancePercentage = (distanceSquared / (ballSqrDistanceRange[1] - ballSqrDistanceRange[0]))
 
             // not you inner wolf, this is the brightness of line n that yo
             let alpha = 1 - Clamp(distancePercentage, ballSqrDistanceRange[0], ballSqrDistanceRange[1])
             // console.log(distancePercentage, ballSqrDistanceRange, alpha)
 
-            
+
 
             // Create the line
             let lineGraphics = CreateLineGraphics(ball1.position, ball2.position, lineWidth)
@@ -470,16 +511,95 @@ function DrawAllLines() {
             game.AddGameObject(line);
             // add to list of created lines
             linesInScene.push(line);
+
+            linesDrawn++;
         }
 
 
     }
 }
 
+// For ball to mouse view my graph
+// https://www.desmos.com/calculator/dl8hdrfrmx 
+
+let ballsPullStrength = 5;
+let ballPullArea = 3; // distance to ball required to puul from the pointer
+function PullAllBallsToMouse(game){
+    // get pointer pos from the game
+    let pointerPos = game.pointerPos;
+
+    // iterate through all balls
+    for(const ball of ballsInScene){
+        // lowkey the distance value (uses square root) isn't too laggy huh
+        let distanceToMouse = VecMath.Distance(ball.position, pointerPos); // distance of ball to mouse
+        // must be close enough to ball
+        if(distanceToMouse >= ballPullArea)
+            continue;
+        // ball to mouse pos vector
+        let ballToPointerVector = VecMath.SubtractVecs(pointerPos, ball.position)
+        // The father away the ball is, the stronger the pull. You then times this by pull strength to make it more or less powerful
+        let newVelocity = VecMath.ScalarMultiplyVec(VecMath.ScalarMultiplyVec(ballToPointerVector, distanceToMouse),ballsPullStrength);
+        // Get the difference from this velocity to the new velocity, 
+        let deltaSec = game.ticker.deltaMS / 1000;
+        let differenceVec = VecMath.SubtractVecs(newVelocity, ball.velocity);
+        //then times that distance by time since last frame to make the push effect happen over time
+        differenceVec = VecMath.ScalarMultiplyVec(differenceVec, deltaSec)
+
+        ball.velocity = VecMath.AddVecs(ball.velocity, differenceVec)
+    }
+}
+
+let ballsPushStrength = 10;
+let ballPushArea = 3; // distance to ball required to push from the pointer
+function PushAllBallsAwayFromMouse(game){
+    // get pointer pos from the game
+    let pointerPos = game.pointerPos;
+
+    // iterate through all balls
+    for(const ball of ballsInScene){
+        // lowkey the distance value (uses square root) isn't too laggy huh
+
+        // But just use square distance because it will push more
+        let distanceToMouse = VecMath.Distance(ball.position, pointerPos); // distance of ball to mouse
+        // must be close enough to ball
+        if(distanceToMouse >= ballPushArea)
+            continue;
+        // ball to mouse pos vector. You then inverse this (* -1) to get the push away effect
+        let ballToPointerVector = VecMath.ScalarMultiplyVec(VecMath.SubtractVecs(pointerPos, ball.position), -1)
+        // The closer the ball is, the stronger the push. You then times this by push strength to make it more or less powerful
+        let newVelocity = VecMath.ScalarMultiplyVec(VecMath.ScalarDivideVec(ballToPointerVector, distanceToMouse),ballsPushStrength);
+        // Get the difference from this velocity to the new velocity, 
+        let deltaSec = game.ticker.deltaMS / 1000;
+        let differenceVec = VecMath.SubtractVecs(newVelocity, ball.velocity);
+        //then times that distance by time since last frame to make the push effect happen over time
+        differenceVec = VecMath.ScalarMultiplyVec(differenceVec, deltaSec)
+
+        ball.velocity = VecMath.AddVecs(ball.velocity, differenceVec)
+    }
+}
+
+function ProcessUserInputs(game) {
+    // Check pointers
+    if (leftPointerDown) {
+        PullAllBallsToMouse(game);
+    } else if (rightPointerDown) {
+        PushAllBallsAwayFromMouse(game);
+    }
+}
+
 function BallsConnectToLineOnTick(game) {
-    // draw new ones (removes old)
+    // deal with user inputs (like pointer or keyboard and stuff)
+    ProcessUserInputs(game);
+
+    // draw new lines (removes old)
     DrawAllLines();
 
+
+
+}
+
+function BallsConnectToLineUnload(game) {
+    // TO-DO REMOVE ALL EVENTS
 }
 
 // #endregion
