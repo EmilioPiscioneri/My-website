@@ -1030,6 +1030,61 @@ class Circle extends GameObject {
 }
 
 /**
+ * A text game object with graphics already done for you.
+ * A seperate class is needed because different behaviour of properties is needed
+ * .textObject is the same as graphics object btw 
+ */
+class GameText extends GameObject {
+    get textObject() { return this.graphicsObject }
+    set textObject(newTextObject) {
+        this.graphicsObject = newTextObject
+    }
+
+    _position = new Point(0, 0);
+    get position() {
+        return this._position
+    }
+    set position(newPosition) {
+        this._position = newPosition;
+        let pixelPos = this.game.ConvertUnitsToRawPixels(newPosition)
+        pixelPos.y -= this.textObject.height;
+        this.textObject.position = pixelPos;
+    }
+    // overwrite pos functions
+    get x() {
+        return this.position.x;
+    }
+    set x(newX) {
+        this.position = new Point(newX, this.position.y)
+    }
+    get y() {
+        return this.position.y;
+    }
+    set y(newY) {
+        this.position = new Point(this.position.x, newY)
+    }
+
+    get text(){return this.textObject.text}
+    set text(newText){this.textObject.text = newText}
+
+    get height(){return this.textObject.height/this.game.pixelsPerUnit.y};
+    set height(newVal){this.textObject.height = newVal*this.game.pixelsPerUnit.y};
+
+    get width(){return this.textObject.width/this.game.pixelsPerUnit.x};
+    set width(newVal){this.textObject.width = newVal*this.game.pixelsPerUnit.x};
+
+    /**
+     * 
+     * @param {PIXI.Text} x PIXI Text or BitMap Text object
+     * @param {Game} game 
+     */
+    constructor(textObject, game) {
+        super(textObject, game, false, false); // turn off share pos and size
+        this.physicsEnabled = false;
+    }
+}
+
+/**
  * An ENUM for collider type
  * @static
  */

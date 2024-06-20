@@ -185,7 +185,9 @@ function GetCanvasSizeInUnits() {
     // convert to pixels per unit
     return {
         width: game.pixiApplication.canvas.width / game.pixelsPerUnit.x,
+        x: game.pixiApplication.canvas.width / game.pixelsPerUnit.x,
         height: game.pixiApplication.canvas.height / game.pixelsPerUnit.y,
+        y: game.pixiApplication.canvas.height / game.pixelsPerUnit.y,
     }
 }
 
@@ -205,6 +207,9 @@ let rightPointerDown = false; // If right mouse or pointer is down on screen
 let eventsToDestroy = []; // Has an array of arrays each with [objectSubscribedTo, eventName, eventListener]
 let ballsInScene = []; // array of game objects of balls
 
+// UI
+let lineCountText;
+let lineCountTextDefault = "Line count: "
 
 function BallsConnectToLineLoad(game) {
     game.backgroundColour = "#353535"; // set better colour for contrast
@@ -368,7 +373,7 @@ function BallsConnectToLineLoad(game) {
     // Weird behaviour will happen if you touch the screen multiple times but what do you expect.
     // Also this will fire even if buttons are pressed
     function HandlePointerDown(pointerEvent) {
-        console.log(pointerEvent)
+        // console.log(pointerEvent)
         if (pointerEvent.button == 0) // left
             leftPointerDown = true;
         else if (pointerEvent.button == 2) // right
@@ -376,7 +381,7 @@ function BallsConnectToLineLoad(game) {
 
     }
     function HandlePointerUp(pointerEvent) {
-        console.log(pointerEvent)
+        // console.log(pointerEvent)
         if (pointerEvent.button == 0) // left
             leftPointerDown = false;
         else if (pointerEvent.button == 2) // right
@@ -389,6 +394,31 @@ function BallsConnectToLineLoad(game) {
     // register pointer to be destroyed later
     eventsToDestroy.push([game.pixiApplication.canvas, "pointerdown", HandlePointerDown])
     eventsToDestroy.push([game.pixiApplication.canvas, "pointerup", HandlePointerUp])
+
+    // Do all the UI stuff
+
+    // BitmapText is a whole lot faster for constantly changing text
+    let lineCountTextVisual = new PIXI.Text({
+        text: lineCountTextDefault,
+        style: {
+            fontFamily: 'Arial',
+            fontSize: 22,
+            fill: "white",
+            stroke:{
+                color:"black",
+                width: 4,
+            },
+            align: 'left',
+        },
+    })
+    lineCountText = new GameText(lineCountTextVisual, game); // create new game text game object
+    lineCountText.position = new Point(0.25,canvasSize.height-lineCountText.height-0.25) // top left
+    console.log(lineCountText)
+    console.log(lineCountText.position)
+
+    // add to scene
+    game.AddGameObject(lineCountText);
+
 
 
     // #endregion
@@ -587,12 +617,17 @@ function ProcessUserInputs(game) {
     }
 }
 
+function UpdateText(game){
+    lineCountText.text = lineCountTextDefault+linesInScene.length
+}
+
 function BallsConnectToLineOnTick(game) {
     // deal with user inputs (like pointer or keyboard and stuff)
     ProcessUserInputs(game);
 
     // draw new lines (removes old)
     DrawAllLines();
+    UpdateText(game);
 
 
 
