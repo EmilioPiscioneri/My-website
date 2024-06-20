@@ -224,8 +224,8 @@ function BallsConnectToLineLoad(game) {
     // How many segments the grid will be divided to among each axis. Each number must be greater than 0
     // E.g. 1 rows means just the whole screen on y axis while 3 columns means 3 different sections with 2 dividing lines in total on x axis
     let segmentQuantities = {
-        rows: 3,
-        columns: 2
+        rows: 6,
+        columns: 6
     };
 
     // error check
@@ -271,7 +271,7 @@ function BallsConnectToLineLoad(game) {
     // just generate for now
     let gridSegments = GenerateGridSegments();
 
-    let ballsPerSegment = 25; // arbitrary number for now
+    let ballsPerSegment = 4; // arbitrary number for now
 
 
     let ballMagnitudeRange = [0.75, 1]; // range of a ball's magnitude. First unit vector is generated and then this magnitude is applied
@@ -331,7 +331,7 @@ function BallsConnectToLineLoad(game) {
                     let ball = new Circle(ballPos.x, ballPos.y, GetRandomRange(ballRadiusRange[0], ballRadiusRange[1]), game)
 
                     // add collider to ball
-                    // ball.collider = new CircleCollider();
+                    ball.collider = new CircleCollider();
 
                     // turn off gravity and drag
                     ball.gravityEnabled = false;

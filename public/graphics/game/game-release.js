@@ -16,7 +16,7 @@ class EventSystem {
     // object where key is event name and value is an array of 2 element arrays of [listener, gameObjectTheListenerIsRegisteredTo]
     // The registered listeners are those which this event system has subscribed to on other event systems. This will be cleared out on destruct to prevent memory leaks
     // they work backwards so when you add an event if u give it an object it will see if that object can register event listener and do so
-    _registeredListeners = {}; 
+    _registeredListeners = {};
 
     constructor() {
     }
@@ -46,8 +46,8 @@ class EventSystem {
 
         listenerArray.push(listener);
 
-        if(objectOfListener && objectOfListener.hasEventSystem)
-            objectOfListener.AddRegisteredListener(this, eventName,listener)
+        if (objectOfListener && objectOfListener.hasEventSystem)
+            objectOfListener.AddRegisteredListener(this, eventName, listener)
     }
 
     /**
@@ -64,7 +64,7 @@ class EventSystem {
 
         let listenerIndex = listenerArray.indexOf(listener);
         // remove if exists
-        if(listenerIndex != -1)
+        if (listenerIndex != -1)
             listenerArray.splice(listenerIndex, 1); // remove the listener
     }
 
@@ -74,7 +74,7 @@ class EventSystem {
      * @param {*} eventName the name of event
      * @param {*} listener the listener
      */
-    AddRegisteredListener(object, eventName, listener){
+    AddRegisteredListener(object, eventName, listener) {
         // The associated array with the current event name and all its listeners
         let listenerArray = this._registeredListeners[eventName];
         // if hasn't been intialised, do so
@@ -140,7 +140,7 @@ class EventSystem {
             while (regListenerArray.length != 0) {
                 let listenerArr = regListenerArray[0];
                 // remove from object
-                listenerArr[1].RemoveEventListener(eventName,listenerArr[0])
+                listenerArr[1].RemoveEventListener(eventName, listenerArr[0])
                 regListenerArray.shift(); // remove first element
             }
             // console.log(regListenerArray)
@@ -231,7 +231,7 @@ class VecMath {
 
     // returns squared distance of two points (just don't do final sqrt part)
     static SqrDistance(vector1, vector2) {
-        return (vector1.x-vector2.x) ** 2 + (vector1.y-vector2.y) ** 2
+        return (vector1.x - vector2.x) ** 2 + (vector1.y - vector2.y) ** 2
     }
 
     static NormaliseVec(vector) {
@@ -274,10 +274,10 @@ class Game extends EventSystem {
     }
 
     _backgroundColour = "#353535"
-    get backgroundColour(){return this._backgroundColour}
-    set backgroundColour(newColour){
+    get backgroundColour() { return this._backgroundColour }
+    set backgroundColour(newColour) {
         this._backgroundColour = newColour;
-        if(this.initialised)
+        if (this.initialised)
             this.pixiApplication.renderer.background.color = newColour
     }
 
@@ -416,11 +416,11 @@ class Game extends EventSystem {
 
     // need to be defined like this to keep "this" to the Game object under ticker listener
     OnTick = () => {
-        if(this.paused)
+        if (this.paused)
             return
         if (this.globalPhysicsEnabled) {
             this.PhysicsTickUpdate();
-                
+
         }
         // fire on tick event
         this.FireListener("tick");
@@ -461,7 +461,7 @@ class Game extends EventSystem {
             // remove from stage
             this.pixiApplication.stage.removeChild(objectToRemove.graphicsObject)
             // clean it up
-            if(callDestructor) 
+            if (callDestructor)
                 objectToRemove.Destruct();
         }
     }
@@ -515,7 +515,14 @@ class Game extends EventSystem {
 
 
         // Then, calculate all collision updates
-        for (const firstGameObj of this.gameObjects) { // loop through game objects once
+
+        // See Excluding same and repeated pairs theory as to how I avoid repeating the same game objects twice
+        // in collision loops 
+
+        // loop through game objects once
+        let gameObjectsTotal = this.gameObjects.length;
+        for (let firstGameObjIndex = 0; firstGameObjIndex < gameObjectsTotal - 1; firstGameObjIndex++) {
+            let firstGameObj = this.gameObjects[firstGameObjIndex];
             // Don't do anything if this object is static. There is nothing to change on this object
             if (firstGameObj.static)
                 continue;
@@ -531,33 +538,30 @@ class Game extends EventSystem {
 
 
             //#region Calculate collisions
+
             // first check if this object has a collider
             if (firstGameObj.collider)
                 // then for each game object compare it's collision with another
-                for (const secondGameObj of this.gameObjects) {
+                for (let secondGameObjIndex = firstGameObjIndex + 1; secondGameObjIndex < gameObjectsTotal; secondGameObjIndex++) {
+                    let secondGameObj = this.gameObjects[secondGameObjIndex];
+
+
                     // don't do any updates when game is paused
                     if (this.paused)
                         return;
 
                     // If iterating the same game objects or the other one doesn't have a collider
-                    if (firstGameObj == secondGameObj || !secondGameObj.collider)
+                    if (firstGameObjIndex == secondGameObjIndex || !secondGameObj.collider)
                         continue; // skip
 
-                    // If the collision has already been calculated for two game objects, don't do it again
-                    let pairExists = false;
-                    for (const pair of calculatedCollisionPairs) {
-                        if ((pair[0] == firstGameObj && pair[1] == secondGameObj)
-                            ||
-                            (pair[0] == secondGameObj && pair[1] == firstGameObj))
-                            pairExists = true;
-                    }
-
-                    if (pairExists || this.paused)
+                    if (this.paused)
                         continue;
+
+                    // From now on this loop won't have first and second object that have already been calculated or them as the same values
 
                     this.ResolveCollision(firstGameObj, secondGameObj, firstInitialPos)
 
-                    calculatedCollisionPairs.push([firstGameObj, secondGameObj])
+                    // calculatedCollisionPairs.push([firstGameObj, secondGameObj])
 
 
                 }
@@ -565,6 +569,7 @@ class Game extends EventSystem {
 
 
         }
+        // console.log(calculatedCollisionPairs.length)
     }
 
     // Resolves a collision between two bodies. It may update velocities or positions
@@ -577,7 +582,6 @@ class Game extends EventSystem {
 
         let firstCollider = firstGameObj.collider;
         let secondCollider = secondGameObj.collider;
-
 
 
         // check for a collision
@@ -943,15 +947,14 @@ class GameObject extends EventSystem {
 
     }
 
-    Destruct(){
+    Destruct() {
         // Called the inherited class's destruct class
         super.Destruct();
 
         // Destroy the graphics object
-        if(this.graphicsObject)
-            {
-                this.graphicsObject.destroy();
-            }
+        if (this.graphicsObject) {
+            this.graphicsObject.destroy();
+        }
     }
 }
 
@@ -1165,10 +1168,9 @@ class Collider extends EventSystem {
             let closestPoint = VecMath.AddVecs(aabbCentre, clampedDifference)
 
             // retrieve vector between center circle and closest point AABB and check if length <= radius
-            difference = VecMath.SubtractVecs(closestPoint, circleCentre)
-
             // Then finally do the collision check
-            let result = VecMath.Magnitude(difference) < circle.radius;
+            // use squared results cos faster
+            let result = VecMath.SqrDistance(closestPoint, circleCentre) < circle.radius ** 2;
 
             // console.log("--------")
             // console.log("circleCentre", circleCentre)
@@ -1189,8 +1191,9 @@ class Collider extends EventSystem {
             // See https://www.youtube.com/watch?v=87Bj4PtgzSc
 
             let radii = this.radius + otherCollider.radius;
-            let distance = VecMath.Magnitude(VecMath.SubtractVecs(this.position, otherCollider.position))
-            if (distance < radii) {
+            // use squared results cos faster
+            let sqrDistance = VecMath.SqrDistance(this.position, otherCollider.position)
+            if (sqrDistance < radii ** 2) {
                 // lmao collision
                 return true;
             }
