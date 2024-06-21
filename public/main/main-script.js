@@ -131,7 +131,7 @@ let adminMenuDiv;
 
 function hideAdminMenu() {
     if (adminMenuCreated)
-        adminMenuDiv.display = "none"
+        adminMenuDiv.style.display = "none"
 
 }
 
@@ -148,7 +148,7 @@ if(!window.isErrorPage)
         .then(handleAdminLoginSuccess)
         .catch(handleAdminLoginFail)
 
-
+// logout
 adminLogoutElement.onclick = function () {
     if (!userIsLoggedIntoAdmin) {
         alert("Mate you're not even logged in")
@@ -167,9 +167,11 @@ adminLogoutElement.onclick = function () {
             if (status >= 200 && status < 400) {
                 console.log("logged out of admin")
                 alert("logged out of admin")
-
-                handleAdminLoginFail();
+                hideAdminMenu();
+                userIsLoggedIntoAdmin = false;
+                adminLoginElement.onclick = adminLoginFromUserInput; // set button to actually login
             } else {
+                handleAdminLoginFail();
                 console.warn("Failed to logout of admin???")
             }
         }
@@ -180,9 +182,11 @@ adminLogoutElement.onclick = function () {
 // shows admin menu, creates the admin menu if it doesn't exist
 function showAdminMenu() {
     if (adminMenuCreated) {
-        adminMenuDiv.display = "flex"
-        return;
+        adminMenuDiv.style.display = "flex"
+        return; // don't continue
     }
+
+    // From now on, admin menu hasn't been created so create it
 
     // create the admin menu
     let mainInnerContent = document.getElementById("main-inner-content"); // grab the inner div
