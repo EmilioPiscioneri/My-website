@@ -1245,9 +1245,6 @@ class TextContainer extends UIElement {
     // Fits the text container to the text size as it updates
     fitToText = true;
 
-
-
-
     // corresponding Game TEXT LABEL which holds PIXI text object
     textLabelObject;
 
@@ -1565,13 +1562,13 @@ class TextInput extends TextContainer {
     }
     placeholderText;
     _displayingPlaceholderText = true;
-    get displayingPlaceholderText(){return this._displayingPlaceholderText}
-    set displayingPlaceholderText(newValue){
+    get displayingPlaceholderText() { return this._displayingPlaceholderText }
+    set displayingPlaceholderText(newValue) {
         // let oldValue = this._displayingPlaceholderText
         this._displayingPlaceholderText = newValue;
         // set to display placeholder text 
-        if(newValue){
-            this.textLabelObject.textObject.text = this.placeholderText; // display on the text object only
+        if (newValue) {
+            this.text = this.placeholderText; // display on the text object only
             this.textLabelObject.textObject.style.fill = "grey"; // display grey for placeholder text
         }
         // no longer displaying placeholder text
@@ -1603,8 +1600,7 @@ class TextInput extends TextContainer {
         // call constrcutor of base class
         super(game, "", useBitmapText, textStyleOptions);
 
-        this.placeholderText = placeholderText;
-        this.displayingPlaceholderText = true; // start as displaying
+
 
         // Create the caret
         let caretGraphics = new Graphics()
@@ -1621,6 +1617,8 @@ class TextInput extends TextContainer {
 
         this.otherGameObjects.push(this.caretObject);
 
+        this.placeholderText = placeholderText;
+        this.displayingPlaceholderText = true; // start as displaying
         // When it comes to focusing on the text input, you have to listen for clicks anywhere, check if it is in the input and then it is selected
 
         game.AddEventListener("keyDown", this.HandleKeyDown, this);
@@ -1769,6 +1767,7 @@ class TextInput extends TextContainer {
     // Updates the caret to be at whatever position it's supposed to be
     UpdateCaret = () => {
         // console.log("Updating caret")
+        // console.log(this)
         let textLabel = this.textLabelObject
         let textStartPos = this.textLabelObject.position; // bottom left of text
         this.caretObject.height = this.textLabelObject.fontSize / this.game.pixelsPerUnit.y;
@@ -1866,10 +1865,10 @@ class TextInput extends TextContainer {
         this.inputFocused = true
 
         // setter handles it
-        if (this.displayingPlaceholderText){
+        if (this.displayingPlaceholderText) {
             this.displayingPlaceholderText = false
         }
-            
+
         this.FireListener("focused")
     }
 
@@ -1878,12 +1877,15 @@ class TextInput extends TextContainer {
         // dont do anything if already unfocused
         if (!this.inputFocused)
             return;
+        if (this.text == "")
+            this.displayingPlaceholderText = true;
         this.inputFocused = false;
         this.FireListener("unfocused")
         // this.text = this.placeholderText
     }
 
 }
+
 
 /**
  * An ENUM for collider type
