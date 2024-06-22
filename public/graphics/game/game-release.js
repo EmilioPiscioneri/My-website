@@ -3,7 +3,7 @@ let near0 = 0.00048828125; // a value that is near 0, it's a power of 2 which co
 
 /*
     GAME.JS
-    VERSION 0.1 - BASIC GAME CLASS AND AABB PHYSICS WORKING
+    VERSION 0.2 - Added UI Elements
 */
 
 /**
@@ -1057,7 +1057,7 @@ class UIElement extends GameObject {
         return this._position
     }
     set position(newPosition) {
-        console.log("Position changed on UI to", newPosition)
+        // console.log("Position changed on UI to", newPosition)
         this._position = new Point(newPosition.x, newPosition.y);
         let pixelPos = this.game.ConvertUnitsToRawPixels(newPosition)
         pixelPos.y -= this.graphicsObject.height;
@@ -1078,18 +1078,7 @@ class UIElement extends GameObject {
         this.position = new Point(this.position.x, newY)
     }
 
-    get height() { return this.graphicsObject.height / this.game.pixelsPerUnit.y };
-    set height(newVal) {
-        this.graphicsObject.height = newVal * this.game.pixelsPerUnit.y
-        this.FireListener("heightChanged") // fire changed event
-    };
 
-    get width() { return this.graphicsObject.width / this.game.pixelsPerUnit.x };
-    set width(newVal) {
-        this.graphicsObject.width = newVal * this.game.pixelsPerUnit.x
-        this.FireListener("widthChanged") // fire changed event
-
-    };
 
 
     /**
@@ -1098,9 +1087,10 @@ class UIElement extends GameObject {
      * @param {Game} game 
      */
     constructor(graphicsObject, game) {
-        super(graphicsObject, game, false, false); // turn off share pos and size
+        super(graphicsObject, game, false, false); // turn off share pos and size for now
         this.physicsEnabled = false;
         this.interactive = true; // Just make all UI elements interactive
+        this.shareSize = true // now turn it back on
     }
 }
 
@@ -1110,24 +1100,75 @@ class UIElement extends GameObject {
  * .textObject is the same as graphics object btw 
  */
 class TextLabel extends UIElement {
+    // PIXI text object
     get textObject() { return this.graphicsObject }
     set textObject(newTextObject) {
         this.graphicsObject = newTextObject
     }
 
-    get text() { return this.textObject.text }
-    set text(newText) { this.textObject.text = newText }
+    get text() {
+        return this.textObject.text
+    }
+    set text(newText) {
+        this.textObject.text = newText
+        // Update width and height
+        this.width = this.textObject.width / this.game.pixelsPerUnit.x
+        this.height = this.textObject.height / this.game.pixelsPerUnit.y
+        this.FireListener("textChanged")
+    }
+
+    get fontSize() { return this.textObject.style.fontSize }
+    set fontSize(newFontSize) {
+        this.textObject.style.fontSize = newFontSize;
+        // Update width and height
+        this.width = this.textObject.width / this.game.pixelsPerUnit.x
+        this.height = this.textObject.height / this.game.pixelsPerUnit.y
+        this.FireListener("fontSizeChanged")
+    }
 
     /**
-     * 
-     * @param {PIXI.Text} textObject PIXI Text or BitMap Text object
+     * Creates a PIXI js text object for you. You just need to change the style to suit yourself.
+     * @param {string} [text] Optional text to display on label
+     * @param {boolean} [useBitmapText] Optional bool whether the button text label should be a bitmap text object, use this if you need to change text a lot
+     * @param {*} [textStyleOptions] Optional PIXI text style options object. See https://pixijs.download/v8.1.5/docs/text.TextOptions.html
      * @param {Game} game 
      */
-    constructor(textObject, game) {
-        super(textObject, game, false, false); // turn off share pos and size
+    constructor(game, text = "TextLabel", useBitmapText = false, textStyleOptions = null) {
+        // create the PIXI text object
+
+        // Set default text style options or use input
+        textStyleOptions = textStyleOptions || {
+            fontFamily: 'Arial',
+            fontSize: 16,
+            fill: "white",
+            // stroke:{
+            //     color:"black",
+            //     width: 4,
+            // },
+            align: 'left',
+        }
+
+        // just use a default style for now
+        let pixiTextObject;
+        // use bitmap or not
+        if (useBitmapText)
+            pixiTextObject = new PIXI.BitmapText({
+                text: text,
+                style: textStyleOptions
+            })
+        else
+            pixiTextObject = new PIXI.Text({
+                text: text,
+                style: textStyleOptions
+            })
+
+        super(pixiTextObject, game, false, false); // turn off share pos and size
 
         // -- initialise values --
         this.position = this.graphicsObject.position;
+        // the text object automatically jets width and height in pixels when created so adjustr
+        this.width = this.graphicsObject.width / game.pixelsPerUnit.x;
+        this.height = this.graphicsObject.height / game.pixelsPerUnit.y;
     }
 }
 
@@ -1146,21 +1187,57 @@ class VerticalAlignment {
     static TOP = 3;
 }
 
+// padding class
+class Padding {
+    left = 0
+    right = 0
+    bottom = 0
+    top = 0
+
+    /**
+     * Create a new padding object. Each value represents a certain amount of game units that the outer content should be from the innner content with respect to size
+     * @param {Number} left 
+     * @param {Number} right 
+     * @param {Number} bottom 
+     * @param {Number} top 
+     */
+    constructor(left = 0, right = 0, bottom = 0, top = 0) {
+        this.left = left;
+        this.right = right;
+        this.bottom = bottom;
+        this.top = top;
+    }
+}
+
+
+
 /**
  * A button game object with graphics already done for you.
  */
 class Button extends UIElement {
 
+    // defaults
+    textHorizontalAlignment = HorizontalAlignment.MIDDLE;
+    textVerticalAlignment = VerticalAlignment.MIDDLE;
 
-    get text() { return this.textObject.text }
-    set text(newText) { this.textObject.text = newText }
+    // Fits the button to the text size as it updates
+    fitToText = true;
+
+
+    get text() { return this.textLabelObject.text }
+    set text(newText) {
+        this.textLabelObject.text = newText
+        this.FitBackgroundToText();
+        this.FireListener("textChanged")
+    }
 
     get backgroundGraphics() { return this.graphicsObject }
     set backgroundGraphics(newVal) {
         this.graphicsObject = newVal
     }
-    // corresponding label for text object
-    textObject;
+
+    // corresponding Game TEXT LABEL which holds PIXI text object
+    textLabelObject;
 
     // array of other game objects that correspond to this button. These will need to be destroyed by game when this button is destroyed
     otherGameObjects = [];
@@ -1171,48 +1248,256 @@ class Button extends UIElement {
     }
     set position(newPosition) {
         super.position = newPosition; // keep the set function for UI element
-        console.log("Position changed on btn to", newPosition)
+        // console.log("Position changed on btn to", newPosition)
         // inject extra code
-        this.textObject.position = newPosition;
+
+        // Update text pos
+        this.UpdateTextPosition();
+
     }
 
     get zIndex() { return this.backgroundGraphics.zIndex }
-    set zIndex(newVal) { 
+    set zIndex(newVal) {
         // text should be 1 zindex above background
         this.backgroundGraphics.zIndex = newVal;
-        this.textObject.graphicsObject.zIndex = newVal + 1; 
+        this.textLabelObject.graphicsObject.zIndex = newVal + 1;
     }
 
     /**
-     * 
-     * @param {PIXI.Text} graphicsObject PIXI Text or BitMap Text object
-     * @param {Game} game 
+     * Updates the position of the text object under the button with respect to the alignment and button position
+     * Need to define function as anonymous ()=>{} this to preserve the "this" variable
      */
-    constructor(backgroundGraphics, textGraphics, game) {
+    UpdateTextPosition = () => {
+        // console.log(this)
 
-        // Going to have two game objects, one for background and one for text  
+        // get the raw values lmao. By thise I just mean the values without padding (do this advanced technique called subtraction)
+        let rawWidth = this.width - this.padding.left - this.padding.right;
+        let rawHeight = this.height - this.padding.bottom - this.padding.top;
+        // start as btn pos (bottom-left)
+        // Need to clone point to avoid object reference conflicts
+        let textPos = new Point(this.position.x + this.padding.left, this.position.y + this.padding.bottom);
+        // calc horizontal x
+        switch (this.textHorizontalAlignment) {
+            case HorizontalAlignment.LEFT:
+                // do nothing
+                break;
+            case HorizontalAlignment.MIDDLE:
+                // pos = middle of button rect (rect.x + rectWidth/2) -  textWidth/2 
+                textPos.x += rawWidth / 2 - this.textLabelObject.width / 2
+                break;
+
+            case HorizontalAlignment.RIGHT:
+                textPos.x += rawWidth;
+                break;
+            default:
+                console.warn("Horizontal aligment is an invalid value")
+                break;
+        }
+        // calc vertical y
+        switch (this.textVerticalAlignment) {
+            case VerticalAlignment.BOTTOM:
+                // do nothing
+                break;
+            case VerticalAlignment.MIDDLE:
+                // pos = middle of button rect (rect.y + rectHeight/2) -  textHeight/2 
+                textPos.y += rawHeight / 2 - this.textLabelObject.height / 2
+                break;
+
+            case VerticalAlignment.TOP:
+                textPos.y += rawHeight;
+                break;
+            default:
+                console.warn("Vertical aligment is an invalid value")
+                break;
+        }
+
+        this.textLabelObject.position = textPos;
+    }
+
+    _padding = new Padding(0.1, 0.1, 0.1, 0.1);
+    get padding() { return this._padding }
+    set padding(newPadding) {
+        let oldPadding = this._padding;
+        this._padding = newPadding;
+
+        // When padding changes you just update the width and height
+
+        // get the raw values lmao. By thise I just mean the values without padding (do this advanced technique called subtraction)
+        let rawWidth = this.width - oldPadding.left - oldPadding - right;
+        let rawHeight = this.height - oldPadding.bottom - oldPadding - top;
+
+        // Set the new width to the raw width + padding on x and y respectively
+        this.width = rawWidth + newPadding.left + newPadding.right;
+        this.height = rawHeight + newPadding.bottom + newPadding.top;
+    }
+
+    get fontSize() { return this.textObject.fontSize }
+    set fontSize(newFontSize) {
+        this.textLabelObject.fontSize = newFontSize;
+        this.FitBackgroundToText()
+        this.FireListener("fontSizeChanged")
+        
+    }
+
+    // fits background size to text size
+    FitBackgroundToText = ()=> {
+        console.log("fitting to text")
+        if (this.fitToText) {
+            console.log("here")
+            this.width = this.textLabelObject.width + this.padding.left + this.padding.right;
+            this.height = this.textLabelObject.height + this.padding.bottom + this.padding.top;
+        }
+    }
+
+    // In order to do colors (including stroke) you're going to need to redraw the rect each time there's a change
+
+    // when you set the stroke it'll update
+    _backgroundStroke;
+    get backgroundStroke() { return this._backgroundStroke }
+    set backgroundStroke(newStroke) {
+        this._backgroundStroke = newStroke;
+        this.RedrawBackground();
+    }
+
+    // when you set the fill it'll update
+    _backgroundFill = "#4f4f4f"
+    get backgroundFill() { return this._backgroundFill }
+    set backgroundFill(newFill) {
+        this._backgroundFill = newFill;
+        this.RedrawBackground();
+    }
+
+
+    RedrawBackground() {
+        // console.log("_---")
+        // console.log("Pre-size", this.backgroundGraphics.width,this.backgroundGraphics.height)
+        // first clear the current visual
+        this.backgroundGraphics.clear();
+        // redraw rect and fill with size
+
+        // console.log("Redrawing", this._width, this._height)
+        let pixelWidth = this._width * this.game.pixelsPerUnit.x;
+        let pixelHeight = this._height * this.game.pixelsPerUnit.y
+        // console.log("Pixel", pixelWidth, pixelHeight)
+
+
+        this.backgroundGraphics
+            .rect(0, -pixelHeight, pixelWidth, pixelHeight)
+            .fill(this._backgroundFill)
+
+        // if has stroke, then process it
+        if (this._backgroundStroke) {
+            this.backgroundGraphics
+                .stroke(this._backgroundStroke)
+        }
+
+        this.backgroundGraphics.scale = new PIXI.Point(1, 1); // For some reaosn the scale gets changed?? PIXI.JS must have a bug idk had me scratching my head
+
+        this.backgroundGraphics.interactive = true; // set back to true
+
+        // console.log("Post-size", this.backgroundGraphics.width,this.backgroundGraphics.height)
+
+        // After redrawn, update position of background
+        // super.position = super.position
+
+
+    }
+
+    // When width and height of btn changes, the background needs to be redrawn and the text needs to be repositioned
+    get height() { return super.height };
+    set height(newVal) {
+        super.height = newVal;
+        this.RedrawBackground();
+        this.UpdateTextPosition();
+    };
+
+    get width() { return super.width };
+    set width(newVal) {
+        super.width = newVal
+        this.RedrawBackground();
+        this.UpdateTextPosition();
+    };
+
+    eventsToDestroy = []; // Has an array of arrays each with [objectSubscribedTo, eventName, eventListener]
+    
+
+    /**
+     * Create a new button, the graphics are created for you (not added to game), you just need to set the different appearance options manually.
+     * @param {Game} game 
+     * @param {string} text Optional text for the button 
+     * @param {boolean} [useBitmapText] Optional bool whether the button text label should be a bitmap text object, use this if you need to change text a lot
+     * @param {*} [textStyleOptions] Optional PIXI text style options object. See https://pixijs.download/v8.1.5/docs/text.TextOptions.html
+     */
+    constructor(game, text = "button", useBitmapText = false, textStyleOptions = null) {
+
+        // Going to have two game objects, one for background and one for text
+
+        // Create text
+        let textLabelObject = new TextLabel(game, text, useBitmapText, textStyleOptions)
+
+
+        // create graphics, need to access the "this" variable which is after the super function and then I'll redraw the background graphics before render which won't be too costly
+        let backgroundGraphics = new Graphics()
+
         super(backgroundGraphics, game);
-        this.textObject = new TextLabel(textGraphics, game);
-        this.otherGameObjects.push(this.textObject);
 
+        // Set object
+        this.textLabelObject = textLabelObject;
+        this.otherGameObjects.push(this.textLabelObject);
 
+        // Update width to based off text size + padding to start 
+        this.width = textLabelObject.width + this.padding.left + this.padding.right;
+        this.height = textLabelObject.height + this.padding.bottom + this.padding.top;
+
+        this.RedrawBackground();
 
 
         // -- initialise values --
-        this.width = backgroundGraphics.width;
-        this.height = backgroundGraphics.height;
+        // this.width = backgroundGraphics.width;
+        // this.height = backgroundGraphics.height;
         this.position = backgroundGraphics.position;
         this.zIndex = backgroundGraphics.zIndex
 
         // console.log(this)
 
+        // update text pos whenever it changes width or height, third value ensures every listener is destroyed properly
+        this.textLabelObject.AddEventListener("widthChanged", this.UpdateTextPosition, this);
+        this.textLabelObject.AddEventListener("heightChanged", this.UpdateTextPosition, this);
+        // when text changes update pos
+        this.textLabelObject.AddEventListener("textChanged", this.UpdateTextPosition, this);
+        this.AddEventListener("textChanged", this.UpdateTextPosition, this);
+        // fit to btn
+        this.textLabelObject.AddEventListener("textChanged", this.FitBackgroundToText, this);
+        this.textLabelObject.AddEventListener("fontSizeChanged", this.FitBackgroundToText, this);
 
+        this.backgroundGraphics.addEventListener("pointerdown",this.HandlePointerDown);
+        this.backgroundGraphics.addEventListener("pointerup",this.HandlePointerUp);
+        // the others are automatically destroyed through the third poarameter
+        this.eventsToDestroy.push([this.backgroundGraphics, "pointerdown", this.HandlePointerDown])
+        this.eventsToDestroy.push([this.backgroundGraphics, "pointerup", this.HandlePointerUp])
+
+
+
+    }
+    
+    HandlePointerDown = (pointerEvent)=>{
+        this.FireListener("pointerDown",pointerEvent);
+    }
+
+    HandlePointerUp = (pointerEvent)=>{
+        this.FireListener("pointerUp",pointerEvent);
     }
 
     Destruct() {
         super.Destruct();
         // destroy both objects is done in game remove object
+
+        // remove all events
+        for(const eventDataToDestroy of eventDataToDestroy){
+            eventDataToDestroy[0].removeEventListener(eventDataToDestroy[1], eventDataToDestroy[2])
+        }
     }
+
 }
 
 /**

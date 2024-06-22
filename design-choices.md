@@ -40,4 +40,8 @@ a
 
 - graphics/primitive-playgound: For different values that use points (game.pixelsPerUnits or gameobject.position or collider.position) they will only update their values if you change the point itself and don't just reassign their x and y values. This is because the setter and getter is on the point itself and I didn't want to add another point class just with events that's the exact same as pixi
 - 
-- graphics/game.js: made the event system have registered listeners as a baind aid fix to prevent memory leaks from event listeners not being cleared. Although, this could just be solved by removing the event listeners eh
+- graphics/game.js: made the event system have registered listeners as a band aid fix to prevent memory leaks from event listeners not being cleared. Although, this could just be solved by removing the event listeners eh
+
+- graphics/game.js: I made it so different classess like buttons employ two game objects such as the background rect and text. However, these objects are seperate and aren't parented, this is because the width and position of each can't be changed independently if they are in a parent-child situation so I opted for doing multiple game objects. The main object keeps track of its other objects and then under the game remove/add game object loop it will check for those objects it keeps track of and then add or remove all of them too
+
+- graphics/game.js: I decided to go for a method of updating properties of game objects only if you change the property on the classes I created, not PIXI objects. I did this because I am unaware of a way to listen for PIXI objects changing properties without having to check every frame for a difference compared to last frame. It is simply easier this way as well and it makes the game library a lot easier to work with. This means if you wanted to change a certain property on the PIXI object you may need to update the Game object accordingly or just call the setter to update. 

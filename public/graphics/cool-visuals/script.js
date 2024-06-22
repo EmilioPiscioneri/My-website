@@ -204,12 +204,16 @@ let objectsToDestroy = [];
 let leftPointerDown = false; // If left mouse or pointer is down on screen
 let rightPointerDown = false; // If right mouse or pointer is down on screen
 // events to destroy
-let eventsToDestroy = []; // Has an array of arrays each with [objectSubscribedTo, eventName, eventListener]
+let pixiEventsToDestroy = []; // Has an array of arrays each with [objectSubscribedTo, eventName, eventListener]
+let gameObjEventsToDestroy = []; // Has an array of arrays each with [objectSubscribedTo, eventName, eventListener]
 let ballsInScene = []; // array of game objects of balls
 
 // UI
 let lineCountTextLbl;
 let lineCountTextDefault = "Line count: "
+let gridVisibilityBtn;
+let gridIsVisible = false;
+
 
 function BallsConnectToLineLoad(game) {
     game.backgroundColour = "#353535"; // set better colour for contrast
@@ -392,63 +396,71 @@ function BallsConnectToLineLoad(game) {
     game.pixiApplication.canvas.addEventListener("pointerup", HandlePointerUp);
 
     // register pointer to be destroyed later
-    eventsToDestroy.push([game.pixiApplication.canvas, "pointerdown", HandlePointerDown])
-    eventsToDestroy.push([game.pixiApplication.canvas, "pointerup", HandlePointerUp])
+    pixiEventsToDestroy.push([game.pixiApplication.canvas, "pointerdown", HandlePointerDown])
+    pixiEventsToDestroy.push([game.pixiApplication.canvas, "pointerup", HandlePointerUp])
 
     // Do all the UI stuff
 
-    // BitmapText is a whole lot faster for constantly changing text
-    // let lineCountTextVisual = new PIXI.Text({
-    //     text: lineCountTextDefault,
-    //     style: {
-    //         fontFamily: 'Arial',
-    //         fontSize: 22,
-    //         fill: "white",
-    //         stroke:{
-    //             color:"black",
-    //             width: 4,
-    //         },
-    //         align: 'left',
-    //     },
-    // })
-    // lineCountTextLbl = new TextLabel(lineCountTextVisual, game); // create new game text game object
-    // lineCountTextLbl.position = new Point(0.25,canvasSize.height-lineCountTextLbl.height-0.25) // top left
-    // // console.log(lineCountTextLbl)
-    // // console.log(lineCountTextLbl.position)
+    // create new game text game object
+    lineCountTextLbl = new TextLabel(game, lineCountTextDefault,true, {
+        fontFamily: 'Arial',
+        fontSize: 22,
+        fill: "white",
+        stroke:{
+            color:"black",
+            width: 2,
+        },
+        align: 'left',
+    }); 
+    lineCountTextLbl.position = new Point(0.25,canvasSize.height-lineCountTextLbl.height-0.25) // top left
 
     // // add to scene
-    // game.AddGameObject(lineCountTextLbl);
+    game.AddGameObject(lineCountTextLbl);
 
-    let txt = new PIXI.Text({
-        text: "Button1",
-        style: {
-            fontFamily: 'Arial',
-            fontSize: 22,
-            fill: "white",
-            stroke:{
-                color:"black",
-                width: 4,
-            },
-            align: 'left',
-        },
-    })
+    gridVisibilityBtn = new Button(game,"Show grid", false);
+    gridVisibilityBtn.position =  new Point(0.25,canvasSize.height-lineCountTextLbl.height-0.55-gridVisibilityBtn.height)
+    gridVisibilityBtn.fontSize = 22;
+    gridVisibilityBtn.backgroundStroke = {
+        color: "black",
+        width: 2
+    }
+    document.btn = gridVisibilityBtn
 
-    let background = new PIXI.Graphics()
-    .rect(0,0,2,1)
-    .fill("red")
+    game.AddGameObject(gridVisibilityBtn)
 
+    gridVisibilityBtn.AddEventListener("pointerUp", HandleGridVisibilityBtnUp)
 
-    let btn = new Button(background,txt,game);
-    btn.position = new Point(5,4)
-    // btn.zIndex = 5
-    // btn.height = 2;
-
-    game.AddGameObject(btn)
-    // game.RemoveGameObject(btn)
+    gameObjEventsToDestroy.push([gridVisibilityBtn, "pointerup", HandleGridVisibilityBtnUp])
 
 
 
     // #endregion
+}
+
+// #region UI event handling --
+
+function HandleGridVisibilityBtnUp(){
+    if(gridIsVisible){
+        gridIsVisible = false
+        HideGrid();
+    }
+    else{
+        gridIsVisible = true
+        ShowGrid();
+    }
+    
+}
+
+// #endregion
+
+function ShowGrid(){
+    gridVisibilityBtn.text = "Hide grid"
+
+}
+
+function HideGrid(){
+    gridVisibilityBtn.text = "Show grid"
+
 }
 
 let linesInScene = [];
