@@ -674,7 +674,15 @@ function BallsConnectToLineOnTick(game) {
 }
 
 function BallsConnectToLineUnload(game) {
-    // TO-DO REMOVE ALL EVENTS
+    // remove all events
+    for (const eventDataToDestroy of pixiEventsToDestroy) {
+        eventDataToDestroy[0].removeEventListener(eventDataToDestroy[1], eventDataToDestroy[2])
+    }
+
+    for (const eventDataToDestroy of gameObjEventsToDestroy) {
+        eventDataToDestroy[0].RemoveEventListener(eventDataToDestroy[1], eventDataToDestroy[2])
+    }
+
 }
 
 // #endregion
