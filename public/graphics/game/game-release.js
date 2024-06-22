@@ -255,6 +255,16 @@ function Clamp(value, min, max) {
     return Math.max(min, Math.min(max, value))
 }
 
+// Returns how many times a characters appears in a string
+function qtyCharInString(stringToCheck, charToMatch) {
+    let qty = 0;
+    for (const character of stringToCheck) {
+        if (character == charToMatch)
+            qty++;
+    }
+    return qty; // return result gang 
+}
+
 // main class, I included the subclasses in the same file because it is easier 
 class Game extends EventSystem {
     pixiApplication = new PIXI.Application();
@@ -336,9 +346,11 @@ class Game extends EventSystem {
             }).then(() => {
                 // now add the canvas to html
                 graphicsContainer.appendChild(this.pixiApplication.canvas)
-                graphicsContainer.onkeydown = this.OnKeyDown;
+                // graphicsContainer.onkeydown = this.OnKeyDown;
                 this.ticker.add(this.OnTick); // attach to ticker event system
                 this.pixiApplication.canvas.addEventListener("pointermove", this.HandlePointerMove)
+                graphicsContainer.addEventListener("keydown", this.HandleKeyDown)
+                graphicsContainer.addEventListener("keyup", this.HandleKeyUp)
                 this.initialised = true;
 
 
@@ -349,6 +361,18 @@ class Game extends EventSystem {
 
 
         })
+    }
+
+
+    // handle key events on canvas
+    HandleKeyDown = (eventData) => {
+        eventData.preventDefault();
+        this.FireListener("keyDown", eventData)
+    }
+
+    HandleKeyUp = (eventData) => {
+        eventData.preventDefault();
+        this.FireListener("keyUp", eventData)
     }
 
 
@@ -432,9 +456,9 @@ class Game extends EventSystem {
     }
 
     // Handler for when key is pressed down
-    OnKeyDown = (eventData) => {
-        this.FireListener("keyDown", eventData)
-    }
+    // OnKeyDown = (eventData) => {
+    //     this.FireListener("keyDown", eventData)
+    // }
 
 
 
@@ -1347,7 +1371,7 @@ class TextContainer extends UIElement {
 
 
         // create graphics, need to access the "this" variable which is after the super function and then I'll redraw the background graphics before render which won't be too costly
-        let backgroundGraphics = new Graphics()
+        let backgroundGraphics = new Graphics().rect(0, 0, 100, 100)
 
         super(backgroundGraphics, game);
 
@@ -1532,6 +1556,30 @@ class Button extends TextContainer {
 class TextInput extends TextContainer {
     inputFocused = false;
     caretObject; // the caret (the | which is used to navigate selected text)
+    _caretPosition = -1;
+    // the index of the caret. It starts at -1 (no character) and is representative of the selected character index
+    get caretPosition() { return this._caretPosition }
+    set caretPosition(newPos) {
+        this._caretPosition = newPos
+        this.UpdateCaret();
+    }
+    placeholderText;
+    _displayingPlaceholderText = true;
+    get displayingPlaceholderText(){return this._displayingPlaceholderText}
+    set displayingPlaceholderText(newValue){
+        // let oldValue = this._displayingPlaceholderText
+        this._displayingPlaceholderText = newValue;
+        // set to display placeholder text 
+        if(newValue){
+            this.textLabelObject.textObject.text = this.placeholderText; // display on the text object only
+            this.textLabelObject.textObject.style.fill = "grey"; // display grey for placeholder text
+        }
+        // no longer displaying placeholder text
+        else {
+            this.text = ""; // default to nothing
+            this.textLabelObject.textObject.style.fill = "white"; // display normal color for normal text
+        }
+    }
 
     // make sure there are no new lines in the text when it changes.
     // You can admittedly get around this by changing the text on the text label object itself but it depends if u want ur code to work tbh
@@ -1539,6 +1587,7 @@ class TextInput extends TextContainer {
     set text(newText) {
         // idc abt \\ escape characters because this may change in the future
         super.text = newText.replaceAll("\n", "")
+        this.UpdateCaret();
     }
 
     /**
@@ -1552,24 +1601,37 @@ class TextInput extends TextContainer {
 
         placeholderText = placeholderText || "Enter text"
         // call constrcutor of base class
-        super(game, placeholderText, useBitmapText, textStyleOptions);
+        super(game, "", useBitmapText, textStyleOptions);
+
+        this.placeholderText = placeholderText;
+        this.displayingPlaceholderText = true; // start as displaying
 
         // Create the caret
         let caretGraphics = new Graphics()
             .rect(0, 0, 0.05, 1)
             .fill("white"); // white fill so u can use tint to change caret color for different contrast. Maybe match with text color idk
 
-        caretObject = new GameObject(caretGraphics,game, true, true);
+        let caretObject = new GameObject(caretGraphics, game, true, true);
+        caretObject.physicsEnabled = false;
 
-        this.caretObject.height = this.textLabelObject.fontSize;
+        caretObject.height = this.textLabelObject.fontSize / game.pixelsPerUnit.y;
+        caretObject.position = this.position
 
-        this.caretObject = this.caretObject;
+        this.caretObject = caretObject;
 
+        this.otherGameObjects.push(this.caretObject);
 
         // When it comes to focusing on the text input, you have to listen for clicks anywhere, check if it is in the input and then it is selected
 
+        game.AddEventListener("keyDown", this.HandleKeyDown, this);
+        this.textLabelObject.AddEventListener("positionChanged", this.UpdateCaret, this)
+        this.AddEventListener("widthChanged", this.UpdateCaret, this)
+        this.AddEventListener("heightChanged", this.UpdateCaret, this)
+        this.textLabelObject.AddEventListener("fontSizeChanged", this.UpdateCaret, this)
+        this.textLabelObject.AddEventListener("textChanged", this.UpdateCaret, this)
         this.backgroundGraphics.addEventListener("pointerdown", this.HandlePointerDownOnInput);
         this.backgroundGraphics.addEventListener("pointerup", this.HandlePointerUpOnInput);
+        game.AddEventListener("tick", this.UpdateCaretVisibility, this) // run caret control every tick
         game.pixiApplication.canvas.addEventListener("pointerdown", this.HandlePointerDownOnCanvas);
         // the others are automatically destroyed through the third poarameter
 
@@ -1578,13 +1640,123 @@ class TextInput extends TextContainer {
         this.eventsToDestroy.push([game.pixiApplication.canvas, "pointerdown", this.HandlePointerDownOnCanvas])
     }
 
+    HandleKeyDown = (keyEvent) => {
+        // If focused on input
+        if (this.inputFocused) {
+            // process if the input is a valid key or like shift or control
+            let keyBlacklist = ["Control", "Shift", "Alt", "Meta", "CapsLock", "ContextMenu", "Backspace",
+                "Enter", "Escape", "ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Delete", "End", "PageDown", "PageUp", "Home", "Insert"]
+            let key = keyEvent.key; // the key event
+            if (keyBlacklist.includes(key)) {
+                if (key == "Escape") {
+                    this.UnfocusOnInput()
+                } else if (key == "Backspace") {
+                    this.HandleBackspace();
+                }
+                else if (key == "Delete") {
+                    this.HandleDelete();
+                }
+                else if (key == "Enter") {
+                    this.UnfocusOnInput();
+                } else if (key == "ArrowLeft" || key == "ArrowRight" || key == "ArrowUp" || key == "ArrowDown") {
+                    this.HandleArrowKey(key);
+                }
 
+            } else {
+                // not on blacklist
+                this.AddTextToInput(key)
+            }
+
+
+
+            // console.log(keyEvent)
+        }
+    }
+
+    AddTextToInput(textToAdd) {
+        // console.log(textToAdd, textToAdd.length)
+        this.caretPosition += textToAdd.length;
+        let newText = this.text.substring(0, this.caretPosition) + textToAdd + this.text.substring(this.caretPosition)
+        this.text = newText
+    }
+
+    HandleArrowKey(key) {
+        // I find case statements easier to look atsometimes
+
+        // Idc if other arrow keys r pressed, basically make it so whena  key is pressed, the the caret pulse is always visible while moving
+        this.timeSinceLastCaretUpdate = Date.now();
+        this.caretObject.isVisible = true;
+
+        switch (key) {
+            case "ArrowLeft": {
+                // if not at start
+                if (this.caretPosition != -1)
+                    this.caretPosition -= 1; // move left 1
+                break;
+            }
+            case "ArrowRight": {
+                // if not at end
+                if (this.caretPosition != this.text.length - 1)
+                    this.caretPosition += 1; // move right 1
+                break
+            }
+            default:
+                break;
+        }
+
+    }
+
+    // Need to remove character
+    HandleBackspace() {
+        // TO DO handle backslash on "\\" removing the whole two lines
+
+        // If the caret is at start of text, do nothing
+        if (this.caretPosition == -1)
+            return;
+
+        // else, caret is not at start
+
+        // substring is (startIndex to endIndex) but end is exclusive
+        // caret position is equal to character index
+        let newText = this.text.substring(0, this.caretPosition) + this.text.substring(this.caretPosition + 1) // start to character index - 1 combined with the char index + 1 to end
+        this.text = newText
+        // caret pos is now -= 1
+        this.caretPosition -= 1
+    }
+
+    // Need to remove character but inverse
+    HandleDelete() {
+        // TO DO handle backslash on "\\" removing the whole two lines
+
+        // If the caret is at end of text, do nothing
+        if (this.caretPosition == this.text.length - 1)
+            return;
+
+        // else, caret is not at end
+
+        // substring is (startIndex to endIndex) but end is exclusive. We still want the char that the caret is on
+        // so we go from pos + 2 to end to get rid of the char
+        // caret position is equal to character index
+        let newText = this.text.substring(0, this.caretPosition + 1) + this.text.substring(this.caretPosition + 2)
+        this.text = newText
+
+        // caret pos is unchanged
+    }
 
     HandlePointerDownOnCanvas = (pointerEvent) => {
         let pointerPos = game.pointerPos; // easier to just access this property
 
-        // check if the input was hit
-        if (this.backgroundGraphics.containsPoint(pointerPos)) {
+        // check if the input was hit 
+        let testPos = pointerPos
+
+
+
+        // PIXI.js contains point won't work so I'm just using other
+
+        // If the input was clicked
+        if (testPos.x >= this.x && testPos.x <= this.x + this.width
+            &&
+            testPos.y >= this.y && testPos.y <= this.y + this.height) {
             this.FocusOnInput(pointerPos);
         } else {
             this.UnfocusOnInput(pointerPos)
@@ -1592,6 +1764,90 @@ class TextInput extends TextContainer {
 
 
         // this.FireListener("pointerDown", pointerEvent);
+    }
+
+    // Updates the caret to be at whatever position it's supposed to be
+    UpdateCaret = () => {
+        // console.log("Updating caret")
+        let textLabel = this.textLabelObject
+        let textStartPos = this.textLabelObject.position; // bottom left of text
+        this.caretObject.height = this.textLabelObject.fontSize / this.game.pixelsPerUnit.y;
+        let newCaretPos = new Point(textStartPos.x, textStartPos.y); // avoid reference conflicts by cloning
+
+        newCaretPos.y += (textLabel.height - this.caretObject.height) / 2; // centre it
+
+
+
+
+        // if not at start of text (can leave how it is)
+        if (this.caretPosition != -1) {
+            // PIXI api to measure text size
+
+            // do +1 because the second param  of substring is exclusive
+            let textUpToCaret = this.text.substring(0, this.caretPosition + 1); // text from start to caret pos
+
+            // width of all spaces combined in a text
+            let spacesWidthInPixels = 0;
+            let qtySpaces = 0;//qtyCharInString(textUpToCaret, " ") // how many spaces occur in text
+
+            // The measure text function will only include spaces if there is a character in front of it. E.g. "   2" will result in a width but "    " will be 0
+
+            // Go from the end of array until you find no spaces
+            for (let charIndex = textUpToCaret.length - 1; charIndex > -1; charIndex--) {
+                const iteratedChar = textUpToCaret[charIndex];
+                if (iteratedChar != " ")
+                    break; // end loop
+                else
+                    qtySpaces++; // increment
+            }
+
+
+            // if there is a space, have to work out how many there are because the measure text function doesn't include spaces
+            if (qtySpaces != 0) {
+                // from just a tiny test it looks like spaces are the width of a character like "a" in lowercase /2
+
+                // So first we get width of a space in pixels
+                let spaceSize = PIXI.BitmapFontManager.measureText("a", textLabel.textObject.style)
+                let spaceWidth = (spaceSize.width * spaceSize.scale) / 2;
+
+                spacesWidthInPixels = spaceWidth * qtySpaces
+            }
+            let textSize = PIXI.BitmapFontManager.measureText(textUpToCaret, textLabel.textObject.style)
+
+
+            // console.log(textSize)
+            // I have no idea why but you do with * scale, who put the scale in there why would they do that
+            newCaretPos.x += (textSize.width * textSize.scale + spacesWidthInPixels) / this.game.pixelsPerUnit.x
+        }
+
+        this.caretObject.position = newCaretPos;
+    }
+
+    // updates caret visibility
+    timeSinceLastCaretUpdate = Date.now();
+    caretPulseInterval = 500; // After this many ms, the caret will either go invisible or visible
+    UpdateCaretVisibility = () => {
+        // if not focused just set to invisible
+        if (!this.inputFocused) {
+            this.caretObject.isVisible = false;
+        }
+        else {
+            // else the text input is focused
+
+            // if enough time has passed
+            if (Date.now() - this.timeSinceLastCaretUpdate >= this.caretPulseInterval) {
+                // inverse the visibility
+                this.caretObject.isVisible = !this.caretObject.isVisible
+
+                // set up next update
+                this.timeSinceLastCaretUpdate = Date.now();
+            }
+
+
+
+
+        }
+
     }
 
     HandlePointerDownOnInput = (pointerEvent) => {
@@ -1603,13 +1859,28 @@ class TextInput extends TextContainer {
     }
 
     FocusOnInput(pointerPos) {
+        // console.log("focusing on input")
+        // dont do anything if already focused
+        if (this.inputFocused)
+            return;
         this.inputFocused = true
 
+        // setter handles it
+        if (this.displayingPlaceholderText){
+            this.displayingPlaceholderText = false
+        }
+            
+        this.FireListener("focused")
     }
 
     UnfocusOnInput(pointerPos) {
+        // console.log("unfocusing on input")
+        // dont do anything if already unfocused
+        if (!this.inputFocused)
+            return;
         this.inputFocused = false;
-
+        this.FireListener("unfocused")
+        // this.text = this.placeholderText
     }
 
 }
