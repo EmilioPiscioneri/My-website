@@ -214,6 +214,7 @@ let lineCountTextDefault = "Line count: "
 let gridVisibilityBtn;
 let gridIsVisible = false;
 var textInput;
+let ballSpeedSlider;
 
 
 function BallsConnectToLineLoad(game) {
@@ -443,6 +444,11 @@ function BallsConnectToLineLoad(game) {
     textInput.position =  new Point(0.25,canvasSize.height-lineCountTextLbl.height-0.75-gridVisibilityBtn.height-textInput.height)
 
     game.AddGameObject(textInput)
+
+    ballSpeedSlider = new Slider(game, 1,5,0.25);
+    ballSpeedSlider.position = new Point(0.25,canvasSize.height-lineCountTextLbl.height-1-gridVisibilityBtn.height-textInput.height-ballSpeedSlider.height)
+
+    game.AddGameObject(ballSpeedSlider)
 
 
     // #endregion

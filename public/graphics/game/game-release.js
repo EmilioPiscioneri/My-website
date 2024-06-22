@@ -1076,6 +1076,7 @@ class Circle extends GameObject {
  * A UI element game object
  */
 class UIElement extends GameObject {
+    isUIElement = true;
     _position = new Point(0, 0);
     get position() {
         return this._position
@@ -1551,7 +1552,7 @@ class Button extends TextContainer {
  * A TextInput game object with graphics already done for you. Doesn't support multiline for now
  */
 class TextInput extends TextContainer {
-    inputFocused = false;
+    isInputFocused = false;
     caretObject; // the caret (the | which is used to navigate selected text)
     _caretPosition = -1;
     // the index of the caret. It starts at -1 (no character) and is representative of the selected character index
@@ -1640,7 +1641,7 @@ class TextInput extends TextContainer {
 
     HandleKeyDown = (keyEvent) => {
         // If focused on input
-        if (this.inputFocused) {
+        if (this.isInputFocused) {
             // process if the input is a valid key or like shift or control
             let keyBlacklist = ["Control", "Shift", "Alt", "Meta", "CapsLock", "ContextMenu", "Backspace",
                 "Enter", "Escape", "ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Delete", "End", "PageDown", "PageUp", "Home", "Insert"]
@@ -1827,7 +1828,7 @@ class TextInput extends TextContainer {
     caretPulseInterval = 500; // After this many ms, the caret will either go invisible or visible
     UpdateCaretVisibility = () => {
         // if not focused just set to invisible
-        if (!this.inputFocused) {
+        if (!this.isInputFocused) {
             this.caretObject.isVisible = false;
         }
         else {
@@ -1860,9 +1861,9 @@ class TextInput extends TextContainer {
     FocusOnInput(pointerPos) {
         // console.log("focusing on input")
         // dont do anything if already focused
-        if (this.inputFocused)
+        if (this.isInputFocused)
             return;
-        this.inputFocused = true
+        this.isInputFocused = true
 
         // setter handles it
         if (this.displayingPlaceholderText) {
@@ -1875,17 +1876,223 @@ class TextInput extends TextContainer {
     UnfocusOnInput(pointerPos) {
         // console.log("unfocusing on input")
         // dont do anything if already unfocused
-        if (!this.inputFocused)
+        if (!this.isInputFocused)
             return;
         if (this.text == "")
             this.displayingPlaceholderText = true;
-        this.inputFocused = false;
+        this.isInputFocused = false;
         this.FireListener("unfocused")
         // this.text = this.placeholderText
     }
 
 }
 
+/**
+ * A slider yeah
+ */
+class Slider extends UIElement {
+    step; // how many steps between min and max of slider 
+    min; // minimum value
+    max; // maximum value for slider
+    value; // the actual value of the slider
+
+    // array of other game objects that correspond to this text container. These will need to be destroyed by game when this text container is destroyed
+    otherGameObjects = [];
+
+    isSliderFocused
+
+    slidingBall; // just a circle game object which is used to slide. Maybe I'll add support for sprites later idk.
+
+    get backgroundGraphics() { return this.graphicsObject }
+    set backgroundGraphics(newVal) {
+        this.graphicsObject = newVal
+    }
+
+    // keep old getter and setter but add new stuff
+    get position() {
+        return super.position;
+    }
+    set position(newPosition) {
+        super.position = newPosition; // keep the set function for UI element
+        this.UpdateOtherObjects();
+    }
+
+    get zIndex() { return this.backgroundGraphics.zIndex }
+    set zIndex(newVal) {
+        // text should be 1 zindex above background
+        this.backgroundGraphics.zIndex = newVal;
+        this.slidingBall.graphicsObject.zIndex = newVal + 1;
+    }
+
+    // In order to do colors (including stroke) you're going to need to redraw the rect each time there's a change
+
+    // when you set the stroke it'll update
+    _backgroundStroke = {
+        color: "#b2b2b2",
+        width: 2
+    };
+    get backgroundStroke() { return this._backgroundStroke }
+    set backgroundStroke(newStroke) {
+        this._backgroundStroke = newStroke;
+        this.RedrawBackground();
+    }
+
+    // when you set the fill it'll update
+    _backgroundFill = "#efefef"
+    get backgroundFill() { return this._backgroundFill }
+    set backgroundFill(newFill) {
+        this._backgroundFill = newFill;
+        this.RedrawBackground();
+    }
+
+    
+    _backgroundRadius = 0.25; 
+    // Radius in game units (x pixels per unit) that is how round the slider is 
+    get backgroundRadius(){return this._backgroundRadius}
+    set backgroundRadius(newRadius) {
+        this._backgroundRadius = newRadius
+        this.RedrawBackground();
+    }
+
+    // when you set the fill it'll update
+    _slidingBallFill = "#0059b7"
+    get slidingBallFill() { return this._slidingBallFill }
+    set slidingBallFill(newFill) {
+        this._slidingBallFill = newFill;
+        this.slidingBall.graphicsObject.tint = newFill; // set the tint because the graphics object is se to white color and no stroke
+    }
+
+
+    // When width and height of btn changes, the background needs to be redrawn and the text needs to be repositioned
+    get height() { return super.height };
+    set height(newVal) {
+        super.height = newVal;
+        this.RedrawBackground();
+        this.UpdateOtherObjects();
+    };
+
+    get width() { return super.width };
+    set width(newVal) {
+        super.width = newVal
+        this.RedrawBackground();
+        this.UpdateOtherObjects();
+    };
+
+    eventsToDestroy = []; // Has an array of arrays each with [objectSubscribedTo, eventName, eventListener]
+
+
+    /**
+     * Create a new slider, the graphics are created for you (not added to game), you just need to set the different appearance options manually.
+     * @param {Game} game 
+     * @param {Number} min Smallest number of slider 
+     * @param {Number} max Largest number of slider
+     * @param {Number} step How much to increment by from movement between min and max
+     */
+    constructor(game, min, max, step) {
+        
+
+        // create graphics, need to access the "this" variable which is after the super function and then I'll redraw the background graphics before render which won't be too costly
+        let backgroundGraphics = new Graphics()
+
+        super(backgroundGraphics, game);
+
+        this.min = min || 0
+        this.max = max || 10;
+        this.step = step || 0.5;
+
+        // create the circle that'll follow slider
+        this.slidingBall = new Circle(0,0,0.1,game);
+        this.slidingBall.physicsEnabled = false;
+        this.otherGameObjects.push(this.slidingBall);
+
+
+        // Just do a default
+        this.width = 3;
+        this.height = 0.25;
+
+        this.RedrawBackground();
+        this.UpdateOtherObjects(); // update sliding ball
+
+
+        // -- initialise values --
+        this.position = backgroundGraphics.position;
+        this.zIndex = backgroundGraphics.zIndex
+        this.slidingBallFill = this.slidingBallFill
+
+        // events
+        this.backgroundGraphics.addEventListener("pointerdown", this.HandlePointerDown);
+        this.backgroundGraphics.addEventListener("pointerup", this.HandlePointerUp);
+        // the others are automatically destroyed through the third poarameter
+        this.eventsToDestroy.push([this.backgroundGraphics, "pointerdown", this.HandlePointerDown])
+        this.eventsToDestroy.push([this.backgroundGraphics, "pointerup", this.HandlePointerUp])
+    }
+
+    HandlePointerDown = () => {
+
+    }
+
+    HandlePointerUp = () => {
+
+    }
+
+    /**
+     * Updates the position of other game objects tied to slider
+     * Need to define function as anonymous ()=>{} this to preserve the "this" variable
+     */
+    UpdateOtherObjects = () =>{
+        let sliderDiameter = this.height*1.5; // everywhere the sliders are usually bigger than the actual slider itself 
+        // share height
+        this.slidingBall.height = sliderDiameter; 
+        // circle maintains a width:height ratio of 1:1
+        this.slidingBall.width = sliderDiameter;
+
+        this.slidingBall.x = this.position.x + this.width/2;
+        this.slidingBall.y = this.position.y + this.height/2;
+    }
+
+    RedrawBackground() {
+        // first clear the current visual
+        this.backgroundGraphics.clear();
+        // redraw rect and fill with size
+
+        let pixelWidth = this._width * this.game.pixelsPerUnit.x;
+        let pixelHeight = this._height * this.game.pixelsPerUnit.y
+
+
+        this.backgroundGraphics
+            .roundRect (0, -pixelHeight, pixelWidth, pixelHeight,this.backgroundRadius*this.game.pixelsPerUnit.x)
+            .fill(this._backgroundFill)
+
+        // if has stroke, then process it
+        if (this._backgroundStroke) {
+            this.backgroundGraphics
+                .stroke(this._backgroundStroke)
+        }
+
+        this.backgroundGraphics.scale = new PIXI.Point(1, 1); // For some reaosn the scale gets changed?? PIXI.JS must have a bug idk had me scratching my head
+
+        this.backgroundGraphics.interactive = true; // set back to true
+
+        // console.log("Post-size", this.backgroundGraphics.width,this.backgroundGraphics.height)
+
+        // After redrawn, update position of background
+        // super.position = super.position
+
+
+    }
+
+
+
+    Destruct() {
+        super.Destruct();
+        // destroy both objects is done in game remove object
+
+        // remove all events
+        for (const eventDataToDestroy of eventDataToDestroy) {
+            eventDataToDestroy[0].removeEventListener(eventDataToDestroy[1], eventDataToDestroy[2])
+        }
+    }
+}
 
 /**
  * An ENUM for collider type
