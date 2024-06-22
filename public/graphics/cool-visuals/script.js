@@ -213,6 +213,7 @@ let lineCountTextLbl;
 let lineCountTextDefault = "Line count: "
 let gridVisibilityBtn;
 let gridIsVisible = false;
+var textInput;
 
 
 function BallsConnectToLineLoad(game) {
@@ -418,13 +419,13 @@ function BallsConnectToLineLoad(game) {
     game.AddGameObject(lineCountTextLbl);
 
     gridVisibilityBtn = new Button(game,"Show grid", false);
-    gridVisibilityBtn.position =  new Point(0.25,canvasSize.height-lineCountTextLbl.height-0.55-gridVisibilityBtn.height)
     gridVisibilityBtn.fontSize = 22;
     gridVisibilityBtn.backgroundStroke = {
         color: "black",
         width: 2
     }
-    document.btn = gridVisibilityBtn
+    gridVisibilityBtn.position =  new Point(0.25,canvasSize.height-lineCountTextLbl.height-0.5-gridVisibilityBtn.height)
+    // document.btn = gridVisibilityBtn
 
     game.AddGameObject(gridVisibilityBtn)
 
@@ -432,6 +433,16 @@ function BallsConnectToLineLoad(game) {
 
     gameObjEventsToDestroy.push([gridVisibilityBtn, "pointerup", HandleGridVisibilityBtnUp])
 
+     
+    textInput = new TextInput(game,null,false)
+    textInput.backgroundStroke = {
+        color:"black",
+        width: 2
+    }
+    textInput.fontSize = 22;
+    textInput.position =  new Point(0.25,canvasSize.height-lineCountTextLbl.height-0.75-gridVisibilityBtn.height-textInput.height)
+
+    game.AddGameObject(textInput)
 
 
     // #endregion

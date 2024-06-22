@@ -1469,21 +1469,15 @@ class TextContainer extends UIElement {
 
     // fits background size to text size
     FitBackgroundToText = () => {
-        console.log("fitting to text")
+        // console.log("fitting to text")
         if (this.fitToText) {
-            console.log("here")
+            // console.log("here")
             this.width = this.textLabelObject.width + this.padding.left + this.padding.right;
             this.height = this.textLabelObject.height + this.padding.bottom + this.padding.top;
         }
     }
 
-    HandlePointerDown = (pointerEvent) => {
-        this.FireListener("pointerDown", pointerEvent);
-    }
 
-    HandlePointerUp = (pointerEvent) => {
-        this.FireListener("pointerUp", pointerEvent);
-    }
 
     Destruct() {
         super.Destruct();
@@ -1511,7 +1505,7 @@ class Button extends TextContainer {
     constructor(game, text = "Lorem Ipsum", useBitmapText = false, textStyleOptions = null) {
 
         // call constrcutor of base class
-        super(game,text,useBitmapText,textStyleOptions);
+        super(game, text, useBitmapText, textStyleOptions);
 
         // Just add interactivity
         this.backgroundGraphics.addEventListener("pointerdown", this.HandlePointerDown);
@@ -1519,11 +1513,104 @@ class Button extends TextContainer {
         // the others are automatically destroyed through the third poarameter
         this.eventsToDestroy.push([this.backgroundGraphics, "pointerdown", this.HandlePointerDown])
         this.eventsToDestroy.push([this.backgroundGraphics, "pointerup", this.HandlePointerUp])
+    }
+
+    HandlePointerDown = (pointerEvent) => {
+        this.FireListener("pointerDown", pointerEvent);
+    }
+
+    HandlePointerUp = (pointerEvent) => {
+        this.FireListener("pointerUp", pointerEvent);
+    }
 
 
+}
+
+/**
+ * A TextInput game object with graphics already done for you. Doesn't support multiline for now
+ */
+class TextInput extends TextContainer {
+    inputFocused = false;
+    caretObject; // the caret (the | which is used to navigate selected text)
+
+    // make sure there are no new lines in the text when it changes.
+    // You can admittedly get around this by changing the text on the text label object itself but it depends if u want ur code to work tbh
+    get text() { return super.text }
+    set text(newText) {
+        // idc abt \\ escape characters because this may change in the future
+        super.text = newText.replaceAll("\n", "")
+    }
+
+    /**
+         * Create a new text input, the graphics are created for you (not added to game), you just need to set the different appearance options manually.
+         * @param {Game} game 
+         * @param {string} placeholderText Optional placeholder text for the text input
+         * @param {boolean} [useBitmapText] Optional bool whether the text input text label should be a bitmap text object, choose if text changes a lot
+         * @param {*} [textStyleOptions] Optional PIXI text style options object. See https://pixijs.download/v8.1.5/docs/text.TextOptions.html
+         */
+    constructor(game, placeholderText, useBitmapText = false, textStyleOptions = null) {
+
+        placeholderText = placeholderText || "Enter text"
+        // call constrcutor of base class
+        super(game, placeholderText, useBitmapText, textStyleOptions);
+
+        // Create the caret
+        let caretGraphics = new Graphics()
+            .rect(0, 0, 0.05, 1)
+            .fill("white"); // white fill so u can use tint to change caret color for different contrast. Maybe match with text color idk
+
+        caretObject = new GameObject(caretGraphics,game, true, true);
+
+        this.caretObject.height = this.textLabelObject.fontSize;
+
+        this.caretObject = this.caretObject;
+
+
+        // When it comes to focusing on the text input, you have to listen for clicks anywhere, check if it is in the input and then it is selected
+
+        this.backgroundGraphics.addEventListener("pointerdown", this.HandlePointerDownOnInput);
+        this.backgroundGraphics.addEventListener("pointerup", this.HandlePointerUpOnInput);
+        game.pixiApplication.canvas.addEventListener("pointerdown", this.HandlePointerDownOnCanvas);
+        // the others are automatically destroyed through the third poarameter
+
+        this.eventsToDestroy.push([this.backgroundGraphics, "pointerdown", this.HandlePointerDownOnInput])
+        this.eventsToDestroy.push([this.backgroundGraphics, "pointerup", this.HandlePointerUpOnInput])
+        this.eventsToDestroy.push([game.pixiApplication.canvas, "pointerdown", this.HandlePointerDownOnCanvas])
+    }
+
+
+
+    HandlePointerDownOnCanvas = (pointerEvent) => {
+        let pointerPos = game.pointerPos; // easier to just access this property
+
+        // check if the input was hit
+        if (this.backgroundGraphics.containsPoint(pointerPos)) {
+            this.FocusOnInput(pointerPos);
+        } else {
+            this.UnfocusOnInput(pointerPos)
+        }
+
+
+        // this.FireListener("pointerDown", pointerEvent);
+    }
+
+    HandlePointerDownOnInput = (pointerEvent) => {
+        this.FireListener("pointerDown", pointerEvent);
+    }
+
+    HandlePointerUpOnInput = (pointerEvent) => {
+        this.FireListener("pointerUp", pointerEvent);
+    }
+
+    FocusOnInput(pointerPos) {
+        this.inputFocused = true
 
     }
 
+    UnfocusOnInput(pointerPos) {
+        this.inputFocused = false;
+
+    }
 
 }
 
