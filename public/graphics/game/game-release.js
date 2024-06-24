@@ -325,22 +325,12 @@ class Game extends EventSystem {
     }
 
     // handles pointer movement anywhere on canvas
-    HandlePointerMove = (pointerEvent) => {
+    HandlePointerMove = (event) => {
         // console.log(event)
         let canvasBounds = this.pixiApplication.canvas.getBoundingClientRect();
 
-        let pointerPos = this.ConvertRawPixelsToUnits(new Point(pointerEvent.clientX - canvasBounds.x, pointerEvent.clientY - canvasBounds.y)); // convert to vectior that is cartesian and uses game units  
+        let pointerPos = this.ConvertRawPixelsToUnits(new Point(event.clientX - canvasBounds.x, event.clientY - canvasBounds.y)); // convert to vectior that is cartesian and uses game units  
         this.pointerPos = pointerPos
-
-        this.FireListener("pointerMove", pointerEvent); // fire event
-    }
-
-    // pointer events
-    HandlePointerUp = (pointerEvent) => {
-        this.FireListener("pointerUp", pointerEvent)
-    }
-    HandlePointerDown = (pointerEvent) => {
-        this.FireListener("pointerDown", pointerEvent)
     }
 
     Initialise(graphicsContainer) {
@@ -359,8 +349,6 @@ class Game extends EventSystem {
                 // graphicsContainer.onkeydown = this.OnKeyDown;
                 this.ticker.add(this.OnTick); // attach to ticker event system
                 this.pixiApplication.canvas.addEventListener("pointermove", this.HandlePointerMove)
-                this.pixiApplication.canvas.addEventListener("pointerdown", this.HandlePointerDown)
-                this.pixiApplication.canvas.addEventListener("pointerup", this.HandlePointerUp)
                 graphicsContainer.addEventListener("keydown", this.HandleKeyDown)
                 graphicsContainer.addEventListener("keyup", this.HandleKeyUp)
                 this.initialised = true;
@@ -1903,46 +1891,10 @@ class TextInput extends TextContainer {
  * A slider yeah
  */
 class Slider extends UIElement {
-    _step;
-    // how many steps between min and max of slider 
-    get step() { return this._step; }
-    set step(newStep) {
-        if (newStep > this.max) {
-            // I'm going to throw error to teach lesson cos ill probably do dumb stuff and struggle to debug idk
-            throw new Error("Tried to set step property of slider to more than max")
-        } else if (newStep <= 0)
-            throw new Error("Step must be greater than 0 smh my head")
-        this._step = newStep;
-        this.UpdateOtherObjects();
-    }
-
-    _min;
-    // minimum value
-    get min() { return this._min; }
-    set min(newMin) {
-        this._min = newMin;
-        this.UpdateOtherObjects();
-    }
-
-    _max;
-    // maximum value for slider
-    get max() { return this._max; }
-    set max(newMax) {
-        this._max = newMax;
-        this.UpdateOtherObjects();
-    }
-
-    _value;
-    // the actual value of the slider
-    get value() { return this._value; }
-    set value(newValue) {
-        // clamp the value to the min and max
-        newValue = Clamp(newValue, this.min, this.max)
-        this._value = newValue;
-        this.UpdateOtherObjects();
-        // console.log("Value updated to ", newValue)
-        this.FireListener("valueChanged")
-    }
+    step; // how many steps between min and max of slider 
+    min; // minimum value
+    max; // maximum value for slider
+    value; // the actual value of the slider
 
     // array of other game objects that correspond to this text container. These will need to be destroyed by game when this text container is destroyed
     otherGameObjects = [];
@@ -1993,10 +1945,10 @@ class Slider extends UIElement {
         this.RedrawBackground();
     }
 
-
-    _backgroundRadius = 0.25;
+    
+    _backgroundRadius = 0.25; 
     // Radius in game units (x pixels per unit) that is how round the slider is 
-    get backgroundRadius() { return this._backgroundRadius }
+    get backgroundRadius(){return this._backgroundRadius}
     set backgroundRadius(newRadius) {
         this._backgroundRadius = newRadius
         this.RedrawBackground();
@@ -2035,24 +1987,24 @@ class Slider extends UIElement {
      * @param {Number} min Smallest number of slider 
      * @param {Number} max Largest number of slider
      * @param {Number} step How much to increment by from movement between min and max
-     * @param {Number} value Starting value
      */
-    constructor(game, min, max, step, value) {
-
+    constructor(game, min, max, step) {
+        
 
         // create graphics, need to access the "this" variable which is after the super function and then I'll redraw the background graphics before render which won't be too costly
         let backgroundGraphics = new Graphics()
 
         super(backgroundGraphics, game);
 
-
+        this.min = min || 0
+        this.max = max || 10;
+        this.step = step || 0.5;
 
         // create the circle that'll follow slider
-        this.slidingBall = new Circle(0, 0, 0.1, game);
+        this.slidingBall = new Circle(0,0,0.1,game);
         this.slidingBall.physicsEnabled = false;
         this.otherGameObjects.push(this.slidingBall);
 
-        
 
         // Just do a default
         this.width = 3;
@@ -2069,124 +2021,33 @@ class Slider extends UIElement {
 
         // events
         this.backgroundGraphics.addEventListener("pointerdown", this.HandlePointerDown);
-        this.slidingBall.graphicsObject.addEventListener("pointerdown", this.HandlePointerDown);
-        this.game.AddEventListener("pointerUp", this.HandlePointerUpOnCanvas, this)
-        this.game.AddEventListener("pointerMove", this.HandlePointerMoveOnCanvas, this)
+        this.backgroundGraphics.addEventListener("pointerup", this.HandlePointerUp);
         // the others are automatically destroyed through the third poarameter
         this.eventsToDestroy.push([this.backgroundGraphics, "pointerdown", this.HandlePointerDown])
-        this.eventsToDestroy.push([this.slidingBall.graphicsObject, "pointerdown", this.HandlePointerDown])
-        
-        this.min = min || 0
-        this.max = max || 10;
-        this.step = step || 0.5;
-        this.value = value || min;
+        this.eventsToDestroy.push([this.backgroundGraphics, "pointerup", this.HandlePointerUp])
     }
 
-    HandlePointerMoveOnCanvas = (pointerEvent) => {
-        // skip if not focused
-        if (!this.isSliderFocused)
-            return;
-        // else, focused
-        // console.log("Pointer focused move")
-
-        // if minimum is smaller than max
-        if (this.min > this.max) {
-            let oldMin = this.min;
-            let oldMax = this.max;
-            // Just flip em
-            this.min = oldMax;
-            this.max = oldMin;
-        }
-        // if min and max are equal
-        else if (this.min == this.max) {
-            this.value = this.max; // Just set it to the only value it can be
-            this.UpdateOtherObjects(); // update circle
-            return; // skip
-        }
-
-        // get mouse pos
-        let pointerPos = this.game.pointerPos;
-
-        // now depending on the x of the pointer (clamped to left and right side of slider) we can use this to get the value compared to min and max
-
-        let sliderWidth = this.width; // used to determine the percentage of the slider that is selected
-
-        let sliderLeft = this.x;
-        let sliderRight = this.x + sliderWidth;
-
-        // clamp the pointer x to left and right side (if you are far right of slider you will be max and vice versa for min)
-        let pointerX = Clamp(pointerPos.x, sliderLeft, sliderRight);
-
-        // Now calculate the pointerX along sliderWidth
-        // first you have to move it to origin (- pos.x)
-        pointerX -= sliderLeft;
-
-        // a decimal representing how far along the slider (0 to 1) the x pos is
-        let sliderProgress = pointerX / sliderWidth;
-
-        // using this decimal we have to make it relative to min and max range
-        let newValue = (this.max - this.min) * sliderProgress
-        // console.log("newValue1",newValue)
-        // ok we have a raw value but remember there's steps so if you have 0 to 1 with 0.25 steps then you can only progress the slider 0.25 forwards or backwards
-
-
-        // round modulo up or down
-        
-        let valueModStep = newValue % this.step;
-        if(valueModStep >= this.step/2){
-            // console.log("+")
-            newValue += this.step-valueModStep; 
-        }else{
-            // console.log("-")
-            newValue -= valueModStep;
-        }
-        // console.log("valueModStep", valueModStep)
-        // console.log("newValue2",newValue)
-
-        // you also bring the min back into the equation
-        this.value = newValue + this.min;
+    HandlePointerDown = () => {
 
     }
 
-    HandlePointerDown = (pointerEvent) => {
-        this.isSliderFocused = true;
-        // just run the move func
-        this.HandlePointerMoveOnCanvas(pointerEvent)
-        // console.log("slider focused")
-    }
+    HandlePointerUp = () => {
 
-    HandlePointerUpOnCanvas = () => {
-        this.isSliderFocused = false;
-        // console.log("slider unfocused")
     }
 
     /**
      * Updates the position of other game objects tied to slider
      * Need to define function as anonymous ()=>{} this to preserve the "this" variable
      */
-    UpdateOtherObjects = () => {
-        let sliderDiameter = this.height * 1.5; // everywhere the sliders are usually bigger than the actual slider itself 
+    UpdateOtherObjects = () =>{
+        let sliderDiameter = this.height*1.5; // everywhere the sliders are usually bigger than the actual slider itself 
         // share height
-        this.slidingBall.height = sliderDiameter;
+        this.slidingBall.height = sliderDiameter; 
         // circle maintains a width:height ratio of 1:1
         this.slidingBall.width = sliderDiameter;
 
-        // centre ball
-        this.slidingBall.y = this.y + this.height / 2;
-        // Make x set to the value with respect to min, max etc.
-
-        // set value to origin (value-min) and then get it as a decimal (divide) out of range (max-min)
-        let factor = ((this.value-this.min)/ (this.max-this.min))
-
-        // console.log("this.value",this.value)
-        // console.log("this.min",this.min)
-        // console.log("this.max",this.max)
-        
-        // Then you times that deimcal by width to get the distance in pixels and then introduce the x back into it so it's not just relative to origin of x
-        this.slidingBall.x = this.x + factor*this.width
-
-        // console.log(factor)
-
+        this.slidingBall.x = this.position.x + this.width/2;
+        this.slidingBall.y = this.position.y + this.height/2;
     }
 
     RedrawBackground() {
@@ -2199,7 +2060,7 @@ class Slider extends UIElement {
 
 
         this.backgroundGraphics
-            .roundRect(0, -pixelHeight, pixelWidth, pixelHeight, this.backgroundRadius * this.game.pixelsPerUnit.x)
+            .roundRect (0, -pixelHeight, pixelWidth, pixelHeight,this.backgroundRadius*this.game.pixelsPerUnit.x)
             .fill(this._backgroundFill)
 
         // if has stroke, then process it

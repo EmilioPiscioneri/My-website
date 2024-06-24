@@ -214,10 +214,7 @@ let lineCountTextDefault = "Line count: "
 let gridVisibilityBtn;
 let gridIsVisible = false;
 var textInput;
-let ballPullStrengthSlider;
-let ballPullStrengthLabel;
-let ballPullStrengthDefaultText = "Ball pull strength: ";
-let ballsPullStrength = 5;
+let ballSpeedSlider;
 
 
 function BallsConnectToLineLoad(game) {
@@ -407,28 +404,28 @@ function BallsConnectToLineLoad(game) {
     // Do all the UI stuff
 
     // create new game text game object
-    lineCountTextLbl = new TextLabel(game, lineCountTextDefault, true, {
+    lineCountTextLbl = new TextLabel(game, lineCountTextDefault,true, {
         fontFamily: 'Arial',
         fontSize: 22,
         fill: "white",
-        stroke: {
-            color: "black",
+        stroke:{
+            color:"black",
             width: 2,
         },
         align: 'left',
-    });
-    lineCountTextLbl.position = new Point(0.25, canvasSize.height - lineCountTextLbl.height - 0.25) // top left
+    }); 
+    lineCountTextLbl.position = new Point(0.25,canvasSize.height-lineCountTextLbl.height-0.25) // top left
 
     // // add to scene
     game.AddGameObject(lineCountTextLbl);
 
-    gridVisibilityBtn = new Button(game, "Show grid", false);
+    gridVisibilityBtn = new Button(game,"Show grid", false);
     gridVisibilityBtn.fontSize = 22;
     gridVisibilityBtn.backgroundStroke = {
         color: "black",
         width: 2
     }
-    gridVisibilityBtn.position = new Point(0.25, canvasSize.height - lineCountTextLbl.height - 0.5 - gridVisibilityBtn.height)
+    gridVisibilityBtn.position =  new Point(0.25,canvasSize.height-lineCountTextLbl.height-0.5-gridVisibilityBtn.height)
     // document.btn = gridVisibilityBtn
 
     game.AddGameObject(gridVisibilityBtn)
@@ -437,35 +434,21 @@ function BallsConnectToLineLoad(game) {
 
     gameObjEventsToDestroy.push([gridVisibilityBtn, "pointerup", HandleGridVisibilityBtnUp])
 
-
-    textInput = new TextInput(game, null, false)
+     
+    textInput = new TextInput(game,null,false)
     textInput.backgroundStroke = {
-        color: "black",
+        color:"black",
         width: 2
     }
     textInput.fontSize = 22;
-    textInput.position = new Point(0.25, canvasSize.height - lineCountTextLbl.height - 0.75 - gridVisibilityBtn.height - textInput.height)
+    textInput.position =  new Point(0.25,canvasSize.height-lineCountTextLbl.height-0.75-gridVisibilityBtn.height-textInput.height)
 
     game.AddGameObject(textInput)
 
-    ballPullStrengthLabel = new TextLabel(game, ballPullStrengthDefaultText, false)
-    ballPullStrengthLabel.fontSize = 22;
-    ballPullStrengthLabel.position = new Point(0.25, canvasSize.height - lineCountTextLbl.height - 1 - gridVisibilityBtn.height - textInput.height - ballPullStrengthLabel.height)
+    ballSpeedSlider = new Slider(game, 1,5,0.25);
+    ballSpeedSlider.position = new Point(0.25,canvasSize.height-lineCountTextLbl.height-1-gridVisibilityBtn.height-textInput.height-ballSpeedSlider.height)
 
-    ballPullStrengthSlider = new Slider(game, 0,100, 0.1, ballsPullStrength);
-    ballPullStrengthSlider.position = new Point(0.25, canvasSize.height - lineCountTextLbl.height - 1.25 - gridVisibilityBtn.height - textInput.height - ballPullStrengthLabel.height - ballPullStrengthSlider.height)
-
-
-    function HandlePullStrengthChanged() {
-        ballPullStrengthLabel.text = ballPullStrengthDefaultText + ballPullStrengthSlider.value.toFixed(2);
-        ballsPullStrength = ballPullStrengthSlider.value;
-    }
-    HandlePullStrengthChanged();
-
-    ballPullStrengthSlider.AddEventListener("valueChanged", HandlePullStrengthChanged, ballPullStrengthLabel)
-
-    game.AddGameObject(ballPullStrengthSlider)
-    game.AddGameObject(ballPullStrengthLabel)
+    game.AddGameObject(ballSpeedSlider)
 
 
     // #endregion
@@ -473,26 +456,26 @@ function BallsConnectToLineLoad(game) {
 
 // #region UI event handling --
 
-function HandleGridVisibilityBtnUp() {
-    if (gridIsVisible) {
+function HandleGridVisibilityBtnUp(){
+    if(gridIsVisible){
         gridIsVisible = false
         HideGrid();
     }
-    else {
+    else{
         gridIsVisible = true
         ShowGrid();
     }
-
+    
 }
 
 // #endregion
 
-function ShowGrid() {
+function ShowGrid(){
     gridVisibilityBtn.text = "Hide grid"
 
 }
 
-function HideGrid() {
+function HideGrid(){
     gridVisibilityBtn.text = "Show grid"
 
 }
@@ -553,7 +536,7 @@ function DrawAllLines() {
         let ball1 = ballsInScene[ball1Index];
         let linesDrawn = 0;
         for (let ball2Index = 0; ball2Index < ballsInScene.length; ball2Index++) {
-            if (linesDrawn > maxLinesPerBall)
+            if(linesDrawn > maxLinesPerBall)
                 break; // go onto the next ball, skip this loop
 
             let ball2 = ballsInScene[ball2Index];
@@ -625,22 +608,23 @@ function DrawAllLines() {
 // For ball to mouse view my graph
 // https://www.desmos.com/calculator/dl8hdrfrmx 
 
+let ballsPullStrength = 5;
 let ballPullArea = 3; // distance to ball required to puul from the pointer
-function PullAllBallsToMouse(game) {
+function PullAllBallsToMouse(game){
     // get pointer pos from the game
     let pointerPos = game.pointerPos;
 
     // iterate through all balls
-    for (const ball of ballsInScene) {
+    for(const ball of ballsInScene){
         // lowkey the distance value (uses square root) isn't too laggy huh
         let distanceToMouse = VecMath.Distance(ball.position, pointerPos); // distance of ball to mouse
         // must be close enough to ball
-        if (distanceToMouse >= ballPullArea)
+        if(distanceToMouse >= ballPullArea)
             continue;
         // ball to mouse pos vector
         let ballToPointerVector = VecMath.SubtractVecs(pointerPos, ball.position)
         // The father away the ball is, the stronger the pull. You then times this by pull strength to make it more or less powerful
-        let newVelocity = VecMath.ScalarMultiplyVec(VecMath.ScalarMultiplyVec(ballToPointerVector, distanceToMouse), ballsPullStrength);
+        let newVelocity = VecMath.ScalarMultiplyVec(VecMath.ScalarMultiplyVec(ballToPointerVector, distanceToMouse),ballsPullStrength);
         // Get the difference from this velocity to the new velocity, 
         let deltaSec = game.ticker.deltaMS / 1000;
         let differenceVec = VecMath.SubtractVecs(newVelocity, ball.velocity);
@@ -653,23 +637,23 @@ function PullAllBallsToMouse(game) {
 
 let ballsPushStrength = 10;
 let ballPushArea = 3; // distance to ball required to push from the pointer
-function PushAllBallsAwayFromMouse(game) {
+function PushAllBallsAwayFromMouse(game){
     // get pointer pos from the game
     let pointerPos = game.pointerPos;
 
     // iterate through all balls
-    for (const ball of ballsInScene) {
+    for(const ball of ballsInScene){
         // lowkey the distance value (uses square root) isn't too laggy huh
 
         // But just use square distance because it will push more
         let distanceToMouse = VecMath.Distance(ball.position, pointerPos); // distance of ball to mouse
         // must be close enough to ball
-        if (distanceToMouse >= ballPushArea)
+        if(distanceToMouse >= ballPushArea)
             continue;
         // ball to mouse pos vector. You then inverse this (* -1) to get the push away effect
         let ballToPointerVector = VecMath.ScalarMultiplyVec(VecMath.SubtractVecs(pointerPos, ball.position), -1)
         // The closer the ball is, the stronger the push. You then times this by push strength to make it more or less powerful
-        let newVelocity = VecMath.ScalarMultiplyVec(VecMath.ScalarDivideVec(ballToPointerVector, distanceToMouse), ballsPushStrength);
+        let newVelocity = VecMath.ScalarMultiplyVec(VecMath.ScalarDivideVec(ballToPointerVector, distanceToMouse),ballsPushStrength);
         // Get the difference from this velocity to the new velocity, 
         let deltaSec = game.ticker.deltaMS / 1000;
         let differenceVec = VecMath.SubtractVecs(newVelocity, ball.velocity);
@@ -689,9 +673,9 @@ function ProcessUserInputs(game) {
     }
 }
 
-function UpdateText(game) {
-    if (lineCountTextLbl)
-        lineCountTextLbl.text = lineCountTextDefault + linesInScene.length
+function UpdateText(game){
+    if(lineCountTextLbl)
+        lineCountTextLbl.text = lineCountTextDefault+linesInScene.length
 }
 
 function BallsConnectToLineOnTick(game) {
