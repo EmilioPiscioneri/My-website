@@ -2242,7 +2242,7 @@ class Slider extends UIElement {
  * The background rect is changable through the stroke and fill properties
  * Change objecys under the layout through the add and remove GameObject functions. If you don't the layout won't updaye accordingly
  */
-class GameObjectLayout extends GameObject {
+class GameObjectLayout extends UIElement {
 
     ManagedObjects = []; // list of game objects under the layout that it will fit content to 
 
@@ -2289,7 +2289,7 @@ class GameObjectLayout extends GameObject {
     get margin(){return this._margin}
     set margin(newMargin){
         this._margin = newMargin
-        this.CalculateObjectPositions() // update the new positions of managed objects
+        this.CalculateObjectPositions() // update the new positions of managed objects wihc then calls other funcs
     }
 
 
@@ -2300,8 +2300,13 @@ class GameObjectLayout extends GameObject {
      */
     constructor(game){
         // create graphics, need to access the "this" variable which is after the super function and then I'll redraw the background graphics before render which won't be too costly
-        let backgroundGraphics = new Graphics().rect(0, 0, 100, 100)
-        super(backgroundGraphics, game, true, true)
+        let backgroundGraphics = new Graphics()
+        .rect(0, 0, 100, 100)
+        // .fill("white") // need to fill to update size?
+
+        // console.log(backgroundGraphics.width,backgroundGraphics.height)
+        super(backgroundGraphics, game)
+        this.physicsEnabled = false;
 
         // redraw the background now you have access to "this"
         this.RedrawBackground();
@@ -2322,6 +2327,7 @@ class GameObjectLayout extends GameObject {
 
     // Redraw the background graphic
     RedrawBackground(){
+        console.log("redrawing background")
         this.backgroundGraphics.clear();
         // redraw rect and fill with size
 
@@ -2349,7 +2355,7 @@ class GameObjectLayout extends GameObject {
      * @param {GameObject} objectToAdd self explanatory
      * @param {Boolean} addToGame whether or not to also add the game object to the main "Game" object for u 
      */
-    AddGameObject(objectToAdd, addToGame){
+    AddGameObject(objectToAdd, addToGame = true){
         if(addToGame)
             this.game.AddGameObject(objectToAdd)
         //update 

@@ -218,6 +218,7 @@ let ballPullStrengthSlider;
 let ballPullStrengthLabel;
 let ballPullStrengthDefaultText = "Ball pull strength: ";
 let ballsPullStrength = 5;
+let layout;
 
 
 function BallsConnectToLineLoad(game) {
@@ -464,8 +465,22 @@ function BallsConnectToLineLoad(game) {
 
     ballPullStrengthSlider.AddEventListener("valueChanged", HandlePullStrengthChanged, ballPullStrengthLabel)
 
-    game.AddGameObject(ballPullStrengthSlider)
-    game.AddGameObject(ballPullStrengthLabel)
+    // game.AddGameObject(ballPullStrengthSlider)
+    // game.AddGameObject(ballPullStrengthLabel)
+
+    layout = new GameObjectLayout(game);
+    document.layout = layout;
+
+    layout.position = new Point(0.5,8);
+    
+    layout.width = 5;
+    layout.height = 5
+
+    game.AddGameObject(layout)
+    
+    
+    layout.AddGameObject(ballPullStrengthLabel,true)
+    layout.AddGameObject(ballPullStrengthSlider, true)
 
 
     // #endregion
