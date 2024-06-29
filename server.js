@@ -275,7 +275,7 @@ let sitemapObject = generateSitemapObject();
 // - different middleware cos I'm lazy
 
 // make public folder, static
-app.use(express.static('public'))
+app.use(express.static(path.join(__dirname, 'public')))
 
 // parse json requests
 app.use(express.json())
