@@ -849,6 +849,7 @@ class Game extends EventSystem {
 // subclasses/abstract classes
 
 
+// #region GameObject Class
 
 /**
  * Currently, it is something that is renderable
@@ -1017,6 +1018,8 @@ class GameObject extends EventSystem {
         }
     }
 }
+
+// #endregion
 
 // The circle graphics context is shared for all circles. This presents recalcualting the vertices each time, maybe redunadant but eh
 let circleGraphicsContext = new PIXI.GraphicsContext()
@@ -2230,6 +2233,139 @@ class Slider extends UIElement {
         for (const eventDataToDestroy of eventDataToDestroy) {
             eventDataToDestroy[0].removeEventListener(eventDataToDestroy[1], eventDataToDestroy[2])
         }
+    }
+}
+
+/**
+ * Object Layout contains a background rect which will contain different game objects and order them in a horizontal or vertical way 
+ * It wil keep all content relative to the layout's position and then will fit to the combined size of the object's uinder it 
+ * The background rect is changable through the stroke and fill properties
+ * Change objecys under the layout through the add and remove GameObject functions. If you don't the layout won't updaye accordingly
+ */
+class GameObjectLayout extends GameObject {
+
+    ManagedObjects = []; // list of game objects under the layout that it will fit content to 
+
+    get backgroundGraphics(){return this.graphicsObject}
+    set backgroundGraphics(newObject){this.graphicsObject = newObject}
+
+    // In order to do colors (including stroke) you're going to need to redraw the rect each time there's a change
+
+    // when you set the stroke it'll update
+    _backgroundStroke;
+    get backgroundStroke() { return this._backgroundStroke }
+    set backgroundStroke(newStroke) {
+        this._backgroundStroke = newStroke;
+        this.RedrawBackground();
+    }
+
+    // when you set the fill it'll update
+    _backgroundFill = "#4f4f4f"
+    get backgroundFill() { return this._backgroundFill }
+    set backgroundFill(newFill) {
+        this._backgroundFill = newFill;
+        this.RedrawBackground();
+    }
+
+
+
+
+    // When width and height of layout changes, the background needs to be redrawn and the text needs to be repositioned
+    get height() { return super.height };
+    set height(newVal) {
+        super.height = newVal;
+        this.RedrawBackground();
+    };
+
+    get width() { return super.width };
+    set width(newVal) {
+        super.width = newVal
+        this.RedrawBackground();
+    };
+
+    _margin = new Padding(0.05,0.05,0.05,0.05)
+
+    // The margin is the space in game units between inner content and outer background graphics
+    get margin(){return this._margin}
+    set margin(newMargin){
+        this._margin = newMargin
+        this.CalculateObjectPositions() // update the new positions of managed objects
+    }
+
+
+    /**
+     * Creates a game object, make sure to add it to the game after creation
+     * @param {Game} game The current game the object is under
+     * 
+     */
+    constructor(game){
+        // create graphics, need to access the "this" variable which is after the super function and then I'll redraw the background graphics before render which won't be too costly
+        let backgroundGraphics = new Graphics().rect(0, 0, 100, 100)
+        super(backgroundGraphics, game, true, true)
+
+        // redraw the background now you have access to "this"
+        this.RedrawBackground();
+
+
+    }
+
+    // Call this whenever you need to recalcaulate the positions of the objects underneath the layout
+    // calls fit layout after
+    CalculateObjectPositions(){
+
+    }
+
+    // calls redraw background after
+    FitLayoutToObjects(){
+
+    }
+
+    // Redraw the background graphic
+    RedrawBackground(){
+        this.backgroundGraphics.clear();
+        // redraw rect and fill with size
+
+        let pixelWidth = this._width * this.game.pixelsPerUnit.x;
+        let pixelHeight = this._height * this.game.pixelsPerUnit.y
+
+
+        this.backgroundGraphics
+            .rect(0, -pixelHeight, pixelWidth, pixelHeight)
+            .fill(this._backgroundFill)
+
+        // if has stroke, then process it
+        if (this._backgroundStroke) {
+            this.backgroundGraphics
+                .stroke(this._backgroundStroke)
+        }
+
+        this.backgroundGraphics.scale = new PIXI.Point(1, 1); // For some reason the scale gets changed?? PIXI.JS must have a bug idk had me scratching my head
+
+        this.backgroundGraphics.interactive = true; // set back to true
+    }
+
+    /**
+     * add object to layout
+     * @param {GameObject} objectToAdd self explanatory
+     * @param {Boolean} addToGame whether or not to also add the game object to the main "Game" object for u 
+     */
+    AddGameObject(objectToAdd, addToGame){
+        if(addToGame)
+            this.game.AddGameObject(objectToAdd)
+        //update 
+        this.CalculateObjectPositions()
+    }
+
+    // remove object from layout
+    RemoveGameObject(){
+
+    }
+
+    Destruct(){
+        // call the parent obj destruct func
+        super.Destruct()
+
+        // 
     }
 }
 
