@@ -405,6 +405,9 @@ function BallsConnectToLineLoad(game) {
     pixiEventsToDestroy.push([game.pixiApplication.canvas, "pointerdown", HandlePointerDown])
     pixiEventsToDestroy.push([game.pixiApplication.canvas, "pointerup", HandlePointerUp])
 
+    // disable context menu on canvas for ball push with right click
+    game.preventContextMenu = true
+
     // Do all the UI stuff
 
     // create new game text game object
@@ -418,10 +421,10 @@ function BallsConnectToLineLoad(game) {
         },
         align: 'left',
     });
-    lineCountTextLbl.position = new Point(0.25, canvasSize.height - lineCountTextLbl.height - 0.25) // top left
+    // lineCountTextLbl.position = new Point(0.25, canvasSize.height - lineCountTextLbl.height - 0.25) // top left
 
     // // add to scene
-    game.AddGameObject(lineCountTextLbl);
+    // game.AddGameObject(lineCountTextLbl);
 
     gridVisibilityBtn = new Button(game, "Show grid", false);
     gridVisibilityBtn.fontSize = 22;
@@ -429,10 +432,10 @@ function BallsConnectToLineLoad(game) {
         color: "black",
         width: 2
     }
-    gridVisibilityBtn.position = new Point(0.25, canvasSize.height - lineCountTextLbl.height - 0.5 - gridVisibilityBtn.height)
+    // gridVisibilityBtn.position = new Point(0.25, canvasSize.height - lineCountTextLbl.height - 0.5 - gridVisibilityBtn.height)
     // document.btn = gridVisibilityBtn
 
-    game.AddGameObject(gridVisibilityBtn)
+    // game.AddGameObject(gridVisibilityBtn)
 
     gridVisibilityBtn.AddEventListener("pointerUp", HandleGridVisibilityBtnUp)
 
@@ -445,16 +448,14 @@ function BallsConnectToLineLoad(game) {
         width: 2
     }
     textInput.fontSize = 22;
-    textInput.position = new Point(0.25, canvasSize.height - lineCountTextLbl.height - 0.75 - gridVisibilityBtn.height - textInput.height)
+    // textInput.position = new Point(0.25, canvasSize.height - lineCountTextLbl.height - 0.75 - gridVisibilityBtn.height - textInput.height)
 
     game.AddGameObject(textInput)
 
     ballPullStrengthLabel = new TextLabel(game, ballPullStrengthDefaultText, false)
     ballPullStrengthLabel.fontSize = 22;
-    ballPullStrengthLabel.position = new Point(0.25, canvasSize.height - lineCountTextLbl.height - 1 - gridVisibilityBtn.height - textInput.height - ballPullStrengthLabel.height)
-
+    
     ballPullStrengthSlider = new Slider(game, 0,100, 0.1, ballsPullStrength);
-    ballPullStrengthSlider.position = new Point(0.25, canvasSize.height - lineCountTextLbl.height - 1.25 - gridVisibilityBtn.height - textInput.height - ballPullStrengthLabel.height - ballPullStrengthSlider.height)
 
 
     function HandlePullStrengthChanged() {
@@ -471,16 +472,24 @@ function BallsConnectToLineLoad(game) {
     layout = new GameObjectLayout(game);
     document.layout = layout;
 
-    layout.position = new Point(0.5,8);
+    layout.position = new Point(0,canvasSize.height);
     
     layout.width = 5;
     layout.height = 5
 
+    // game.AddGameObject(layout)
+    
+    
+    // game.AddGameObject(ballPullStrengthLabel)
+    // game.AddGameObject(ballPullStrengthSlider)
+
     game.AddGameObject(layout)
-    
-    
-    layout.AddGameObject(ballPullStrengthLabel,true)
-    layout.AddGameObject(ballPullStrengthSlider, true)
+
+    // layout.AddGameObject(lineCountTextLbl)
+    layout.AddGameObject(gridVisibilityBtn)
+    layout.AddGameObject(textInput)
+    layout.AddGameObject(ballPullStrengthLabel)
+    layout.AddGameObject(ballPullStrengthSlider)
 
 
     // #endregion

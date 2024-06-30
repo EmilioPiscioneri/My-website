@@ -281,6 +281,8 @@ class Game extends EventSystem {
     _pixelsPerUnit = new PIXI.Point(50, 50); // each game unit is a certain amount of pixels in x and y 
     initialised = false; // whether the pixi application has been initialised
 
+    preventContextMenu = false; // whether or not to prevent the context menu from showing up on right click of canvas
+
     // each game unit is a certain amount of pixels in x and y 
     get pixelsPerUnit() { return this._pixelsPerUnit };
     set pixelsPerUnit(newValue) {
@@ -343,6 +345,11 @@ class Game extends EventSystem {
         this.FireListener("pointerDown", pointerEvent)
     }
 
+    HandleContextMenu = (event) =>{
+        if(this.preventContextMenu)
+            event.preventDefault()
+    }
+
     Initialise(graphicsContainer) {
         this.graphicsContainer = graphicsContainer;
 
@@ -361,6 +368,7 @@ class Game extends EventSystem {
                 this.pixiApplication.canvas.addEventListener("pointermove", this.HandlePointerMove)
                 this.pixiApplication.canvas.addEventListener("pointerdown", this.HandlePointerDown)
                 this.pixiApplication.canvas.addEventListener("pointerup", this.HandlePointerUp)
+                this.pixiApplication.canvas.addEventListener("contextmenu", this.HandleContextMenu)
                 graphicsContainer.addEventListener("keydown", this.HandleKeyDown)
                 graphicsContainer.addEventListener("keyup", this.HandleKeyUp)
                 this.initialised = true;
@@ -2055,7 +2063,7 @@ class Slider extends UIElement {
         this.slidingBall.physicsEnabled = false;
         this.otherGameObjects.push(this.slidingBall);
 
-        
+
 
         // Just do a default
         this.width = 3;
@@ -2078,7 +2086,7 @@ class Slider extends UIElement {
         // the others are automatically destroyed through the third poarameter
         this.eventsToDestroy.push([this.backgroundGraphics, "pointerdown", this.HandlePointerDown])
         this.eventsToDestroy.push([this.slidingBall.graphicsObject, "pointerdown", this.HandlePointerDown])
-        
+
         this.min = min || 0
         this.max = max || 10;
         this.step = step || 0.5;
@@ -2134,12 +2142,12 @@ class Slider extends UIElement {
 
 
         // round modulo up or down
-        
+
         let valueModStep = newValue % this.step;
-        if(valueModStep >= this.step/2){
+        if (valueModStep >= this.step / 2) {
             // console.log("+")
-            newValue += this.step-valueModStep; 
-        }else{
+            newValue += this.step - valueModStep;
+        } else {
             // console.log("-")
             newValue -= valueModStep;
         }
@@ -2179,14 +2187,14 @@ class Slider extends UIElement {
         // Make x set to the value with respect to min, max etc.
 
         // set value to origin (value-min) and then get it as a decimal (divide) out of range (max-min)
-        let factor = ((this.value-this.min)/ (this.max-this.min))
+        let factor = ((this.value - this.min) / (this.max - this.min))
 
         // console.log("this.value",this.value)
         // console.log("this.min",this.min)
         // console.log("this.max",this.max)
-        
+
         // Then you times that deimcal by width to get the distance in pixels and then introduce the x back into it so it's not just relative to origin of x
-        this.slidingBall.x = this.x + factor*this.width
+        this.slidingBall.x = this.x + factor * this.width
 
         // console.log(factor)
 
@@ -2246,8 +2254,11 @@ class GameObjectLayout extends UIElement {
 
     ManagedObjects = []; // list of game objects under the layout that it will fit content to 
 
-    get backgroundGraphics(){return this.graphicsObject}
-    set backgroundGraphics(newObject){this.graphicsObject = newObject}
+    // In Game units, dependant on vertical or horizontal layout
+    spaceBetweenObjects = 0.25;
+
+    get backgroundGraphics() { return this.graphicsObject }
+    set backgroundGraphics(newObject) { this.graphicsObject = newObject }
 
     // In order to do colors (including stroke) you're going to need to redraw the rect each time there's a change
 
@@ -2283,13 +2294,27 @@ class GameObjectLayout extends UIElement {
         this.RedrawBackground();
     };
 
-    _margin = new Padding(0.05,0.05,0.05,0.05)
+    _margin = new Padding(0.25, 0.25, 0.25, 0.25)
+    // _margin = new Padding(0.5, 0.5, 0.5, 0.5)
 
     // The margin is the space in game units between inner content and outer background graphics
-    get margin(){return this._margin}
-    set margin(newMargin){
+    get margin() { return this._margin }
+    set margin(newMargin) {
         this._margin = newMargin
         this.CalculateObjectPositions() // update the new positions of managed objects wihc then calls other funcs
+    }
+
+    get position() { return super.position }
+    set position(newPos) {
+        super.position = newPos
+        this.CalculateObjectPositions() // update
+    }
+
+    get zIndex() { return this.backgroundGraphics.zIndex }
+    set zIndex(newVal) {
+        // text should be 1 zindex above background
+        this.backgroundGraphics.zIndex = newVal;
+        
     }
 
 
@@ -2298,15 +2323,15 @@ class GameObjectLayout extends UIElement {
      * @param {Game} game The current game the object is under
      * 
      */
-    constructor(game){
+    constructor(game) {
         // create graphics, need to access the "this" variable which is after the super function and then I'll redraw the background graphics before render which won't be too costly
         let backgroundGraphics = new Graphics()
-        .rect(0, 0, 100, 100)
+            .rect(0, 0, 100, 100)
         // .fill("white") // need to fill to update size?
 
         // console.log(backgroundGraphics.width,backgroundGraphics.height)
         super(backgroundGraphics, game)
-        this.physicsEnabled = false;
+        // this.physicsEnabled = false;
 
         // redraw the background now you have access to "this"
         this.RedrawBackground();
@@ -2314,19 +2339,105 @@ class GameObjectLayout extends UIElement {
 
     }
 
+    // updates the z index of all objects
+    UpdateObjectsZIndex(){
+        let layoutzIndex = this.zIndex;
+        for(let objIndex = 0; objIndex < this.ManagedObjects.length; objIndex++){
+            let gameObj = this.ManagedObjects[objIndex]
+            // gameObj.graphicsObject.zIndex = newVal + objIndex + 1; // + 1 to make it 1 based indexing
+            gameObj.graphicsObject.zIndex = layoutzIndex + 1; // jsut make it 1 higher than layout background
+        }
+
+    }
+
+
     // Call this whenever you need to recalcaulate the positions of the objects underneath the layout
     // calls fit layout after
-    CalculateObjectPositions(){
+    CalculateObjectPositions =()=> {
+        let totalObjects = this.ManagedObjects.length;
+
+        // Vertical down positioning
+
+        // going to have a start pos. One axis will be static while the other one will change with each iterated object
+        // This will change as objects are iterated
+        let startPos = new Point(this.position.x + this.margin.left, this.position.y);
+
+        startPos.y -= this.margin.top
+
+        // loop thru managed objects and change position according to previous ones
+        for (let objIndex = 0; objIndex < totalObjects; objIndex++) {
+            let iteratedObj = this.ManagedObjects[objIndex]
+
+            // for vertical down, if this is first iteration, move down by object height and margin top
+            // if (objIndex == 0)
+            //     startPos.y -= (iteratedObj.height + this.margin.top)
+
+            startPos.y -= iteratedObj.height
+
+            if (!iteratedObj) {
+                // an iterated obj is invalid, just ignore
+                console.warn("Found invalid object under layout managed objects:", this.ManagedObjects)
+                continue;
+            }
+
+            // console.log(iteratedObj, startPos)
+            iteratedObj.position = startPos;
+
+            // setup next loop
+            // startPos.y -= (iteratedObj.height + this.spaceBetweenObjects);
+            startPos.y -= this.spaceBetweenObjects;
+        }
+
+        this.FitLayoutToObjects();
+    }
+
+    // gets the size of inner content
+    GetManagedSize=()=> {
+        // if no objects under layout just return nothing
+        if (this.ManagedObjects.length == 0)
+            return new Point()
+        // for y down
+
+        // for x just get largest width
+        let xSize = this.ManagedObjects[0].width
+        for (const obj of this.ManagedObjects) {
+            if (obj.width > xSize)
+                xSize = obj.width
+        }
+
+        // for y it is the sum of all heights + space between objects *objects length-1
+        let totalHeight = 0;
+        for (const obj of this.ManagedObjects) {
+            totalHeight += obj.height
+        }
+
+        let ySize = totalHeight + this.spaceBetweenObjects * (this.ManagedObjects.length - 1)
+
+        console.log(this.ManagedObjects.length)
+        console.log(this.spaceBetweenObjects * (this.ManagedObjects.length - 1))
+
+        // return size as point
+        return new Point(xSize, ySize)
+
 
     }
 
     // calls redraw background after
-    FitLayoutToObjects(){
+    FitLayoutToObjects = () => {
 
+        // Calculate bounds of objects, I decided to do it in this function because it is just easier
+        let innerSize = this.GetManagedSize()
+        console.log("innerSize", innerSize)
+
+        // let newWidth = this.margin.left + innerSize.width + this.margin.right;
+        // let newHeight = this.margin.bottom + innerSize.height + this.margin.top;
+
+        this.width = this.margin.left + innerSize.x + this.margin.right;
+        this.height = this.margin.bottom + innerSize.y + this.margin.top;
     }
 
     // Redraw the background graphic
-    RedrawBackground(){
+    RedrawBackground() {
         console.log("redrawing background")
         this.backgroundGraphics.clear();
         // redraw rect and fill with size
@@ -2334,9 +2445,14 @@ class GameObjectLayout extends UIElement {
         let pixelWidth = this._width * this.game.pixelsPerUnit.x;
         let pixelHeight = this._height * this.game.pixelsPerUnit.y
 
+        // vertical up
+        // this.backgroundGraphics
+        //     .rect(0, -pixelHeight, pixelWidth, pixelHeight)
+        //     .fill(this._backgroundFill)
 
+        // vertical down
         this.backgroundGraphics
-            .rect(0, -pixelHeight, pixelWidth, pixelHeight)
+            .rect(0, 0, pixelWidth, pixelHeight)
             .fill(this._backgroundFill)
 
         // if has stroke, then process it
@@ -2355,19 +2471,31 @@ class GameObjectLayout extends UIElement {
      * @param {GameObject} objectToAdd self explanatory
      * @param {Boolean} addToGame whether or not to also add the game object to the main "Game" object for u 
      */
-    AddGameObject(objectToAdd, addToGame = true){
-        if(addToGame)
+    AddGameObject(objectToAdd, addToGame = true) {
+        if (!objectToAdd)
+            throw new Error("Tried to add a game object to layout that isn't valid")
+
+        if (addToGame)
             this.game.AddGameObject(objectToAdd)
+
+        // For vertical down
+        objectToAdd.AddEventListener("widthChanged", this.FitLayoutToObjects, this) // make sure content fits
+        objectToAdd.AddEventListener("heightChanged", this.CalculateObjectPositions, this) // when height changes, so does the positions of each object
+
+        this.ManagedObjects.push(objectToAdd)
         //update 
         this.CalculateObjectPositions()
+        this.UpdateObjectsZIndex();
     }
 
     // remove object from layout
-    RemoveGameObject(){
-
+    RemoveGameObject(objectToRemove) {
+        // For vertical down
+        objectToAdd.RemoveEventListener("widthChanged", this.FitLayoutToObjects)
+        objectToAdd.RemoveEventListener("heightChanged", this.CalculateObjectPositions)
     }
 
-    Destruct(){
+    Destruct() {
         // call the parent obj destruct func
         super.Destruct()
 
@@ -2637,7 +2765,6 @@ class AABB extends Collider {
             bottom: this.position.y,
             top: this.position.y + this.height
         }
-
     }
 
 
