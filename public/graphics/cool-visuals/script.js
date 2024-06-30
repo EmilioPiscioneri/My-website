@@ -214,10 +214,16 @@ let lineCountTextDefault = "Line count: "
 let gridVisibilityBtn;
 let gridIsVisible = false;
 var textInput;
+// pull
 let ballPullStrengthSlider;
 let ballPullStrengthLabel;
 let ballPullStrengthDefaultText = "Ball pull strength: ";
 let ballsPullStrength = 5;
+// push
+let ballPushStrengthSlider
+let ballPushStrengthLabel;
+let ballPushStrengthDefaultText = "Ball push strength: ";
+let ballsPushStrength = 3;
 let layout;
 
 
@@ -466,6 +472,22 @@ function BallsConnectToLineLoad(game) {
 
     ballPullStrengthSlider.AddEventListener("valueChanged", HandlePullStrengthChanged, ballPullStrengthLabel)
 
+    // --
+
+    ballPushStrengthLabel = new TextLabel(game, ballPushStrengthDefaultText, false)
+    ballPushStrengthLabel.fontSize = 22;
+    
+    ballPushStrengthSlider = new Slider(game, 0,100, 0.1, ballsPushStrength);
+
+
+    function HandlePushStrengthChanged() {
+        ballPushStrengthLabel.text = ballPushStrengthDefaultText + ballPushStrengthSlider.value.toFixed(2);
+        ballsPushStrength = ballPushStrengthSlider.value;
+    }
+    HandlePushStrengthChanged();
+
+    ballPushStrengthSlider.AddEventListener("valueChanged", HandlePushStrengthChanged, ballPushStrengthLabel)
+
     // game.AddGameObject(ballPullStrengthSlider)
     // game.AddGameObject(ballPullStrengthLabel)
 
@@ -490,6 +512,8 @@ function BallsConnectToLineLoad(game) {
     layout.AddGameObject(textInput)
     layout.AddGameObject(ballPullStrengthLabel)
     layout.AddGameObject(ballPullStrengthSlider)
+    layout.AddGameObject(ballPushStrengthLabel)
+    layout.AddGameObject(ballPushStrengthSlider)
 
 
     // #endregion
@@ -675,7 +699,7 @@ function PullAllBallsToMouse(game) {
     }
 }
 
-let ballsPushStrength = 10;
+// let ballsPushStrength = 10;
 let ballPushArea = 3; // distance to ball required to push from the pointer
 function PushAllBallsAwayFromMouse(game) {
     // get pointer pos from the game
