@@ -464,7 +464,7 @@ function BallsConnectToLineLoad(game) {
     textInput.fontSize = 22;
     // textInput.position = new Point(0.25, canvasSize.height - lineCountTextLbl.height - 0.75 - gridVisibilityBtn.height - textInput.height)
 
-    game.AddGameObject(textInput)
+    // game.AddGameObject(textInput)
 
     ballPullStrengthLabel = new TextLabel(game, ballPullStrengthDefaultText, false)
     ballPullStrengthLabel.fontSize = 22;
@@ -515,13 +515,21 @@ function BallsConnectToLineLoad(game) {
 
     game.AddGameObject(uiLayout)
 
-    // layout.AddGameObject(lineCountTextLbl)
-    uiLayout.AddGameObject(gridVisibilityBtn)
-    uiLayout.AddGameObject(textInput)
-    uiLayout.AddGameObject(ballPullStrengthLabel)
-    uiLayout.AddGameObject(ballPullStrengthSlider)
-    uiLayout.AddGameObject(ballPushStrengthLabel)
-    uiLayout.AddGameObject(ballPushStrengthSlider)
+    // second param is add as game object to the Game as well as layout
+    uiLayout.AddGameObject(lineCountTextLbl, true)
+
+    // So we have two text container inherited objects and whenever they are under the layout and their text changes it fitsredraw background which messes up its positioning
+    // When under the Game it does not do that. Confusing
+
+    uiLayout.AddGameObject(gridVisibilityBtn, true)
+    // game.AddGameObject(gridVisibilityBtn)
+    gridVisibilityBtn.position = new Point(4,4)
+    // uiLayout.AddGameObject(textInput, true)
+    uiLayout.AddGameObject(ballPullStrengthLabel, true)
+    uiLayout.AddGameObject(ballPullStrengthSlider, true)
+    uiLayout.AddGameObject(ballPushStrengthLabel, true)
+    uiLayout.AddGameObject(ballPushStrengthSlider, true)
+
 
 
     // #endregion

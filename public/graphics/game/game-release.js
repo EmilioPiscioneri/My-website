@@ -1404,7 +1404,8 @@ class TextContainer extends UIElement {
         this.width = textLabelObject.width + this.padding.left + this.padding.right;
         this.height = textLabelObject.height + this.padding.bottom + this.padding.top;
 
-        this.RedrawBackground();
+        // background is already redrawn when width and height r set
+        // this.RedrawBackground(); // 
 
 
         // -- initialise values --
@@ -1478,8 +1479,11 @@ class TextContainer extends UIElement {
     }
 
     RedrawBackground() {
-        // console.log("_---")
-        // console.log("Pre-size", this.backgroundGraphics.width,this.backgroundGraphics.height)
+        console.log("_---")
+        console.log("Pre-size", this.backgroundGraphics.width,this.backgroundGraphics.height)
+        console.log("Pre-pos", this.backgroundGraphics.x,this.backgroundGraphics.y)
+        // let oldX = this.backgroundGraphics.x;
+        // let oldY = this.backgroundGraphics.y;
         // first clear the current visual
         this.backgroundGraphics.clear();
         // redraw rect and fill with size
@@ -1487,7 +1491,7 @@ class TextContainer extends UIElement {
         // console.log("Redrawing", this._width, this._height)
         let pixelWidth = this._width * this.game.pixelsPerUnit.x;
         let pixelHeight = this._height * this.game.pixelsPerUnit.y
-        // console.log("Pixel", pixelWidth, pixelHeight)
+        console.log("Pixel", pixelWidth, pixelHeight)
 
 
         this.backgroundGraphics
@@ -1504,7 +1508,13 @@ class TextContainer extends UIElement {
 
         this.backgroundGraphics.interactive = true; // set back to true
 
-        // console.log("Post-size", this.backgroundGraphics.width,this.backgroundGraphics.height)
+        console.log("Post-size", this.backgroundGraphics.width,this.backgroundGraphics.height)
+        console.log("Post-pos", this.backgroundGraphics.x,this.backgroundGraphics.y)
+        console.log(this.backgroundGraphics)
+
+        // hacky fix 
+        // this.backgroundGraphics.x = oldX;
+        // this.backgroundGraphics.y = oldY;
 
         // After redrawn, update position of background
         // super.position = super.position
@@ -2413,8 +2423,8 @@ class GameObjectLayout extends UIElement {
 
         let ySize = totalHeight + this.spaceBetweenObjects * (this.ManagedObjects.length - 1)
 
-        console.log(this.ManagedObjects.length)
-        console.log(this.spaceBetweenObjects * (this.ManagedObjects.length - 1))
+        // console.log(this.ManagedObjects.length)
+        // console.log(this.spaceBetweenObjects * (this.ManagedObjects.length - 1))
 
         // return size as point
         return new Point(xSize, ySize)
@@ -2427,7 +2437,7 @@ class GameObjectLayout extends UIElement {
 
         // Calculate bounds of objects, I decided to do it in this function because it is just easier
         let innerSize = this.GetManagedSize()
-        console.log("innerSize", innerSize)
+        // console.log("innerSize", innerSize)
 
         // let newWidth = this.margin.left + innerSize.width + this.margin.right;
         // let newHeight = this.margin.bottom + innerSize.height + this.margin.top;
@@ -2474,7 +2484,7 @@ class GameObjectLayout extends UIElement {
 
     // Redraw the background graphic
     RedrawBackground() {
-        console.log("redrawing background")
+        // console.log("redrawing background")
         this.backgroundGraphics.clear();
         // redraw rect and fill with size
 
@@ -2515,7 +2525,9 @@ class GameObjectLayout extends UIElement {
             this.game.AddGameObject(objectToAdd)
 
         // For vertical down
-        objectToAdd.AddEventListener("widthChanged", this.FitLayoutToObjects, this) // make sure content fits
+
+        //on change make sure content fits accordingly
+        objectToAdd.AddEventListener("widthChanged", this.CalculateObjectPositions, this) // make sure content fits
         objectToAdd.AddEventListener("heightChanged", this.CalculateObjectPositions, this) // when height changes, so does the positions of each object
 
         this.ManagedObjects.push(objectToAdd)
@@ -2527,7 +2539,7 @@ class GameObjectLayout extends UIElement {
     // remove object from layout
     RemoveGameObject(objectToRemove) {
         // For vertical down
-        objectToAdd.RemoveEventListener("widthChanged", this.FitLayoutToObjects)
+        objectToAdd.RemoveEventListener("widthChanged", this.CalculateObjectPositions)
         objectToAdd.RemoveEventListener("heightChanged", this.CalculateObjectPositions)
     }
 
