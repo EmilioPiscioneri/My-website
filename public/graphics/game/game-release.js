@@ -2436,6 +2436,42 @@ class GameObjectLayout extends UIElement {
         this.height = this.margin.bottom + innerSize.y + this.margin.top;
     }
 
+    
+    /**
+     * Gets whether or not the layout contains the point inclusive of all objects underneath and layout edges
+     * @param {PIXI.Point} pointToCheck The point to check in the bounds of 
+     * @returns {Boolean} Whether or not the layout contains the point
+     */
+    ContainsPoint(pointToCheck){
+        // console.log("pointToCheck",pointToCheck)
+
+        // let layoutBounds = {
+        //     left: this.x,
+        //     right: this.x + this.width,
+        //     bottom: this.y,
+        //     top: this.y+this.height
+        // }
+
+        // for vertical down 
+        let layoutBounds = {
+            left: this.x,
+            right: this.x + this.width,
+            // bottom and top is shifted down by height
+            bottom: this.y-this.height, 
+            top: this.y
+        }
+
+        
+        return (
+            // in between x bounds
+            // this.left <= point.x <= this.right
+            layoutBounds.left <= pointToCheck.x && pointToCheck.x <= layoutBounds.right  
+            // and in between y bounds
+            // this.bottom <= point.y <= this.top
+            && layoutBounds.bottom <= pointToCheck.y && pointToCheck.y <= layoutBounds.top)
+
+    }
+
     // Redraw the background graphic
     RedrawBackground() {
         console.log("redrawing background")

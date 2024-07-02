@@ -224,7 +224,7 @@ let ballPushStrengthSlider
 let ballPushStrengthLabel;
 let ballPushStrengthDefaultText = "Ball push strength: ";
 let ballsPushStrength = 3;
-let layout;
+let uiLayout;
 
 
 function BallsConnectToLineLoad(game) {
@@ -383,6 +383,10 @@ function BallsConnectToLineLoad(game) {
     // mm balls
     GenerateBalls(gridSegments);
 
+    // Define layout where all UI game objects will be underneath to make them look ordered
+    uiLayout = new GameObjectLayout(game);
+    document.layout = uiLayout;
+
     // handle pointer down and up
 
     // Pointer.button 0 is left mouse, 1 is middle mouse, 2 is right mouse 
@@ -390,10 +394,14 @@ function BallsConnectToLineLoad(game) {
     // Also this will fire even if buttons are pressed
     function HandlePointerDown(pointerEvent) {
         // console.log(pointerEvent)
-        if (pointerEvent.button == 0) // left
-            leftPointerDown = true;
-        else if (pointerEvent.button == 2) // right
-            rightPointerDown = true;
+        
+        // if didn't click down on ui layout (
+        if (!uiLayout.ContainsPoint(game.pointerPos)){
+            if (pointerEvent.button == 0) // left
+                leftPointerDown = true;
+            else if (pointerEvent.button == 2) // right
+                rightPointerDown = true;
+        }
 
     }
     function HandlePointerUp(pointerEvent) {
@@ -460,8 +468,8 @@ function BallsConnectToLineLoad(game) {
 
     ballPullStrengthLabel = new TextLabel(game, ballPullStrengthDefaultText, false)
     ballPullStrengthLabel.fontSize = 22;
-    
-    ballPullStrengthSlider = new Slider(game, 0,100, 0.1, ballsPullStrength);
+
+    ballPullStrengthSlider = new Slider(game, 0, 100, 0.1, ballsPullStrength);
 
 
     function HandlePullStrengthChanged() {
@@ -476,8 +484,8 @@ function BallsConnectToLineLoad(game) {
 
     ballPushStrengthLabel = new TextLabel(game, ballPushStrengthDefaultText, false)
     ballPushStrengthLabel.fontSize = 22;
-    
-    ballPushStrengthSlider = new Slider(game, 0,100, 0.1, ballsPushStrength);
+
+    ballPushStrengthSlider = new Slider(game, 0, 100, 0.1, ballsPushStrength);
 
 
     function HandlePushStrengthChanged() {
@@ -491,29 +499,29 @@ function BallsConnectToLineLoad(game) {
     // game.AddGameObject(ballPullStrengthSlider)
     // game.AddGameObject(ballPullStrengthLabel)
 
-    layout = new GameObjectLayout(game);
-    document.layout = layout;
 
-    layout.position = new Point(0,canvasSize.height);
-    
-    layout.width = 5;
-    layout.height = 5
+    // Setup layout (defined earlier)
+
+    uiLayout.position = new Point(0, canvasSize.height);
+
+    uiLayout.width = 5;
+    uiLayout.height = 5
 
     // game.AddGameObject(layout)
-    
-    
+
+
     // game.AddGameObject(ballPullStrengthLabel)
     // game.AddGameObject(ballPullStrengthSlider)
 
-    game.AddGameObject(layout)
+    game.AddGameObject(uiLayout)
 
     // layout.AddGameObject(lineCountTextLbl)
-    layout.AddGameObject(gridVisibilityBtn)
-    layout.AddGameObject(textInput)
-    layout.AddGameObject(ballPullStrengthLabel)
-    layout.AddGameObject(ballPullStrengthSlider)
-    layout.AddGameObject(ballPushStrengthLabel)
-    layout.AddGameObject(ballPushStrengthSlider)
+    uiLayout.AddGameObject(gridVisibilityBtn)
+    uiLayout.AddGameObject(textInput)
+    uiLayout.AddGameObject(ballPullStrengthLabel)
+    uiLayout.AddGameObject(ballPullStrengthSlider)
+    uiLayout.AddGameObject(ballPushStrengthLabel)
+    uiLayout.AddGameObject(ballPushStrengthSlider)
 
 
     // #endregion
