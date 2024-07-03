@@ -954,9 +954,6 @@ class GameObject extends EventSystem {
     set width(newWidth) {
         this._width = newWidth;
         if (this.shareSize){
-            if(this.name =="grid visibility"){
-                console.log(1)
-            }
             this.graphicsObject.width = newWidth * this.game.pixelsPerUnit.x;// convert units to pixels
         }
         this.FireListener("widthChanged") // fire changed event
@@ -969,9 +966,6 @@ class GameObject extends EventSystem {
     set height(newHeight) {
         this._height = newHeight;
         if (this.shareSize){
-            if(this.name =="grid visibility"){
-                console.log(2)
-            }
             this.graphicsObject.height = newHeight * this.game.pixelsPerUnit.y;// convert units to pixels
         }
         if (this.sharePosition)
@@ -1113,13 +1107,13 @@ class UIElement extends GameObject {
         return this._position
     }
     set position(newPosition) {
-        if(this.name == "grid visibility"){
-            console.log(";;;---///")
-            console.log("name", this.name)
-            console.log("Changing to units pos",newPosition.x,newPosition.y)
-            console.log("Pre-pos (.x,.y)", this.backgroundGraphics.x, this.backgroundGraphics.y)
-            console.log("Pre-pos (.position)", this.backgroundGraphics.position.x, this.backgroundGraphics.position.y)
-        }
+        // if(this.name == "grid visibility"){
+        //     console.log(";;;---///")
+        //     console.log("name", this.name)
+        //     console.log("Changing to units pos",newPosition.x,newPosition.y)
+        //     console.log("Pre-pos (.x,.y)", this.backgroundGraphics.x, this.backgroundGraphics.y)
+        //     console.log("Pre-pos (.position)", this.backgroundGraphics.position.x, this.backgroundGraphics.position.y)
+        // }
 
 
         
@@ -1130,10 +1124,10 @@ class UIElement extends GameObject {
         this.graphicsObject.position = pixelPos;
         this.FireListener("positionChanged") // fire changed event
 
-        if(this.name == "grid visibility"){
-            console.log("Post-pos (.x,.y)", this.backgroundGraphics.x, this.backgroundGraphics.y)
-            console.log("Post-pos (.position)", this.backgroundGraphics.position.x, this.backgroundGraphics.position.y)
-        }
+        // if(this.name == "grid visibility"){
+        //     console.log("Post-pos (.x,.y)", this.backgroundGraphics.x, this.backgroundGraphics.y)
+        //     console.log("Post-pos (.position)", this.backgroundGraphics.position.x, this.backgroundGraphics.position.y)
+        // }
     }
     // overwrite pos functions
     get x() {
@@ -1315,13 +1309,13 @@ class TextContainer extends GameObject {
         return super.position;
     }
     set position(newPosition) {
-        if(this.name == "grid visibility"){
-            console.log("~!~")
-            console.log("name", this.name)
-            console.log("Changing to units pos",newPosition.x,newPosition.y)
-            console.log("Pre-pos (.x,.y)", this.backgroundGraphics.x, this.backgroundGraphics.y)
-            console.log("Pre-pos (.position)", this.backgroundGraphics.position.x, this.backgroundGraphics.position.y)
-        }
+        // if(this.name == "grid visibility"){
+        //     console.log("~!~")
+        //     console.log("name", this.name)
+        //     console.log("Changing to units pos",newPosition.x,newPosition.y)
+        //     console.log("Pre-pos (.x,.y)", this.backgroundGraphics.x, this.backgroundGraphics.y)
+        //     console.log("Pre-pos (.position)", this.backgroundGraphics.position.x, this.backgroundGraphics.position.y)
+        // }
 
         super.position = newPosition; // keep the set function for UI element
         // if(this.name == "grid visibility")
@@ -1331,10 +1325,10 @@ class TextContainer extends GameObject {
         // Update text pos
         this.UpdateTextPosition();
 
-        if(this.name == "grid visibility"){
-            console.log("Post-pos (.x,.y)", this.backgroundGraphics.x, this.backgroundGraphics.y)
-            console.log("Post-pos (.position)", this.backgroundGraphics.position.x, this.backgroundGraphics.position.y)
-        }
+        // if(this.name == "grid visibility"){
+        //     console.log("Post-pos (.x,.y)", this.backgroundGraphics.x, this.backgroundGraphics.y)
+        //     console.log("Post-pos (.position)", this.backgroundGraphics.position.x, this.backgroundGraphics.position.y)
+        // }
 
     }
 
@@ -1437,9 +1431,10 @@ class TextContainer extends GameObject {
 
 
         // debugging
-        if(text == "Show grid")
-            this["name"] = "grid visibility"
+        // if(text == "Show grid")
+        //     this["name"] = "grid visibility"
 
+        // The background is static so set all those vars up
         this.physicsEnabled = false;
         this.interactive = true; // Just make all UI elements interactive
         this.shareSize = true // now turn it back on
@@ -1449,24 +1444,10 @@ class TextContainer extends GameObject {
         this.textLabelObject = textLabelObject;
         this.otherGameObjects.push(this.textLabelObject);
 
-        // this.shareSize = true;  
-        if(this.name =="grid visibility"){
-            console.log("CONSTRUCTOR pre-size",this.width, this.height)
-            console.log("CONSTRUCTOR graph pre-size", this.graphicsObject.width, this.graphicsObject.height)
-        }
         // Update width to based off text size + padding to start 
 
-        // for some reason am getting bug with setting size so have to do it manually
-        // this._width = textLabelObject.width + this.padding.left + this.padding.right
-        // this.graphicsObject.width = (textLabelObject.width + this.padding.left + this.padding.right)*game.pixelsPerUnit.x
-        // this._height = (textLabelObject.height + this.padding.bottom + this.padding.top)*game.pixelsPerUnit.y;
-        // this.graphicsObject.height = (textLabelObject.height + this.padding.bottom + this.padding.top)*game.pixelsPerUnit.y;
         this.width = textLabelObject.width + this.padding.left + this.padding.right;
         this.height = textLabelObject.height + this.padding.bottom + this.padding.top;
-        if(this.name =="grid visibility"){
-            console.log("CONSTRUCTOR post-size",this.width, this.height)
-            console.log("CONSTRUCTOR graph post-size", this.graphicsObject.width, this.graphicsObject.height)
-        }
 
         // this.graphicsObject.height = (textLabelObject.height + this.padding.bottom + this.padding.top)*game.pixelsPerUnit.y
 
@@ -1550,14 +1531,14 @@ class TextContainer extends GameObject {
     }
 
     RedrawBackground() {
-        let showDebug = (this.name == "grid visibility");
-        if (showDebug) {
-            console.log("_---")
-            console.log("name", this.name)
-            console.log("Pre-size", this.backgroundGraphics.width, this.backgroundGraphics.height)
-            console.log("Pre-pos (.x,.y)", this.backgroundGraphics.x, this.backgroundGraphics.y)
-            console.log("Pre-pos (.position)", this.backgroundGraphics.position.x, this.backgroundGraphics.position.y)
-        }
+        // let showDebug = (this.name == "grid visibility");
+        // if (showDebug) {
+        //     console.log("_---")
+        //     console.log("name", this.name)
+        //     console.log("Pre-size", this.backgroundGraphics.width, this.backgroundGraphics.height)
+        //     console.log("Pre-pos (.x,.y)", this.backgroundGraphics.x, this.backgroundGraphics.y)
+        //     console.log("Pre-pos (.position)", this.backgroundGraphics.position.x, this.backgroundGraphics.position.y)
+        // }
 
         // let oldX = this.backgroundGraphics.x;
         // let oldY = this.backgroundGraphics.y;
@@ -1568,10 +1549,9 @@ class TextContainer extends GameObject {
         // console.log("Redrawing", this._width, this._height)
         let pixelWidth = this._width * this.game.pixelsPerUnit.x;
         let pixelHeight = this._height * this.game.pixelsPerUnit.y
-        if (showDebug) {
-            console.log("Pixel size", pixelWidth, pixelHeight)
-
-        }
+        // if (showDebug) {
+        //     console.log("Pixel size", pixelWidth, pixelHeight)
+        // }
 
 
         this.backgroundGraphics
@@ -1588,12 +1568,12 @@ class TextContainer extends GameObject {
         this.backgroundGraphics.scale = new PIXI.Point(1, 1); // For some reaosn the scale gets changed?? PIXI.JS must have a bug idk had me scratching my head
 
         this.backgroundGraphics.interactive = true; // set back to true
-        if (showDebug) {
-            console.log("Post-size", this.backgroundGraphics.width, this.backgroundGraphics.height)
-            console.log("Post-pos (.x,.y)", this.backgroundGraphics.x, this.backgroundGraphics.y)
-            console.log("Post-pos (.position)", this.backgroundGraphics.position.x, this.backgroundGraphics.position.y)
-            console.log(this.backgroundGraphics)
-        }
+        // if (showDebug) {
+        //     console.log("Post-size", this.backgroundGraphics.width, this.backgroundGraphics.height)
+        //     console.log("Post-pos (.x,.y)", this.backgroundGraphics.x, this.backgroundGraphics.y)
+        //     console.log("Post-pos (.position)", this.backgroundGraphics.position.x, this.backgroundGraphics.position.y)
+        //     console.log(this.backgroundGraphics)
+        // }
 
         // hacky fix 
         // this.backgroundGraphics.x = oldX;
