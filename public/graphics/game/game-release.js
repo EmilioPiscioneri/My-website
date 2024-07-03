@@ -1404,6 +1404,12 @@ class TextContainer extends GameObject {
         this.RedrawBackground();
     };
 
+    // whether background graphics is visible
+    get isVisible(){return this.graphicsObject.visible}
+    set isVisible(newVisibility){
+        this.graphicsObject.visible = newVisibility;
+    }
+
     eventsToDestroy = []; // Has an array of arrays each with [objectSubscribedTo, eventName, eventListener]
 
 
