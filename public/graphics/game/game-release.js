@@ -953,8 +953,12 @@ class GameObject extends EventSystem {
     }
     set width(newWidth) {
         this._width = newWidth;
-        if (this.shareSize)
+        if (this.shareSize){
+            if(this.name =="grid visibility"){
+                console.log(1)
+            }
             this.graphicsObject.width = newWidth * this.game.pixelsPerUnit.x;// convert units to pixels
+        }
         this.FireListener("widthChanged") // fire changed event
         // this.updateGraphicsObjPosition();
     }
@@ -964,8 +968,12 @@ class GameObject extends EventSystem {
     }
     set height(newHeight) {
         this._height = newHeight;
-        if (this.shareSize)
+        if (this.shareSize){
+            if(this.name =="grid visibility"){
+                console.log(2)
+            }
             this.graphicsObject.height = newHeight * this.game.pixelsPerUnit.y;// convert units to pixels
+        }
         if (this.sharePosition)
             this.updateGraphicsObjPosition();
         this.FireListener("heightChanged") // fire changed event
@@ -1105,12 +1113,27 @@ class UIElement extends GameObject {
         return this._position
     }
     set position(newPosition) {
+        if(this.name == "grid visibility"){
+            console.log(";;;---///")
+            console.log("name", this.name)
+            console.log("Changing to units pos",newPosition.x,newPosition.y)
+            console.log("Pre-pos (.x,.y)", this.backgroundGraphics.x, this.backgroundGraphics.y)
+            console.log("Pre-pos (.position)", this.backgroundGraphics.position.x, this.backgroundGraphics.position.y)
+        }
+
+
+        
         // console.log("Position changed on UI to", newPosition)
         this._position = new Point(newPosition.x, newPosition.y);
         let pixelPos = this.game.ConvertUnitsToRawPixels(newPosition)
         pixelPos.y -= this.graphicsObject.height;
         this.graphicsObject.position = pixelPos;
         this.FireListener("positionChanged") // fire changed event
+
+        if(this.name == "grid visibility"){
+            console.log("Post-pos (.x,.y)", this.backgroundGraphics.x, this.backgroundGraphics.y)
+            console.log("Post-pos (.position)", this.backgroundGraphics.position.x, this.backgroundGraphics.position.y)
+        }
     }
     // overwrite pos functions
     get x() {
@@ -1261,7 +1284,7 @@ class Padding {
 /**
  * A base class UI element which has a text label with a background rect as well
  */
-class TextContainer extends UIElement {
+class TextContainer extends GameObject {
     // defaults
     textHorizontalAlignment = HorizontalAlignment.MIDDLE;
     textVerticalAlignment = VerticalAlignment.MIDDLE;
@@ -1377,14 +1400,14 @@ class TextContainer extends UIElement {
     set height(newVal) {
         super.height = newVal;
         this.RedrawBackground();
-        // this.UpdateTextPosition();
+        this.UpdateTextPosition();
     };
 
     get width() { return super.width };
     set width(newVal) {
         super.width = newVal
+        this.UpdateTextPosition();
         this.RedrawBackground();
-        // this.UpdateTextPosition();
     };
 
     eventsToDestroy = []; // Has an array of arrays each with [objectSubscribedTo, eventName, eventListener]
@@ -1408,19 +1431,44 @@ class TextContainer extends UIElement {
         // create graphics, need to access the "this" variable which is after the super function and then I'll redraw the background graphics before render which won't be too costly
         let backgroundGraphics = new Graphics().rect(0, 0, 100, 100).fill("white")
 
-        super(backgroundGraphics, game);
+        // start as share off because it tries to access functions that haven't been defined yet
+        super(backgroundGraphics, game, false, false);
 
-        // this.physicsEnabled = false;
-        // this.interactive = true; // Just make all UI elements interactive
-        // this.shareSize = true // now turn it back on
+
+
+        // debugging
+        if(text == "Show grid")
+            this["name"] = "grid visibility"
+
+        this.physicsEnabled = false;
+        this.interactive = true; // Just make all UI elements interactive
+        this.shareSize = true // now turn it back on
+        this.sharePosition = true;
 
         // Set object
         this.textLabelObject = textLabelObject;
         this.otherGameObjects.push(this.textLabelObject);
 
+        // this.shareSize = true;  
+        if(this.name =="grid visibility"){
+            console.log("CONSTRUCTOR pre-size",this.width, this.height)
+            console.log("CONSTRUCTOR graph pre-size", this.graphicsObject.width, this.graphicsObject.height)
+        }
         // Update width to based off text size + padding to start 
+
+        // for some reason am getting bug with setting size so have to do it manually
+        // this._width = textLabelObject.width + this.padding.left + this.padding.right
+        // this.graphicsObject.width = (textLabelObject.width + this.padding.left + this.padding.right)*game.pixelsPerUnit.x
+        // this._height = (textLabelObject.height + this.padding.bottom + this.padding.top)*game.pixelsPerUnit.y;
+        // this.graphicsObject.height = (textLabelObject.height + this.padding.bottom + this.padding.top)*game.pixelsPerUnit.y;
         this.width = textLabelObject.width + this.padding.left + this.padding.right;
         this.height = textLabelObject.height + this.padding.bottom + this.padding.top;
+        if(this.name =="grid visibility"){
+            console.log("CONSTRUCTOR post-size",this.width, this.height)
+            console.log("CONSTRUCTOR graph post-size", this.graphicsObject.width, this.graphicsObject.height)
+        }
+
+        // this.graphicsObject.height = (textLabelObject.height + this.padding.bottom + this.padding.top)*game.pixelsPerUnit.y
 
         // background is already redrawn when width and height r set
         // this.RedrawBackground(); // 
@@ -1430,6 +1478,8 @@ class TextContainer extends UIElement {
         // this.width = backgroundGraphics.width;
         // this.height = backgroundGraphics.height;
         this.position = backgroundGraphics.position;
+        // this.position = new Point(0,0)
+        // this.position = this.position;
         this.zIndex = backgroundGraphics.zIndex
 
         // console.log(this)
@@ -1438,14 +1488,14 @@ class TextContainer extends UIElement {
 
         // TURN THESE BACK ON
 
-        // this.textLabelObject.AddEventListener("widthChanged", this.UpdateTextPosition, this);
-        // this.textLabelObject.AddEventListener("heightChanged", this.UpdateTextPosition, this);
+        this.textLabelObject.AddEventListener("widthChanged", this.UpdateTextPosition, this);
+        this.textLabelObject.AddEventListener("heightChanged", this.UpdateTextPosition, this);
         // when text changes update pos
-        // this.textLabelObject.AddEventListener("textChanged", this.UpdateTextPosition, this);
-        // this.AddEventListener("textChanged", this.UpdateTextPosition, this);
+        this.textLabelObject.AddEventListener("textChanged", this.UpdateTextPosition, this);
+        this.AddEventListener("textChanged", this.UpdateTextPosition, this);
         // fit to btn
-        // this.textLabelObject.AddEventListener("textChanged", this.FitBackgroundToText, this);
-        // this.textLabelObject.AddEventListener("fontSizeChanged", this.FitBackgroundToText, this);
+        this.textLabelObject.AddEventListener("textChanged", this.FitBackgroundToText, this);
+        this.textLabelObject.AddEventListener("fontSizeChanged", this.FitBackgroundToText, this);
     }
 
     /**
@@ -1530,10 +1580,10 @@ class TextContainer extends UIElement {
             .fill(this._backgroundFill)
 
         // if has stroke, then process it
-        // if (this._backgroundStroke) {
-        //     this.backgroundGraphics
-        //         .stroke(this._backgroundStroke)
-        // }
+        if (this._backgroundStroke) {
+            this.backgroundGraphics
+                .stroke(this._backgroundStroke)
+        }
 
         this.backgroundGraphics.scale = new PIXI.Point(1, 1); // For some reaosn the scale gets changed?? PIXI.JS must have a bug idk had me scratching my head
 
