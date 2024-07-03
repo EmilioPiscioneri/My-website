@@ -973,6 +973,18 @@ class GameObject extends EventSystem {
         this.FireListener("heightChanged") // fire changed event
     }
 
+    // the alpha value of the object graphics
+    get alpha(){
+        if(this.graphicsObject)
+            return this.graphicsObject.alpha
+        else
+            return null
+    }
+    set alpha(newAlpha){
+        if(this.graphicsObject)
+            this.graphicsObject.alpha = newAlpha
+    }
+
     /**
      * Creates a game object, make sure to add it to the game after creation
      * @param {Graphics} graphicsObject A PIXI JS graphics object which holds all the render data. Is automatically added to game stage
@@ -1409,6 +1421,8 @@ class TextContainer extends GameObject {
     set isVisible(newVisibility){
         this.graphicsObject.visible = newVisibility;
     }
+
+    
 
     eventsToDestroy = []; // Has an array of arrays each with [objectSubscribedTo, eventName, eventListener]
 

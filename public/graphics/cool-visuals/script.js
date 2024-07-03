@@ -507,6 +507,7 @@ function BallsConnectToLineLoad(game) {
 
     uiLayout.width = 5;
     uiLayout.height = 5
+    uiLayout.alpha = 0.75;
 
     // game.AddGameObject(layout)
 
