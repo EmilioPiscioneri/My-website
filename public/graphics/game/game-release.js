@@ -345,8 +345,8 @@ class Game extends EventSystem {
         this.FireListener("pointerDown", pointerEvent)
     }
 
-    HandleContextMenu = (event) =>{
-        if(this.preventContextMenu)
+    HandleContextMenu = (event) => {
+        if (this.preventContextMenu)
             event.preventDefault()
     }
 
@@ -1292,12 +1292,26 @@ class TextContainer extends UIElement {
         return super.position;
     }
     set position(newPosition) {
+        if(this.name == "grid visibility"){
+            console.log("~!~")
+            console.log("name", this.name)
+            console.log("Changing to units pos",newPosition.x,newPosition.y)
+            console.log("Pre-pos (.x,.y)", this.backgroundGraphics.x, this.backgroundGraphics.y)
+            console.log("Pre-pos (.position)", this.backgroundGraphics.position.x, this.backgroundGraphics.position.y)
+        }
+
         super.position = newPosition; // keep the set function for UI element
-        // console.log("Position changed on btn to", newPosition)
+        // if(this.name == "grid visibility")
+        //     console.log("Position changed on ",this.name," to", newPosition)
         // inject extra code
 
         // Update text pos
         this.UpdateTextPosition();
+
+        if(this.name == "grid visibility"){
+            console.log("Post-pos (.x,.y)", this.backgroundGraphics.x, this.backgroundGraphics.y)
+            console.log("Post-pos (.position)", this.backgroundGraphics.position.x, this.backgroundGraphics.position.y)
+        }
 
     }
 
@@ -1363,14 +1377,14 @@ class TextContainer extends UIElement {
     set height(newVal) {
         super.height = newVal;
         this.RedrawBackground();
-        this.UpdateTextPosition();
+        // this.UpdateTextPosition();
     };
 
     get width() { return super.width };
     set width(newVal) {
         super.width = newVal
         this.RedrawBackground();
-        this.UpdateTextPosition();
+        // this.UpdateTextPosition();
     };
 
     eventsToDestroy = []; // Has an array of arrays each with [objectSubscribedTo, eventName, eventListener]
@@ -1392,9 +1406,13 @@ class TextContainer extends UIElement {
 
 
         // create graphics, need to access the "this" variable which is after the super function and then I'll redraw the background graphics before render which won't be too costly
-        let backgroundGraphics = new Graphics().rect(0, 0, 100, 100)
+        let backgroundGraphics = new Graphics().rect(0, 0, 100, 100).fill("white")
 
         super(backgroundGraphics, game);
+
+        // this.physicsEnabled = false;
+        // this.interactive = true; // Just make all UI elements interactive
+        // this.shareSize = true // now turn it back on
 
         // Set object
         this.textLabelObject = textLabelObject;
@@ -1417,14 +1435,17 @@ class TextContainer extends UIElement {
         // console.log(this)
 
         // update text pos whenever it changes width or height, third value ensures every listener is destroyed properly
-        this.textLabelObject.AddEventListener("widthChanged", this.UpdateTextPosition, this);
-        this.textLabelObject.AddEventListener("heightChanged", this.UpdateTextPosition, this);
+
+        // TURN THESE BACK ON
+
+        // this.textLabelObject.AddEventListener("widthChanged", this.UpdateTextPosition, this);
+        // this.textLabelObject.AddEventListener("heightChanged", this.UpdateTextPosition, this);
         // when text changes update pos
-        this.textLabelObject.AddEventListener("textChanged", this.UpdateTextPosition, this);
-        this.AddEventListener("textChanged", this.UpdateTextPosition, this);
+        // this.textLabelObject.AddEventListener("textChanged", this.UpdateTextPosition, this);
+        // this.AddEventListener("textChanged", this.UpdateTextPosition, this);
         // fit to btn
-        this.textLabelObject.AddEventListener("textChanged", this.FitBackgroundToText, this);
-        this.textLabelObject.AddEventListener("fontSizeChanged", this.FitBackgroundToText, this);
+        // this.textLabelObject.AddEventListener("textChanged", this.FitBackgroundToText, this);
+        // this.textLabelObject.AddEventListener("fontSizeChanged", this.FitBackgroundToText, this);
     }
 
     /**
@@ -1479,9 +1500,15 @@ class TextContainer extends UIElement {
     }
 
     RedrawBackground() {
-        console.log("_---")
-        console.log("Pre-size", this.backgroundGraphics.width,this.backgroundGraphics.height)
-        console.log("Pre-pos", this.backgroundGraphics.x,this.backgroundGraphics.y)
+        let showDebug = (this.name == "grid visibility");
+        if (showDebug) {
+            console.log("_---")
+            console.log("name", this.name)
+            console.log("Pre-size", this.backgroundGraphics.width, this.backgroundGraphics.height)
+            console.log("Pre-pos (.x,.y)", this.backgroundGraphics.x, this.backgroundGraphics.y)
+            console.log("Pre-pos (.position)", this.backgroundGraphics.position.x, this.backgroundGraphics.position.y)
+        }
+
         // let oldX = this.backgroundGraphics.x;
         // let oldY = this.backgroundGraphics.y;
         // first clear the current visual
@@ -1491,26 +1518,32 @@ class TextContainer extends UIElement {
         // console.log("Redrawing", this._width, this._height)
         let pixelWidth = this._width * this.game.pixelsPerUnit.x;
         let pixelHeight = this._height * this.game.pixelsPerUnit.y
-        console.log("Pixel", pixelWidth, pixelHeight)
+        if (showDebug) {
+            console.log("Pixel size", pixelWidth, pixelHeight)
+
+        }
 
 
         this.backgroundGraphics
-            .rect(0, -pixelHeight, pixelWidth, pixelHeight)
+            .rect(0, 0, pixelWidth, pixelHeight)
+            // .rect(0, -pixelHeight, pixelWidth, pixelHeight) // no need
             .fill(this._backgroundFill)
 
         // if has stroke, then process it
-        if (this._backgroundStroke) {
-            this.backgroundGraphics
-                .stroke(this._backgroundStroke)
-        }
+        // if (this._backgroundStroke) {
+        //     this.backgroundGraphics
+        //         .stroke(this._backgroundStroke)
+        // }
 
         this.backgroundGraphics.scale = new PIXI.Point(1, 1); // For some reaosn the scale gets changed?? PIXI.JS must have a bug idk had me scratching my head
 
         this.backgroundGraphics.interactive = true; // set back to true
-
-        console.log("Post-size", this.backgroundGraphics.width,this.backgroundGraphics.height)
-        console.log("Post-pos", this.backgroundGraphics.x,this.backgroundGraphics.y)
-        console.log(this.backgroundGraphics)
+        if (showDebug) {
+            console.log("Post-size", this.backgroundGraphics.width, this.backgroundGraphics.height)
+            console.log("Post-pos (.x,.y)", this.backgroundGraphics.x, this.backgroundGraphics.y)
+            console.log("Post-pos (.position)", this.backgroundGraphics.position.x, this.backgroundGraphics.position.y)
+            console.log(this.backgroundGraphics)
+        }
 
         // hacky fix 
         // this.backgroundGraphics.x = oldX;
@@ -2324,7 +2357,7 @@ class GameObjectLayout extends UIElement {
     set zIndex(newVal) {
         // text should be 1 zindex above background
         this.backgroundGraphics.zIndex = newVal;
-        
+
     }
 
 
@@ -2350,9 +2383,9 @@ class GameObjectLayout extends UIElement {
     }
 
     // updates the z index of all objects
-    UpdateObjectsZIndex(){
+    UpdateObjectsZIndex() {
         let layoutzIndex = this.zIndex;
-        for(let objIndex = 0; objIndex < this.ManagedObjects.length; objIndex++){
+        for (let objIndex = 0; objIndex < this.ManagedObjects.length; objIndex++) {
             let gameObj = this.ManagedObjects[objIndex]
             // gameObj.graphicsObject.zIndex = newVal + objIndex + 1; // + 1 to make it 1 based indexing
             gameObj.graphicsObject.zIndex = layoutzIndex + 1; // jsut make it 1 higher than layout background
@@ -2363,7 +2396,7 @@ class GameObjectLayout extends UIElement {
 
     // Call this whenever you need to recalcaulate the positions of the objects underneath the layout
     // calls fit layout after
-    CalculateObjectPositions =()=> {
+    CalculateObjectPositions = () => {
         let totalObjects = this.ManagedObjects.length;
 
         // Vertical down positioning
@@ -2402,7 +2435,7 @@ class GameObjectLayout extends UIElement {
     }
 
     // gets the size of inner content
-    GetManagedSize=()=> {
+    GetManagedSize = () => {
         // if no objects under layout just return nothing
         if (this.ManagedObjects.length == 0)
             return new Point()
@@ -2446,13 +2479,13 @@ class GameObjectLayout extends UIElement {
         this.height = this.margin.bottom + innerSize.y + this.margin.top;
     }
 
-    
+
     /**
      * Gets whether or not the layout contains the point inclusive of all objects underneath and layout edges
      * @param {PIXI.Point} pointToCheck The point to check in the bounds of 
      * @returns {Boolean} Whether or not the layout contains the point
      */
-    ContainsPoint(pointToCheck){
+    ContainsPoint(pointToCheck) {
         // console.log("pointToCheck",pointToCheck)
 
         // let layoutBounds = {
@@ -2467,15 +2500,15 @@ class GameObjectLayout extends UIElement {
             left: this.x,
             right: this.x + this.width,
             // bottom and top is shifted down by height
-            bottom: this.y-this.height, 
+            bottom: this.y - this.height,
             top: this.y
         }
 
-        
+
         return (
             // in between x bounds
             // this.left <= point.x <= this.right
-            layoutBounds.left <= pointToCheck.x && pointToCheck.x <= layoutBounds.right  
+            layoutBounds.left <= pointToCheck.x && pointToCheck.x <= layoutBounds.right
             // and in between y bounds
             // this.bottom <= point.y <= this.top
             && layoutBounds.bottom <= pointToCheck.y && pointToCheck.y <= layoutBounds.top)

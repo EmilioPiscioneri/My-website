@@ -441,11 +441,12 @@ function BallsConnectToLineLoad(game) {
     // game.AddGameObject(lineCountTextLbl);
 
     gridVisibilityBtn = new Button(game, "Show grid", false);
+    gridVisibilityBtn["name"] = "grid visibility"
     gridVisibilityBtn.fontSize = 22;
-    gridVisibilityBtn.backgroundStroke = {
-        color: "black",
-        width: 2
-    }
+    // gridVisibilityBtn.backgroundStroke = {
+    //     color: "black",
+    //     width: 2
+    // }
     // gridVisibilityBtn.position = new Point(0.25, canvasSize.height - lineCountTextLbl.height - 0.5 - gridVisibilityBtn.height)
     // document.btn = gridVisibilityBtn
 
@@ -516,19 +517,26 @@ function BallsConnectToLineLoad(game) {
     game.AddGameObject(uiLayout)
 
     // second param is add as game object to the Game as well as layout
-    uiLayout.AddGameObject(lineCountTextLbl, true)
+    // uiLayout.AddGameObject(lineCountTextLbl, true)
 
     // So we have two text container inherited objects and whenever they are under the layout and their text changes it fitsredraw background which messes up its positioning
     // When under the Game it does not do that. Confusing
 
-    uiLayout.AddGameObject(gridVisibilityBtn, true)
-    // game.AddGameObject(gridVisibilityBtn)
-    gridVisibilityBtn.position = new Point(4,4)
+    
+    game.AddGameObject(gridVisibilityBtn)
+    // gridVisibilityBtn.position = new Point(4,4)
     // uiLayout.AddGameObject(textInput, true)
+    // game.AddGameObject(textInput)
+
+    // textInput.zIndex = 2; // nothing to do w zIndex
     uiLayout.AddGameObject(ballPullStrengthLabel, true)
     uiLayout.AddGameObject(ballPullStrengthSlider, true)
     uiLayout.AddGameObject(ballPushStrengthLabel, true)
     uiLayout.AddGameObject(ballPushStrengthSlider, true)
+
+    uiLayout.backgroundFill = "grey"
+    
+    // uiLayout.AddGameObject(gridVisibilityBtn, true)
 
 
 
