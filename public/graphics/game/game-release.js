@@ -953,7 +953,7 @@ class GameObject extends EventSystem {
     }
     set width(newWidth) {
         this._width = newWidth;
-        if (this.shareSize){
+        if (this.shareSize) {
             this.graphicsObject.width = newWidth * this.game.pixelsPerUnit.x;// convert units to pixels
         }
         this.FireListener("widthChanged") // fire changed event
@@ -965,7 +965,7 @@ class GameObject extends EventSystem {
     }
     set height(newHeight) {
         this._height = newHeight;
-        if (this.shareSize){
+        if (this.shareSize) {
             this.graphicsObject.height = newHeight * this.game.pixelsPerUnit.y;// convert units to pixels
         }
         if (this.sharePosition)
@@ -974,14 +974,14 @@ class GameObject extends EventSystem {
     }
 
     // the alpha value of the object graphics
-    get alpha(){
-        if(this.graphicsObject)
+    get alpha() {
+        if (this.graphicsObject)
             return this.graphicsObject.alpha
         else
             return null
     }
-    set alpha(newAlpha){
-        if(this.graphicsObject)
+    set alpha(newAlpha) {
+        if (this.graphicsObject)
             this.graphicsObject.alpha = newAlpha
     }
 
@@ -1128,7 +1128,7 @@ class UIElement extends GameObject {
         // }
 
 
-        
+
         // console.log("Position changed on UI to", newPosition)
         this._position = new Point(newPosition.x, newPosition.y);
         let pixelPos = this.game.ConvertUnitsToRawPixels(newPosition)
@@ -1417,12 +1417,12 @@ class TextContainer extends GameObject {
     };
 
     // whether background graphics is visible
-    get isVisible(){return this.graphicsObject.visible}
-    set isVisible(newVisibility){
+    get isVisible() { return this.graphicsObject.visible }
+    set isVisible(newVisibility) {
         this.graphicsObject.visible = newVisibility;
     }
 
-    
+
 
     eventsToDestroy = []; // Has an array of arrays each with [objectSubscribedTo, eventName, eventListener]
 
@@ -2341,9 +2341,9 @@ class Slider extends UIElement {
  * ENUM class, represents the direction of positioned items for object layouts.
  */
 class LayoutOrientation {
-    static VerticalDown = 1; 
-    static VerticalUp = 2; 
-    static HorizontalLeft = 3; 
+    static VerticalDown = 1;
+    static VerticalUp = 2;
+    static HorizontalLeft = 3;
     static HorizontalRight = 4;
 
 }
@@ -2362,9 +2362,13 @@ class GameObjectLayout extends GameObject {
         return this._layoutOrientation;
     }
     set layoutOrientation(newOrientation) {
+        if (newOrientation < 1 || newOrientation > 4) {
+            console.warn("Tried to set layout orientation to an invalid value, defaulted to vertical down")
+            newOrientation = LayoutOrientation.VerticalDown
+        }
         this._layoutOrientation = newOrientation;
         // redraw and re position elements on orientation change
-        this.RedrawBackground(); 
+        this.RedrawBackground();
         this.CalculateObjectPositions() // update
 
     }
@@ -2445,7 +2449,7 @@ class GameObjectLayout extends GameObject {
         // create graphics, need to access the "this" variable which is after the super function and then I'll redraw the background graphics before render which won't be too costly
         let backgroundGraphics = new Graphics()
             .rect(0, 0, 100, 100)
-        .fill("white") // need to fill to update size?
+            .fill("white") // need to fill to update size?
 
         // console.log(backgroundGraphics.width,backgroundGraphics.height)
         super(backgroundGraphics, game)
@@ -2486,19 +2490,27 @@ class GameObjectLayout extends GameObject {
 
         // going to have a start pos. One axis will be static while the other one will change with each iterated object
         // This will change as objects are iterated
-        let startPos = new Point(this.position.x + this.margin.left, this.position.y);
+        let startPos = new Point(this.position.x, this.position.y);
 
-        startPos.y -= this.margin.top
+        // modify start pos depending on orientation
+        if (this.layoutOrientation == LayoutOrientation.VerticalDown) {
+            startPos.x += this.margin.left;
+            startPos.y -= this.margin.top
+        } else if (this.layoutOrientation == LayoutOrientation.VerticalUp || this.layoutOrientation == LayoutOrientation.HorizontalRight) {
+            startPos.x += this.margin.left;
+            startPos.y += this.margin.bottom
+        } else if (this.layoutOrientation == LayoutOrientation.HorizontalLeft) {
+            startPos.x -= this.margin.right;
+            startPos.y += this.margin.bottom
+        }
+
+
 
         // loop thru managed objects and change position according to previous ones
         for (let objIndex = 0; objIndex < totalObjects; objIndex++) {
             let iteratedObj = this.ManagedObjects[objIndex]
 
-            // for vertical down, if this is first iteration, move down by object height and margin top
-            // if (objIndex == 0)
-            //     startPos.y -= (iteratedObj.height + this.margin.top)
 
-            startPos.y -= iteratedObj.height
 
             if (!iteratedObj) {
                 // an iterated obj is invalid, just ignore
@@ -2506,12 +2518,42 @@ class GameObjectLayout extends GameObject {
                 continue;
             }
 
-            // console.log(iteratedObj, startPos)
-            iteratedObj.position = startPos;
+            // set position of current object and change the startPos 
 
-            // setup next loop
-            // startPos.y -= (iteratedObj.height + this.spaceBetweenObjects);
-            startPos.y -= this.spaceBetweenObjects;
+            if (this.layoutOrientation == LayoutOrientation.VerticalDown) {
+                // Move down on vertical and set the object to new pos. Do this because the .position of the iterated opbject starts at bottom-left and
+                // the start pos is currently at the top-left of the object
+                startPos.y -= iteratedObj.height
+
+                iteratedObj.position = startPos;
+
+                // setup next iteration
+                startPos.y -= this.spaceBetweenObjects;
+            } else if (this.layoutOrientation == LayoutOrientation.VerticalUp) {
+                // start pos is currently at bottom-left of object
+                iteratedObj.position = startPos;
+
+                // setup next iteration by moving by vertical space the object takes up (height) added with padding
+                startPos.y += iteratedObj.height + this.spaceBetweenObjects;
+            } else if (this.layoutOrientation == LayoutOrientation.HorizontalLeft) {
+                // start pos is at bottom-right, correct
+                startPos.x -= iteratedObj.width
+
+                iteratedObj.position = startPos;
+
+                // move left by spacing
+                startPos.x -= this.spaceBetweenObjects;
+
+
+            } else if (this.layoutOrientation == LayoutOrientation.HorizontalRight) {
+                // start pos is at bottom-left
+                iteratedObj.position = startPos;
+
+                // move right by width + spacing
+                startPos.x += iteratedObj.width + this.spaceBetweenObjects;
+            }
+
+
         }
 
         this.FitLayoutToObjects();
@@ -2522,22 +2564,47 @@ class GameObjectLayout extends GameObject {
         // if no objects under layout just return nothing
         if (this.ManagedObjects.length == 0)
             return new Point()
-        // for y down
 
-        // for x just get largest width
-        let xSize = this.ManagedObjects[0].width
-        for (const obj of this.ManagedObjects) {
-            if (obj.width > xSize)
-                xSize = obj.width
+
+        let xSize = 0;
+        let ySize = 0;
+        // for vertical orientations
+        if (this.layoutOrientation == LayoutOrientation.VerticalDown || this.layoutOrientation == LayoutOrientation.VerticalUp) {
+            // for x just get largest width
+            xSize = this.ManagedObjects[0].width
+            for (const obj of this.ManagedObjects) {
+                if (obj.width > xSize)
+                    xSize = obj.width
+            }
+
+            // for y it is the sum of all heights + space between objects *objects length-1
+            let totalHeight = 0;
+            for (const obj of this.ManagedObjects) {
+                totalHeight += obj.height
+            }
+
+            ySize = totalHeight + this.spaceBetweenObjects * (this.ManagedObjects.length - 1)
+
+        } else { // horizontal orientations
+            // for x it is the sum of all widths + space between objects *objects length-1
+            let totalWidth = 0;
+            for (const obj of this.ManagedObjects) {
+                totalWidth += obj.width
+            }
+            xSize = totalWidth + this.spaceBetweenObjects * (this.ManagedObjects.length - 1)
+
+            // for y just get largest height
+            ySize = this.ManagedObjects[0].height
+            for (const obj of this.ManagedObjects) {
+                if (obj.height > ySize)
+                    ySize = obj.height
+            }
+
+
         }
 
-        // for y it is the sum of all heights + space between objects *objects length-1
-        let totalHeight = 0;
-        for (const obj of this.ManagedObjects) {
-            totalHeight += obj.height
-        }
 
-        let ySize = totalHeight + this.spaceBetweenObjects * (this.ManagedObjects.length - 1)
+
 
         // console.log(this.ManagedObjects.length)
         // console.log(this.spaceBetweenObjects * (this.ManagedObjects.length - 1))
@@ -2578,14 +2645,35 @@ class GameObjectLayout extends GameObject {
         //     top: this.y+this.height
         // }
 
-        // for vertical down 
-        let layoutBounds = {
-            left: this.x,
-            right: this.x + this.width,
-            // bottom and top is shifted down by height
-            bottom: this.y - this.height,
-            top: this.y
+        let layoutBounds;
+
+        if (this.layoutOrientation == LayoutOrientation.VerticalDown) {
+            layoutBounds = {
+                left: this.x,
+                right: this.x + this.width,
+                // bottom and top is shifted down by height
+                bottom: this.y - this.height,
+                top: this.y
+            }
+        } else if (this.layoutOrientation == LayoutOrientation.VerticalUp || this.layoutOrientation == LayoutOrientation.HorizontalRight) {
+            layoutBounds = {
+                left: this.x,
+                right: this.x + this.width,
+                // bottom and top is shifted down by height
+                bottom: this.y,
+                top: this.y + this.height
+            }
+        } else if (this.layoutOrientation == LayoutOrientation.HorizontalLeft) {
+            layoutBounds = {
+                left: this.x - this.width,
+                right: this.x,
+                // bottom and top is shifted down by height
+                bottom: this.y,
+                top: this.y + this.height
+            }
         }
+
+
 
 
         return (
@@ -2616,28 +2704,20 @@ class GameObjectLayout extends GameObject {
         let graphicsXPos = 0;
         let graphicsYPos = 0;
 
-        if(this.layoutOrientation == LayoutOrientation.VerticalDown){
+        if (this.layoutOrientation == LayoutOrientation.VerticalDown) {
             // the y moves down (pixi draws it upwards so we go down to counteract this).
             // To move down with pixi you go positive in y direction
             graphicsYPos += pixelHeight
-        } 
+        }
         // else if(this.layoutOrientation == LayoutOrientation.VerticalUp){
         //     // 0,0 is start pos no change
         // } 
-        else if(this.layoutOrientation == LayoutOrientation.HorizontalLeft){
-            
-        } else if(this.layoutOrientation == LayoutOrientation.HorizontalRight){
-            
+        else if (this.layoutOrientation == LayoutOrientation.HorizontalLeft) {
+            graphicsXPos -= pixelWidth
+
         }
-
-        // if(this.layoutOrientation == LayoutOrientation.VerticalDown){
-
-        // } else if(this.layoutOrientation == LayoutOrientation.VerticalUp){
-            
-        // } else if(this.layoutOrientation == LayoutOrientation.HorizontalLeft){
-            
-        // } else if(this.layoutOrientation == LayoutOrientation.HorizontalRight){
-            
+        // else if (this.layoutOrientation == LayoutOrientation.HorizontalRight) {
+        // 0,0 no change
         // }
 
         // vertical down

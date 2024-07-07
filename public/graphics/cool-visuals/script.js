@@ -470,7 +470,7 @@ function BallsConnectToLineLoad(game) {
     ballPullStrengthLabel = new TextLabel(game, ballPullStrengthDefaultText, false)
     ballPullStrengthLabel.fontSize = 22;
 
-    ballPullStrengthSlider = new Slider(game, 0, 100, 0.1, ballsPullStrength);
+    ballPullStrengthSlider = new Slider(game, 0.1, 100, 0.1, ballsPullStrength);
 
 
     function HandlePullStrengthChanged() {
@@ -486,7 +486,7 @@ function BallsConnectToLineLoad(game) {
     ballPushStrengthLabel = new TextLabel(game, ballPushStrengthDefaultText, false)
     ballPushStrengthLabel.fontSize = 22;
 
-    ballPushStrengthSlider = new Slider(game, 0, 100, 0.1, ballsPushStrength);
+    ballPushStrengthSlider = new Slider(game, 0.1, 100, 0.1, ballsPushStrength);
 
 
     function HandlePushStrengthChanged() {
@@ -504,7 +504,9 @@ function BallsConnectToLineLoad(game) {
     // Setup layout (defined earlier)
 
     // uiLayout.position = new Point(0, canvasSize.height);
-    uiLayout.position = new Point(canvasSize.width/2, canvasSize.height/2); // to visualise layouts
+    uiLayout.position = new Point(0, canvasSize.height/2);
+    uiLayout.layoutOrientation = LayoutOrientation.HorizontalRight
+    // uiLayout.margin = new Padding(0.2,0.1,0.3,0.4)
 
     uiLayout.width = 5;
     uiLayout.height = 5
