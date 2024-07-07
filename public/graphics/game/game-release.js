@@ -1455,7 +1455,7 @@ class TextContainer extends GameObject {
         //     this["name"] = "grid visibility"
 
         // The background is static so set all those vars up
-        this.physicsEnabled = false;
+        this.static = true;
         this.interactive = true; // Just make all UI elements interactive
         this.shareSize = true // now turn it back on
         this.sharePosition = true;
@@ -2338,12 +2338,36 @@ class Slider extends UIElement {
 }
 
 /**
+ * ENUM class, represents the direction of positioned items for object layouts.
+ */
+class LayoutOrientation {
+    static VerticalDown = 1; 
+    static VerticalUp = 2; 
+    static HorizontalLeft = 3; 
+    static HorizontalRight = 4;
+
+}
+
+/**
  * Object Layout contains a background rect which will contain different game objects and order them in a horizontal or vertical way 
  * It wil keep all content relative to the layout's position and then will fit to the combined size of the object's uinder it 
  * The background rect is changable through the stroke and fill properties
  * Change objecys under the layout through the add and remove GameObject functions. If you don't the layout won't updaye accordingly
  */
-class GameObjectLayout extends UIElement {
+class GameObjectLayout extends GameObject {
+
+    // the orientation of layout relative to it's position point
+    _layoutOrientation;
+    get layoutOrientation() {
+        return this._layoutOrientation;
+    }
+    set layoutOrientation(newOrientation) {
+        this._layoutOrientation = newOrientation;
+        // redraw and re position elements on orientation change
+        this.RedrawBackground(); 
+        this.CalculateObjectPositions() // update
+
+    }
 
     ManagedObjects = []; // list of game objects under the layout that it will fit content to 
 
@@ -2414,17 +2438,26 @@ class GameObjectLayout extends UIElement {
     /**
      * Creates a game object, make sure to add it to the game after creation
      * @param {Game} game The current game the object is under
+     * @param {number} [orientation] Optional, the initial orientation of the layout's content
      * 
      */
-    constructor(game) {
+    constructor(game, orientation = LayoutOrientation.VerticalDown) {
         // create graphics, need to access the "this" variable which is after the super function and then I'll redraw the background graphics before render which won't be too costly
         let backgroundGraphics = new Graphics()
             .rect(0, 0, 100, 100)
-        // .fill("white") // need to fill to update size?
+        .fill("white") // need to fill to update size?
 
         // console.log(backgroundGraphics.width,backgroundGraphics.height)
         super(backgroundGraphics, game)
-        // this.physicsEnabled = false;
+
+        // The background is static so set all those vars up
+        this.static = true;
+        this.interactive = true; // Just make all UI elements interactive
+        // this.shareSize = true // now turn it back on
+        // this.sharePosition = true;
+
+
+        this.layoutOrientation = orientation; // set
 
         // redraw the background now you have access to "this"
         this.RedrawBackground();
@@ -2579,9 +2612,37 @@ class GameObjectLayout extends UIElement {
         //     .rect(0, -pixelHeight, pixelWidth, pixelHeight)
         //     .fill(this._backgroundFill)
 
+        // this is the position of the graphics object in pixels for the redrawn object
+        let graphicsXPos = 0;
+        let graphicsYPos = 0;
+
+        if(this.layoutOrientation == LayoutOrientation.VerticalDown){
+            // the y moves down (pixi draws it upwards so we go down to counteract this).
+            // To move down with pixi you go positive in y direction
+            graphicsYPos += pixelHeight
+        } 
+        // else if(this.layoutOrientation == LayoutOrientation.VerticalUp){
+        //     // 0,0 is start pos no change
+        // } 
+        else if(this.layoutOrientation == LayoutOrientation.HorizontalLeft){
+            
+        } else if(this.layoutOrientation == LayoutOrientation.HorizontalRight){
+            
+        }
+
+        // if(this.layoutOrientation == LayoutOrientation.VerticalDown){
+
+        // } else if(this.layoutOrientation == LayoutOrientation.VerticalUp){
+            
+        // } else if(this.layoutOrientation == LayoutOrientation.HorizontalLeft){
+            
+        // } else if(this.layoutOrientation == LayoutOrientation.HorizontalRight){
+            
+        // }
+
         // vertical down
         this.backgroundGraphics
-            .rect(0, 0, pixelWidth, pixelHeight)
+            .rect(graphicsXPos, graphicsYPos, pixelWidth, pixelHeight)
             .fill(this._backgroundFill)
 
         // if has stroke, then process it

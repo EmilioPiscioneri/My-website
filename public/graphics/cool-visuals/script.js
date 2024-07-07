@@ -503,7 +503,8 @@ function BallsConnectToLineLoad(game) {
 
     // Setup layout (defined earlier)
 
-    uiLayout.position = new Point(0, canvasSize.height);
+    // uiLayout.position = new Point(0, canvasSize.height);
+    uiLayout.position = new Point(canvasSize.width/2, canvasSize.height/2); // to visualise layouts
 
     uiLayout.width = 5;
     uiLayout.height = 5
