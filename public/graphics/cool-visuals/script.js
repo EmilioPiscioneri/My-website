@@ -497,15 +497,31 @@ function BallsConnectToLineLoad(game) {
 
     ballPushStrengthSlider.AddEventListener("valueChanged", HandlePushStrengthChanged, ballPushStrengthLabel)
 
+    let radiusVisibilityBtn = new Button(game, "Show push/pull radius", false);
+    
+    radiusVisibilityBtn.fontSize = 22;
+    radiusVisibilityBtn.backgroundStroke = {
+        color: "black",
+        width: 2
+    }
+    // gridVisibilityBtn.position = new Point(0.25, canvasSize.height - lineCountTextLbl.height - 0.5 - gridVisibilityBtn.height)
+    // document.btn = gridVisibilityBtn
+
+    // game.AddGameObject(gridVisibilityBtn)
+
+    radiusVisibilityBtn.AddEventListener("pointerUp", HandleGridVisibilityBtnUp)
+
+    gameObjEventsToDestroy.push([gridVisibilityBtn, "pointerup", HandleGridVisibilityBtnUp])
+
     // game.AddGameObject(ballPullStrengthSlider)
     // game.AddGameObject(ballPullStrengthLabel)
 
 
     // Setup layout (defined earlier)
 
-    // uiLayout.position = new Point(0, canvasSize.height);
-    uiLayout.position = new Point(0, canvasSize.height/2);
-    uiLayout.layoutOrientation = LayoutOrientation.HorizontalRight
+    uiLayout.position = new Point(0.25, canvasSize.height-0.25);
+    // uiLayout.position = new Point(canvasSize.width/2, canvasSize.height/2);
+    uiLayout.layoutOrientation = LayoutOrientation.VerticalDown
     // uiLayout.margin = new Padding(0.2,0.1,0.3,0.4)
 
     uiLayout.width = 5;
@@ -529,7 +545,7 @@ function BallsConnectToLineLoad(game) {
     
     // game.AddGameObject(gridVisibilityBtn)
     // gridVisibilityBtn.position = new Point(4,4)
-    uiLayout.AddGameObject(textInput, true)
+    // uiLayout.AddGameObject(textInput, true)
     uiLayout.AddGameObject(gridVisibilityBtn, true)
     // game.AddGameObject(textInput)
 
