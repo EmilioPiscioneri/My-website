@@ -358,7 +358,7 @@ function BallsConnectToLineLoad(game) {
                     ballVelocity = VecMath.ScalarMultiplyVec(ballVelocity, GetRandomRange(ballMagnitudeRange[0], ballMagnitudeRange[1]));
 
                     // Now actually create the game object
-                    let ball = new Circle(ballPos.x, ballPos.y, GetRandomRange(ballRadiusRange[0], ballRadiusRange[1]), game)
+                    let ball = new Circle(game, ballPos.x, ballPos.y, GetRandomRange(ballRadiusRange[0], ballRadiusRange[1]))
 
                     // add collider to ball
                     ball.collider = new CircleCollider();
@@ -394,9 +394,9 @@ function BallsConnectToLineLoad(game) {
     // Also this will fire even if buttons are pressed
     function HandlePointerDown(pointerEvent) {
         // console.log(pointerEvent)
-        
+
         // if didn't click down on ui layout (
-        if (!uiLayout.ContainsPoint(game.pointerPos)){
+        if (!uiLayout.ContainsPoint(game.pointerPos)) {
             if (pointerEvent.button == 0) // left
                 leftPointerDown = true;
             else if (pointerEvent.button == 2) // right
@@ -441,7 +441,7 @@ function BallsConnectToLineLoad(game) {
     // game.AddGameObject(lineCountTextLbl);
 
     gridVisibilityBtn = new Button(game, "Show grid", false);
-    
+
     gridVisibilityBtn.fontSize = 22;
     gridVisibilityBtn.backgroundStroke = {
         color: "black",
@@ -498,7 +498,7 @@ function BallsConnectToLineLoad(game) {
     ballPushStrengthSlider.AddEventListener("valueChanged", HandlePushStrengthChanged, ballPushStrengthLabel)
 
     let radiusVisibilityBtn = new Button(game, "Show push/pull radius", false);
-    
+
     radiusVisibilityBtn.fontSize = 22;
     radiusVisibilityBtn.backgroundStroke = {
         color: "black",
@@ -519,7 +519,7 @@ function BallsConnectToLineLoad(game) {
 
     // Setup layout (defined earlier)
 
-    uiLayout.position = new Point(0.25, canvasSize.height-0.25);
+    uiLayout.position = new Point(0.25, canvasSize.height - 0.25);
     // uiLayout.position = new Point(canvasSize.width/2, canvasSize.height/2);
     uiLayout.layoutOrientation = LayoutOrientation.VerticalDown
     // uiLayout.margin = new Padding(0.2,0.1,0.3,0.4)
@@ -542,7 +542,7 @@ function BallsConnectToLineLoad(game) {
     // So we have two text container inherited objects and whenever they are under the layout and their text changes it fitsredraw background which messes up its positioning
     // When under the Game it does not do that. Confusing
 
-    
+
     // game.AddGameObject(gridVisibilityBtn)
     // gridVisibilityBtn.position = new Point(4,4)
     // uiLayout.AddGameObject(textInput, true)
@@ -556,7 +556,7 @@ function BallsConnectToLineLoad(game) {
     uiLayout.AddGameObject(ballPushStrengthSlider, true)
 
     // uiLayout.backgroundFill = "grey"
-    
+
 
 
 
@@ -699,7 +699,7 @@ function DrawAllLines() {
             lineGraphics.zIndex = -1
 
             // game object
-            let line = new GameObject(lineGraphics, game, false, false); // don't share size and pos
+            let line = new GameObject(game, lineGraphics, false, false); // don't share size and pos
             line.gravityEnabled = false;
 
             // add to scene

@@ -993,7 +993,7 @@ class GameObject extends EventSystem {
      * @param {Boolean} shareSize whether or not setting size (width and height) of game object will affect graphics object
      * 
      */
-    constructor(graphicsObject, game, sharePosition = true, shareSize = true) {
+    constructor(game, graphicsObject, sharePosition = true, shareSize = true) {
         super(); // calls constructor for inherited object
 
         if (graphicsObject == null)
@@ -1085,7 +1085,7 @@ class Circle extends GameObject {
      * @param {Number} radius 
      * @param {Game} game 
      */
-    constructor(x, y, radius, game) {
+    constructor(game, x, y, radius) {
         // Create the circle graphics object
         // let circleGraphicsObject = new PIXI.Graphics()
         //     .circle(0, 0, radius)
@@ -1098,7 +1098,7 @@ class Circle extends GameObject {
 
         circleGraphicsObject.interactive = true
 
-        super(circleGraphicsObject, game)
+        super(game, circleGraphicsObject)
 
         // Initialise position
         this.x = x;
@@ -1163,8 +1163,8 @@ class UIElement extends GameObject {
      * @param {PIXI.Graphics} graphicsObject PIXI graphics object
      * @param {Game} game 
      */
-    constructor(graphicsObject, game) {
-        super(graphicsObject, game, false, false); // turn off share pos and size for now
+    constructor(game, graphicsObject) {
+        super(game, graphicsObject, false, false); // turn off share pos and size for now
         this.physicsEnabled = false;
         this.interactive = true; // Just make all UI elements interactive
         this.shareSize = true // now turn it back on
@@ -1239,7 +1239,7 @@ class TextLabel extends UIElement {
                 style: textStyleOptions
             })
 
-        super(pixiTextObject, game, false, false); // turn off share pos and size
+        super(game, pixiTextObject, false, false); // turn off share pos and size
 
         // -- initialise values --
         this.position = this.graphicsObject.position;
@@ -1446,7 +1446,7 @@ class TextContainer extends GameObject {
         let backgroundGraphics = new Graphics().rect(0, 0, 100, 100).fill("white")
 
         // start as share off because it tries to access functions that haven't been defined yet
-        super(backgroundGraphics, game, false, false);
+        super(game, backgroundGraphics, false, false);
 
 
 
@@ -1724,7 +1724,7 @@ class TextInput extends TextContainer {
             .rect(0, 0, 0.05, 1)
             .fill("white"); // white fill so u can use tint to change caret color for different contrast. Maybe match with text color idk
 
-        let caretObject = new GameObject(caretGraphics, game, true, true);
+        let caretObject = new GameObject(game, caretGraphics, true, true);
         caretObject.physicsEnabled = false;
 
         caretObject.height = this.textLabelObject.fontSize / game.pixelsPerUnit.y;
@@ -2147,12 +2147,12 @@ class Slider extends UIElement {
         // create graphics, need to access the "this" variable which is after the super function and then I'll redraw the background graphics before render which won't be too costly
         let backgroundGraphics = new Graphics()
 
-        super(backgroundGraphics, game);
+        super(game, backgroundGraphics);
 
 
 
         // create the circle that'll follow slider
-        this.slidingBall = new Circle(0, 0, 0.1, game);
+        this.slidingBall = new Circle(game, 0, 0, 0.1);
         this.slidingBall.physicsEnabled = false;
         this.otherGameObjects.push(this.slidingBall);
 
@@ -2452,7 +2452,7 @@ class GameObjectLayout extends GameObject {
             .fill("white") // need to fill to update size?
 
         // console.log(backgroundGraphics.width,backgroundGraphics.height)
-        super(backgroundGraphics, game)
+        super(game, backgroundGraphics)
 
         // The background is static so set all those vars up
         this.static = true;
