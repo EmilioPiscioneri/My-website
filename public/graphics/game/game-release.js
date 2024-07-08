@@ -269,7 +269,7 @@ function qtyCharInString(stringToCheck, charToMatch) {
 class Game extends EventSystem {
     pixiApplication = new PIXI.Application();
     graphicsContainer = null; // a div where graphics go 
-    // defaultBackgroundColour = "#4f4f4f"
+    // defaultBackgroundColor = "#4f4f4f"
     gameObjects = []; // an array of all game objects in scene 
     ticker; // a PIXI ticker object that is for this game obvject
     globalPhysicsEnabled = true; // Maybe you don't want physics idk
@@ -290,12 +290,12 @@ class Game extends EventSystem {
         this.FireListener("pixelsPerUnitChanged")
     }
 
-    _backgroundColour = "#353535"
-    get backgroundColour() { return this._backgroundColour }
-    set backgroundColour(newColour) {
-        this._backgroundColour = newColour;
+    _backgroundColor = "#353535"
+    get backgroundColor() { return this._backgroundColor }
+    set backgroundColor(newColor) {
+        this._backgroundColor = newColor;
         if (this.initialised)
-            this.pixiApplication.renderer.background.color = newColour
+            this.pixiApplication.renderer.background.color = newColor
     }
 
     _paused = false;
@@ -357,7 +357,7 @@ class Game extends EventSystem {
         return new Promise((resolve, reject) => {
             // initialise the graphics object (is done asynchronously)
             this.pixiApplication.init({
-                background: this._backgroundColour,
+                background: this._backgroundColor,
                 resizeTo: graphicsContainer,
                 antialias: true, // make graphics not look so bad
             }).then(() => {
@@ -1089,7 +1089,7 @@ class Circle extends GameObject {
         // Create the circle graphics object
         // let circleGraphicsObject = new PIXI.Graphics()
         //     .circle(0, 0, radius)
-        //     .fill("white"); // can just change colour with tint
+        //     .fill("white"); // can just change color with tint
 
         let circleGraphicsObject = new PIXI.Graphics(circleGraphicsContext)
 
@@ -2472,6 +2472,7 @@ class GameObjectLayout extends GameObject {
     // updates the z index of all objects
     UpdateObjectsZIndex() {
         let layoutzIndex = this.zIndex;
+
         for (let objIndex = 0; objIndex < this.ManagedObjects.length; objIndex++) {
             let gameObj = this.ManagedObjects[objIndex]
             // gameObj.graphicsObject.zIndex = newVal + objIndex + 1; // + 1 to make it 1 based indexing
