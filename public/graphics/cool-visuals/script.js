@@ -228,7 +228,7 @@ let uiLayout;
 
 
 function BallsConnectToLineLoad(game) {
-    game.backgroundColour = "#353535"; // set better colour for contrast
+    game.backgroundColor = "#353535"; // set better color for contrast
     // Just push game objects inwards if out of screen bounds. Easier than dealing with static objects
 
     // #region Create a grid
