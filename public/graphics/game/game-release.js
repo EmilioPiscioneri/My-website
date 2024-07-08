@@ -3,7 +3,7 @@ let near0 = 0.00048828125; // a value that is near 0, it's a power of 2 which co
 
 /*
     GAME.JS
-    VERSION 0.2 - Added UI Elements
+    VERSION 0.3 
 */
 
 /**
