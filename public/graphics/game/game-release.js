@@ -150,6 +150,136 @@ class EventSystem {
 }
 
 /**
+ * This class represents a Node that has child nodes, parent nodes and so on.
+ * All higher level parents are referred to as ancestors
+ * All lower level children are referred to as descendants
+ */
+class GameNode extends EventSystem {
+    children = [];
+
+    _parent = null;
+    get parent() {
+        return this._parent;
+    }
+    set parent(newParent) {
+        this._parent = newParent;
+    }
+
+    constructor() {
+        super();
+    }
+
+    /**
+     * See snippet about overriding two functions that access each other
+        class a{
+            constructor(){
+                
+            }
+
+            removeChild(i){
+                console.log(i)
+            }
+
+            removeChildren(){
+                for(let i =0; i<4; i++){
+                    this.removeChild(i)
+                }
+            }
+        }
+
+        class b extends a {
+            constructor(){
+                super()
+            }
+
+            removeChild(i){
+                console.log(i+2)
+            }
+        }
+
+        var x = new b();
+        x.removeChildren();
+
+        // Output: 2 3 5 7
+     */
+
+
+    /**
+     * @param {GameNode} childToAdd 
+     */
+    AddChild(childToAdd) {
+        if(childToAdd.parent)
+            throw new Error("Tried to add a child to node that already has a parent")
+        this.children.push(childToAdd);
+        childToAdd.parent = this; // set new parent
+        this.FireListener("childAdded", {child: childToAdd})
+    }
+    
+    AddChildren(childrenToAdd) {
+        if (!Array.isArray(childrenToAdd))
+            throw new Error("Passed children aren't an array")
+        for (const gameObj of childrenToAdd) {
+            this.AddChild(gameObj);
+        }
+    }
+
+    /**
+     * Removes a specified child from node
+     * @param {GameNode} childToRemove 
+     * @param {Boolean} callDestructor After node is removed, whether to call its destruct function
+     * @returns Whether the remove waas successfull or not
+     */
+    RemoveChild(childToRemove, callDestructor) {
+        // If child doesn't exist return false
+        if (!this.ContainsChild(childToRemove)) {
+            return false   
+        }
+        // else return true after remove
+
+        // remove from array
+        this.children.splice(this.children.indexOf(childToRemove), 1)
+
+        childToRemove.parent = null;
+
+        // clean it up
+        if (callDestructor)
+            childToRemove.Destruct();
+
+        this.FireListener("childRemoved", {child: childToRemove})
+
+
+        return true
+    }
+
+    /**
+     * Removes an array of nodes from children 
+     * @param {Array.<Node>} childrenToRemove 
+     * @param {Boolean} callDestructor After node is removed, whether to call its destruct function
+     */
+    RemoveChildren(childrenToRemove, callDestructor) {
+        if (!Array.isArray(childrenToRemove))
+            throw new Error("Passed children aren't an array")
+        for (const node of childrenToRemove) {
+            this.RemoveChild(node, callDestructor);
+        }
+    }
+
+    /**
+     * If node contains child node
+     * @param {Node} nodeToFind 
+     * @returns true if found, else false
+     */
+    ContainsChild(nodeToFind) {
+        return (this.children.indexOf(nodeToFind) != -1)
+    }
+
+    // Deal with descendants and other items for garbage collector
+    Destruct() {
+        super.Destruct()
+    }
+}
+
+/**
  * Static direction ENUM
  */
 class Direction {
