@@ -213,7 +213,14 @@ class GameNode extends EventSystem {
         this.children.push(childToAdd);
         childToAdd.parent = this; // set new parent
         this.FireListener("childAdded", {child: childToAdd})
-        // Recursively fire the descendant added to all parents above th current node
+
+        // Recursively fire the descendant added to all parents (ancestors) above the current node
+        let ancestor = this.parent; // ancestor will change as each one gets iterated to it's own parent
+        // keep going until ancestor is null
+        while(ancestor){
+            ancestor.FireListener("descendantAdded", {descendant: childToAdd})
+            ancestor = ancestor.parent; // go 1 layer higher
+        }
         
     }
     
@@ -241,6 +248,9 @@ class GameNode extends EventSystem {
         // remove from array
         this.children.splice(this.children.indexOf(childToRemove), 1)
 
+        let oldParent = childToRemove.parent
+
+        // Want the parent to be null before the child/descendant removed events are fired
         childToRemove.parent = null;
 
         // clean it up
@@ -248,6 +258,14 @@ class GameNode extends EventSystem {
             childToRemove.Destruct();
 
         this.FireListener("childRemoved", {child: childToRemove})
+
+        // Recursively fire the descendant added to all parents (ancestors) above the current node
+        let ancestor = oldParent; // ancestor will change as each one gets iterated to it's own parent
+        // keep going until ancestor is null
+        while(ancestor){
+            ancestor.FireListener("descendantRemoved", {descendant: childToAdd})
+            ancestor = ancestor.parent; // go 1 layer higher
+        }
 
 
         return true
@@ -626,7 +644,7 @@ class Game extends EventSystem {
         }
 
         this.gameObjects.push(objectToAdd)
-        this.pixiApplication.stage.addChild(objectToAdd.graphicsObject)
+        this.pixiApplication.stage.addChild(objectToAdd.stageObject)
         // if others, add them too
         if (objectToAdd.otherGameObjects)
             this.AddGameObjects(objectToAdd.otherGameObjects);
@@ -656,7 +674,7 @@ class Game extends EventSystem {
             this.gameObjects.splice(this.gameObjects.indexOf(objectToRemove), 1)
 
             // remove from stage
-            this.pixiApplication.stage.removeChild(objectToRemove.graphicsObject)
+            this.pixiApplication.stage.removeChild(objectToRemove.stageObject)
             // clean it up
             if (callDestructor)
                 objectToRemove.Destruct();
@@ -698,7 +716,7 @@ class Game extends EventSystem {
         // game stage children doesn't mtter because it will handle errors
         // if found in both game stage and game objects array
         // return (this.gameObjects.indexOf(objectToFind) != -1 &&
-        //     this.pixiApplication.stage.children.indexOf(objectToFind.graphicsObject) != -1)
+        //     this.pixiApplication.stage.children.indexOf(objectToFind.stageObject) != -1)
     }
 
 
@@ -921,7 +939,7 @@ class Game extends EventSystem {
             return;
 
         // the position is relative to parent so I'll just make it so only parent can move for now
-        if (gameObj.graphicsObject.parent != gameStage)
+        if (gameObj.stageObject.parent != gameStage)
             return;
 
         // Don't need to move if static, can't have velocity
@@ -995,7 +1013,7 @@ class Game extends EventSystem {
  * Currently, it is something that is renderable
  */
 class GameObject extends GameNode {
-    graphicsObject; // the actual graphics object of the game object
+    stageObject; // the actual graphics object of the game object
     game; // the current game object
     _isVisible = true;
     get isVisible() {
@@ -1003,7 +1021,7 @@ class GameObject extends GameNode {
     }
     set isVisible(newVisibility) {
         this._isVisible = newVisibility // set class variable
-        this.graphicsObject.visible = newVisibility; // also set graphics visibility
+        this.stageObject.visible = newVisibility; // also set graphics visibility
     }
 
     sharePosition = true; // whether or not setting position of game object will affect graphics object
@@ -1038,7 +1056,7 @@ class GameObject extends GameNode {
             + canvasHeight - this.height // convert to bottom-left (currently top left)
 
         // set the new pos, convert to pixel units first
-        this.graphicsObject.position = this.game.ConvertUnitsToPixels(newPosition);
+        this.stageObject.position = this.game.ConvertUnitsToPixels(newPosition);
 
 
     }
@@ -1062,7 +1080,7 @@ class GameObject extends GameNode {
 
 
         // newPosition.y = newPosition.y * -1 + game.pixiApplication.canvas.height; // inverse the y and make it bottom left (currently top left)
-        // this.graphicsObject.position = newPosition; // set the new pos
+        // this.stageObject.position = newPosition; // set the new pos
     }
 
     // position values
@@ -1086,7 +1104,7 @@ class GameObject extends GameNode {
     set width(newWidth) {
         this._width = newWidth;
         if (this.shareSize) {
-            this.graphicsObject.width = newWidth * this.game.pixelsPerUnit.x;// convert units to pixels
+            this.stageObject.width = newWidth * this.game.pixelsPerUnit.x;// convert units to pixels
         }
         this.FireListener("widthChanged") // fire changed event
         // this.updateGraphicsObjPosition();
@@ -1098,7 +1116,7 @@ class GameObject extends GameNode {
     set height(newHeight) {
         this._height = newHeight;
         if (this.shareSize) {
-            this.graphicsObject.height = newHeight * this.game.pixelsPerUnit.y;// convert units to pixels
+            this.stageObject.height = newHeight * this.game.pixelsPerUnit.y;// convert units to pixels
         }
         if (this.sharePosition)
             this.updateGraphicsObjPosition();
@@ -1107,32 +1125,32 @@ class GameObject extends GameNode {
 
     // the alpha value of the object graphics
     get alpha() {
-        if (this.graphicsObject)
-            return this.graphicsObject.alpha
+        if (this.stageObject)
+            return this.stageObject.alpha
         else
             return null
     }
     set alpha(newAlpha) {
-        if (this.graphicsObject)
-            this.graphicsObject.alpha = newAlpha
+        if (this.stageObject)
+            this.stageObject.alpha = newAlpha
     }
 
     /**
      * Creates a game object, make sure to add it to the game after creation
-     * @param {Graphics} graphicsObject A PIXI JS graphics object which holds all the render data. Is automatically added to game stage
+     * @param {Graphics} stageObject A PIXI JS graphics object which holds all the render data. Is automatically added to game stage
      * @param {Game} game The current game the object is under
      * @param {Boolean} sharePosition whether or not setting position of game object will affect graphics object
      * @param {Boolean} shareSize whether or not setting size (width and height) of game object will affect graphics object
      * 
      */
-    constructor(game, graphicsObject, sharePosition = true, shareSize = true) {
+    constructor(game, stageObject, sharePosition = true, shareSize = true) {
         super(); // calls constructor for inherited object
 
-        if (graphicsObject == null)
+        if (stageObject == null)
             throw new Error("Created a new game object with null graphics object")
         if (game == null)
             throw new Error("Created a new game object with null game input")
-        this.graphicsObject = graphicsObject;
+        this.stageObject = stageObject;
         this.game = game;
 
         this.sharePosition = sharePosition;
@@ -1140,8 +1158,8 @@ class GameObject extends GameNode {
 
         // -- initialise values --
         if (shareSize) {
-            this.width = this.graphicsObject.width;
-            this.height = this.graphicsObject.height;
+            this.width = this.stageObject.width;
+            this.height = this.stageObject.height;
         }
 
 
@@ -1155,10 +1173,10 @@ class GameObject extends GameNode {
 
         }, this)
 
-        // console.log("current pos is "+this.graphicsObject.position.x, +" " + this.graphicsObject.position.y)
+        // console.log("current pos is "+this.stageObject.position.x, +" " + this.stageObject.position.y)
 
         // intialising position doesn't work?
-        // this.position = this.graphicsObject.position; // run through the set function
+        // this.position = this.stageObject.position; // run through the set function
 
     }
 
@@ -1167,8 +1185,8 @@ class GameObject extends GameNode {
         super.Destruct();
 
         // Destroy the graphics object if it exists and has destory function
-        if (this.graphicsObject && this.graphicsObject.destroy) {
-            this.graphicsObject.destroy();
+        if (this.stageObject && this.stageObject.destroy) {
+            this.stageObject.destroy();
         }
     }
 }
@@ -1203,7 +1221,7 @@ class Circle extends GameObject {
             + canvasHeight // Move to bottom. Because its a circle its x and y is middle of circle
 
         // set the new pos, convert to pixel units first
-        this.graphicsObject.position = this.game.ConvertUnitsToPixels(newPosition);
+        this.stageObject.position = this.game.ConvertUnitsToPixels(newPosition);
     }
 
     isACircle = true;
@@ -1264,8 +1282,8 @@ class UIElement extends GameObject {
         // console.log("Position changed on UI to", newPosition)
         this._position = new Point(newPosition.x, newPosition.y);
         let pixelPos = this.game.ConvertUnitsToRawPixels(newPosition)
-        pixelPos.y -= this.graphicsObject.height;
-        this.graphicsObject.position = pixelPos;
+        pixelPos.y -= this.stageObject.height;
+        this.stageObject.position = pixelPos;
         this.FireListener("positionChanged") // fire changed event
 
         // if(this.name == "grid visibility"){
@@ -1292,11 +1310,11 @@ class UIElement extends GameObject {
 
     /**
      * 
-     * @param {PIXI.Graphics} graphicsObject PIXI graphics object
+     * @param {PIXI.Graphics} stageObject PIXI graphics object
      * @param {Game} game 
      */
-    constructor(game, graphicsObject) {
-        super(game, graphicsObject, false, false); // turn off share pos and size for now
+    constructor(game, stageObject) {
+        super(game, stageObject, false, false); // turn off share pos and size for now
         this.physicsEnabled = false;
         this.interactive = true; // Just make all UI elements interactive
         this.shareSize = true // now turn it back on
@@ -1310,9 +1328,9 @@ class UIElement extends GameObject {
  */
 class TextLabel extends UIElement {
     // PIXI text object
-    get textObject() { return this.graphicsObject }
+    get textObject() { return this.stageObject }
     set textObject(newTextObject) {
-        this.graphicsObject = newTextObject
+        this.stageObject = newTextObject
     }
 
     get text() {
@@ -1374,10 +1392,10 @@ class TextLabel extends UIElement {
         super(game, pixiTextObject, false, false); // turn off share pos and size
 
         // -- initialise values --
-        this.position = this.graphicsObject.position;
+        this.position = this.stageObject.position;
         // the text object automatically jets width and height in pixels when created so adjustr
-        this.width = this.graphicsObject.width / game.pixelsPerUnit.x;
-        this.height = this.graphicsObject.height / game.pixelsPerUnit.y;
+        this.width = this.stageObject.width / game.pixelsPerUnit.x;
+        this.height = this.stageObject.height / game.pixelsPerUnit.y;
     }
 }
 
@@ -1443,9 +1461,9 @@ class TextContainer extends GameObject {
         this.FireListener("textChanged")
     }
 
-    get backgroundGraphics() { return this.graphicsObject }
+    get backgroundGraphics() { return this.stageObject }
     set backgroundGraphics(newVal) {
-        this.graphicsObject = newVal
+        this.stageObject = newVal
     }
 
     // keep old getter and setter but add new stuff
@@ -1480,7 +1498,7 @@ class TextContainer extends GameObject {
     set zIndex(newVal) {
         // text should be 1 zindex above background
         this.backgroundGraphics.zIndex = newVal;
-        this.textLabelObject.graphicsObject.zIndex = newVal + 1;
+        this.textLabelObject.stageObject.zIndex = newVal + 1;
     }
 
 
@@ -1549,9 +1567,9 @@ class TextContainer extends GameObject {
     };
 
     // whether background graphics is visible
-    get isVisible() { return this.graphicsObject.visible }
+    get isVisible() { return this.stageObject.visible }
     set isVisible(newVisibility) {
-        this.graphicsObject.visible = newVisibility;
+        this.stageObject.visible = newVisibility;
     }
 
 
@@ -1601,7 +1619,7 @@ class TextContainer extends GameObject {
         this.width = textLabelObject.width + this.padding.left + this.padding.right;
         this.height = textLabelObject.height + this.padding.bottom + this.padding.top;
 
-        // this.graphicsObject.height = (textLabelObject.height + this.padding.bottom + this.padding.top)*game.pixelsPerUnit.y
+        // this.stageObject.height = (textLabelObject.height + this.padding.bottom + this.padding.top)*game.pixelsPerUnit.y
 
         // background is already redrawn when width and height r set
         // this.RedrawBackground(); // 
@@ -2187,9 +2205,9 @@ class Slider extends UIElement {
 
     slidingBall; // just a circle game object which is used to slide. Maybe I'll add support for sprites later idk.
 
-    get backgroundGraphics() { return this.graphicsObject }
+    get backgroundGraphics() { return this.stageObject }
     set backgroundGraphics(newVal) {
-        this.graphicsObject = newVal
+        this.stageObject = newVal
     }
 
     // keep old getter and setter but add new stuff
@@ -2205,7 +2223,7 @@ class Slider extends UIElement {
     set zIndex(newVal) {
         // text should be 1 zindex above background
         this.backgroundGraphics.zIndex = newVal;
-        this.slidingBall.graphicsObject.zIndex = newVal + 1;
+        this.slidingBall.stageObject.zIndex = newVal + 1;
     }
 
     // In order to do colors (including stroke) you're going to need to redraw the rect each time there's a change
@@ -2243,7 +2261,7 @@ class Slider extends UIElement {
     get slidingBallFill() { return this._slidingBallFill }
     set slidingBallFill(newFill) {
         this._slidingBallFill = newFill;
-        this.slidingBall.graphicsObject.tint = newFill; // set the tint because the graphics object is se to white color and no stroke
+        this.slidingBall.stageObject.tint = newFill; // set the tint because the graphics object is se to white color and no stroke
     }
 
 
@@ -2305,12 +2323,12 @@ class Slider extends UIElement {
 
         // events
         this.backgroundGraphics.addEventListener("pointerdown", this.HandlePointerDown);
-        this.slidingBall.graphicsObject.addEventListener("pointerdown", this.HandlePointerDown);
+        this.slidingBall.stageObject.addEventListener("pointerdown", this.HandlePointerDown);
         this.game.AddEventListener("pointerUp", this.HandlePointerUpOnCanvas, this)
         this.game.AddEventListener("pointerMove", this.HandlePointerMoveOnCanvas, this)
         // the others are automatically destroyed through the third poarameter
         this.eventsToDestroy.push([this.backgroundGraphics, "pointerdown", this.HandlePointerDown])
-        this.eventsToDestroy.push([this.slidingBall.graphicsObject, "pointerdown", this.HandlePointerDown])
+        this.eventsToDestroy.push([this.slidingBall.stageObject, "pointerdown", this.HandlePointerDown])
 
         this.min = min || 0
         this.max = max || 10;
@@ -2510,8 +2528,8 @@ class GameObjectLayout extends GameObject {
     // In Game units, dependant on vertical or horizontal layout
     spaceBetweenObjects = 0.25;
 
-    get backgroundGraphics() { return this.graphicsObject }
-    set backgroundGraphics(newObject) { this.graphicsObject = newObject }
+    get backgroundGraphics() { return this.stageObject }
+    set backgroundGraphics(newObject) { this.stageObject = newObject }
 
     // In order to do colors (including stroke) you're going to need to redraw the rect each time there's a change
 
@@ -2607,8 +2625,8 @@ class GameObjectLayout extends GameObject {
 
         for (let objIndex = 0; objIndex < this.ManagedObjects.length; objIndex++) {
             let gameObj = this.ManagedObjects[objIndex]
-            // gameObj.graphicsObject.zIndex = newVal + objIndex + 1; // + 1 to make it 1 based indexing
-            gameObj.graphicsObject.zIndex = layoutzIndex + 1; // jsut make it 1 higher than layout background
+            // gameObj.stageObject.zIndex = newVal + objIndex + 1; // + 1 to make it 1 based indexing
+            gameObj.stageObject.zIndex = layoutzIndex + 1; // jsut make it 1 higher than layout background
         }
 
     }
