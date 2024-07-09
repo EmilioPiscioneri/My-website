@@ -562,51 +562,101 @@ function BallsConnectToLineLoad(game) {
 
     // #endregion
 
+    // ----------
+
+    //-----------
+    
     // Game node and scene testing 
     let testScene = new Scene(game);
 
-    // // Add objects to scene
+    // Add objects to scene
+    
+    // For each rect the layer is represented by index and then its value is position in laywr
+    // E.g. rect0_0 is layer 0->layer 1, index 0 
+    // E.g. rect1 is layer0, index 1
+    
+    
+    // layer 0
 
-
-    // let rectGraphics = new PIXI.Graphics()
-    // .rect(0,0,100,100)
-    // .fill("white")
-    // let singleLayerRect = new GameObject(game, 
-    //     rectGraphics
-    // )
-
-    let preAddSingleLayerRect = new GameObject(game,
+    let rect0 = new GameObject(game,
         new PIXI.Graphics()
             .rect(0, 0, 1, 1)
             .fill("white"))
 
-    preAddSingleLayerRect.position = new Point(2,5)
+    rect0.position = new Point(7,16)
+    
+    // layer 1
 
-    let preAddDoubleLayerRect1 = new GameObject(game,
+    let rect0_0 = new GameObject(game,
         new PIXI.Graphics()
             .rect(0, 0, 1, 1)
-            .fill("red"))
-            preAddDoubleLayerRect1.name = "preAddDoubleLayerRect1"
+            .fill("grey"))
+            
+    rect0_0.name = "rect0_0"
 
-    preAddDoubleLayerRect1.position = new Point(0,5)
+    rect0_0.position = new Point(3,15)
 
-    let preAddDoubleLayerRect2 = new GameObject(game,
+    let rect0_1 = new GameObject(game,
         new PIXI.Graphics()
             .rect(0, 0, 1, 1)
-            .fill("green"))
+            .fill("grey"))
 
-    preAddDoubleLayerRect2.name = "preAddDoubleLayerRect2"
+    rect0_1.name = "rect0_1"
 
-    preAddDoubleLayerRect1.AddChild(preAddDoubleLayerRect2)
-    preAddDoubleLayerRect2.position = new Point(0,4)
+    rect0_1.position = new Point(11,15)
+    
+    // layer 2
+    
+    let rect0_0_0 = new GameObject(game,
+        new PIXI.Graphics()
+            .rect(0, 0, 1, 1)
+            .fill("black"))
 
+    rect0_0_0.name = "rect0_0_0"
 
+    rect0_0_0.position = new Point(1,15)
+
+    let rect0_0_1 = new GameObject(game,
+        new PIXI.Graphics()
+            .rect(0, 0, 1, 1)
+            .fill("black"))
+
+    rect0_0_1.name = "rect0_0_1"
+
+    rect0_0_1.position = new Point(2,15)
+    
+    let rect0_1_0 = new GameObject(game,
+        new PIXI.Graphics()
+            .rect(0, 0, 1, 1)
+            .fill("black"))
+
+    rect0_1_0.name = "rect0_1_0"
+
+    rect0_1_0.position = new Point(9,15)
+    
+    let rect0_1_1 = new GameObject(game,
+        new PIXI.Graphics()
+            .rect(0, 0, 1, 1)
+            .fill("black"))
+
+    rect0_1_1.name = "rect0_1_1"
+
+    rect0_1_1.position = new Point(13,15)
+
+    let firstDelay = 1000; // ms
+
+    setTimeout(()=>rect0.AddChild(rect0_0),firstDelay)
+    setTimeout(()=>rect0.AddChild(rect0_1),firstDelay+1000)
+    setTimeout(()=>rect0_0.AddChild(rect0_0_0),firstDelay+3000)
+    setTimeout(()=>rect0_0.AddChild(rect0_0_1),firstDelay+2000)
+    setTimeout(()=>rect0_1.AddChild(rect0_1_0),firstDelay+4000)
+    setTimeout(()=>rect0_1.AddChild(rect0_1_1),firstDelay+3950)
 
 
 
     // // add to scene
-    testScene.AddChild(preAddSingleLayerRect)
-    testScene.AddChild(preAddDoubleLayerRect1)
+    testScene.AddChild(rect0)
+
 
     game.activeScene = testScene;
 
