@@ -561,6 +561,57 @@ function BallsConnectToLineLoad(game) {
 
 
     // #endregion
+
+    // Game node and scene testing 
+    let testScene = new Scene(game);
+
+    // // Add objects to scene
+
+
+    // let rectGraphics = new PIXI.Graphics()
+    // .rect(0,0,100,100)
+    // .fill("white")
+    // let singleLayerRect = new GameObject(game, 
+    //     rectGraphics
+    // )
+
+    let preAddSingleLayerRect = new GameObject(game,
+        new PIXI.Graphics()
+            .rect(0, 0, 1, 1)
+            .fill("white"))
+
+    preAddSingleLayerRect.position = new Point(2,5)
+
+    let preAddDoubleLayerRect1 = new GameObject(game,
+        new PIXI.Graphics()
+            .rect(0, 0, 1, 1)
+            .fill("red"))
+            preAddDoubleLayerRect1.name = "preAddDoubleLayerRect1"
+
+    preAddDoubleLayerRect1.position = new Point(0,5)
+
+    let preAddDoubleLayerRect2 = new GameObject(game,
+        new PIXI.Graphics()
+            .rect(0, 0, 1, 1)
+            .fill("green"))
+
+    preAddDoubleLayerRect2.name = "preAddDoubleLayerRect2"
+
+    preAddDoubleLayerRect1.AddChild(preAddDoubleLayerRect2)
+    preAddDoubleLayerRect2.position = new Point(0,4)
+
+
+
+
+
+    // // add to scene
+    testScene.AddChild(preAddSingleLayerRect)
+    testScene.AddChild(preAddDoubleLayerRect1)
+
+    game.activeScene = testScene;
+
+
+
 }
 
 // #region UI event handling --
