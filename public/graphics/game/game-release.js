@@ -213,6 +213,8 @@ class GameNode extends EventSystem {
         this.children.push(childToAdd);
         childToAdd.parent = this; // set new parent
         this.FireListener("childAdded", {child: childToAdd})
+        // Recursively fire the descendant added to all parents above th current node
+        
     }
     
     AddChildren(childrenToAdd) {
@@ -992,7 +994,7 @@ class Game extends EventSystem {
 /**
  * Currently, it is something that is renderable
  */
-class GameObject extends EventSystem {
+class GameObject extends GameNode {
     graphicsObject; // the actual graphics object of the game object
     game; // the current game object
     _isVisible = true;
