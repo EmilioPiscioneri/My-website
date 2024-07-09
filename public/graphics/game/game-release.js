@@ -1043,7 +1043,7 @@ class GameObject extends GameNode {
     }
 
 
-    updateGraphicsObjPosition() {
+    updateStageObjPosition() {
         // only if shared pos
         if (!this.sharePosition)
             return;
@@ -1074,7 +1074,7 @@ class GameObject extends GameNode {
         this._position = new Point(newPosition.x, newPosition.y); // avoid conflicts with referenced pos
         // make changes
         if (this.sharePosition)
-            this.updateGraphicsObjPosition();
+            this.updateStageObjPosition();
 
         this.FireListener("positionChanged") // fire changed event
 
@@ -1107,7 +1107,7 @@ class GameObject extends GameNode {
             this.stageObject.width = newWidth * this.game.pixelsPerUnit.x;// convert units to pixels
         }
         this.FireListener("widthChanged") // fire changed event
-        // this.updateGraphicsObjPosition();
+        // this.updateStageObjPosition();
     }
     _height = 0;
     get height() {
@@ -1119,7 +1119,7 @@ class GameObject extends GameNode {
             this.stageObject.height = newHeight * this.game.pixelsPerUnit.y;// convert units to pixels
         }
         if (this.sharePosition)
-            this.updateGraphicsObjPosition();
+            this.updateStageObjPosition();
         this.FireListener("heightChanged") // fire changed event
     }
 
@@ -1212,7 +1212,7 @@ class Circle extends GameObject {
     // }
 
     // overwrite
-    updateGraphicsObjPosition() {
+    updateStageObjPosition() {
         // clone to avoid conflicts
         let newPosition = new Point(this._position.x, this._position.y);
         let canvasHeight = game.pixiApplication.canvas.height / this.game.pixelsPerUnit.y; // convert from pixels to units
@@ -1237,18 +1237,18 @@ class Circle extends GameObject {
      */
     constructor(game, x, y, radius) {
         // Create the circle graphics object
-        // let circleGraphicsObject = new PIXI.Graphics()
+        // let circleStageObject = new PIXI.Graphics()
         //     .circle(0, 0, radius)
         //     .fill("white"); // can just change color with tint
 
-        let circleGraphicsObject = new PIXI.Graphics(circleGraphicsContext)
+        let circleStageObject = new PIXI.Graphics(circleGraphicsContext)
 
-        circleGraphicsObject.width = radius * 2;
-        circleGraphicsObject.height = radius * 2;
+        circleStageObject.width = radius * 2;
+        circleStageObject.height = radius * 2;
 
-        circleGraphicsObject.interactive = true
+        circleStageObject.interactive = true
 
-        super(game, circleGraphicsObject)
+        super(game, circleStageObject)
 
         // Initialise position
         this.x = x;
