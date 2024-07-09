@@ -1038,6 +1038,7 @@ class Game extends EventSystem {
 class Scene extends GameNode {
     // Array of stage objects that should be added to a PIXI stage whenever this stage is set as activeStage
     // this is seperate to the .children member of scene which contains GameObject's only and not its descendants.
+    // Think of it like a queue for PIXI stageObjects to render when ready (Game.activeStage == this)
     // DON'T ADD OR REMOVE FROM ARRAY. Use the add and remove stage child functions instead :>
     stageObjects = [];
     isScene = true;
@@ -1090,12 +1091,13 @@ class Scene extends GameNode {
         }
     }
 
+    // Whether stage object exists under Scene.stageObjects
     StageObjectExists(stageObject) {
         return (this.stageObjects.indexOf(stageObject) != -1)
     }
 
     /**
-     * Adds game object to scene
+     * Adds GameObject child to scene and renders the child's and its descendant's stageObjects
      * @param {GameObject} child 
      */
     AddChild(child) {
@@ -1154,8 +1156,6 @@ class Scene extends GameNode {
                     if (iteratedDescendant.stageObject)
                         this.AddStageObject(iteratedDescendant.stageObject)
 
-                    // TO-DO turn below into while loop because it needs to go up recursively
-
                     // The new index that the top layer's value was set to 
                     // Move up index for this layer by 1, the ++x increments and returns the new value btw (for my sake)
                     let newIndex = ++iterationIndexes[iterationIndexes.length - 1];
@@ -1179,18 +1179,11 @@ class Scene extends GameNode {
                     }
                 }
             }
-
-
-            // while(descendants.length){
-
-            //     descendant = child.children
-            // }
+        }
 
         } else {
             console.warn("Tried to add a non GameObject child to scene")
         }
-
-
     }
 
 
