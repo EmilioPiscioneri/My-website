@@ -5,3 +5,5 @@
   - graphicsObject changed to stageObject
 
 - I named GameNodes "GameNode" and not just Node because Node is a native js class.
+
+- For scenes, child added event gets fired first then the stage object added events are fired. Same for removed events 

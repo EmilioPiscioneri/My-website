@@ -208,22 +208,22 @@ class GameNode extends EventSystem {
      * @param {GameNode} childToAdd 
      */
     AddChild(childToAdd) {
-        if(childToAdd.parent)
+        if (childToAdd.parent)
             throw new Error("Tried to add a child to node that already has a parent")
         this.children.push(childToAdd);
         childToAdd.parent = this; // set new parent
-        this.FireListener("childAdded", {child: childToAdd})
+        this.FireListener("childAdded", { child: childToAdd })
 
         // Recursively fire the descendant added to all parents (ancestors) above the current node
         let ancestor = this.parent; // ancestor will change as each one gets iterated to it's own parent
         // keep going until ancestor is null
-        while(ancestor){
-            ancestor.FireListener("descendantAdded", {descendant: childToAdd})
+        while (ancestor) {
+            ancestor.FireListener("descendantAdded", { descendant: childToAdd })
             ancestor = ancestor.parent; // go 1 layer higher
         }
-        
+
     }
-    
+
     AddChildren(childrenToAdd) {
         if (!Array.isArray(childrenToAdd))
             throw new Error("Passed children aren't an array")
@@ -241,7 +241,7 @@ class GameNode extends EventSystem {
     RemoveChild(childToRemove, callDestructor) {
         // If child doesn't exist return false
         if (!this.ContainsChild(childToRemove)) {
-            return false   
+            return false
         }
         // else return true after remove
 
@@ -257,13 +257,13 @@ class GameNode extends EventSystem {
         if (callDestructor)
             childToRemove.Destruct();
 
-        this.FireListener("childRemoved", {child: childToRemove})
+        this.FireListener("childRemoved", { child: childToRemove })
 
         // Recursively fire the descendant added to all parents (ancestors) above the current node
         let ancestor = oldParent; // ancestor will change as each one gets iterated to it's own parent
         // keep going until ancestor is null
-        while(ancestor){
-            ancestor.FireListener("descendantRemoved", {descendant: childToAdd})
+        while (ancestor) {
+            ancestor.FireListener("descendantRemoved", { descendant: childToAdd })
             ancestor = ancestor.parent; // go 1 layer higher
         }
 
@@ -460,6 +460,18 @@ class Game extends EventSystem {
                 this.ticker.speed = 0;
             else // else resume
                 this.ticker.speed = 1;
+
+    }
+
+    _activeScene = null;
+    get activeScene() {
+        return this._activeScene;
+    }
+    set activeScene(newScene) {
+        let oldScene = this._activeScene;
+        this._activeScene = newScene;
+
+        // Handle change of scene
 
     }
 
@@ -1006,6 +1018,162 @@ class Game extends EventSystem {
 
 // subclasses/abstract classes
 
+// #region Scene class
+
+class Scene extends GameNode {
+    // Array of stage objects that should be added to a PIXI stage whenever this stage is set as activeStage
+    // this is seperate to the .children member of scene which contains GameObject's only and not its descendants.
+    // DON'T ADD OR REMOVE FROM ARRAY. Use the add and remove stage child functions instead :>
+    stageObjects = [];
+    game;
+
+    constructor(game) {
+        super();
+        this.game = game;
+    }
+
+    /**
+     * Adds stage object to scene, displays if scene is active
+     * @param {*} stageObject 
+     */
+    AddStageObject(stageObject) {
+        if (!stageObject) {
+            console.warn("Tried to add a null stage object to scene")
+            return
+        }
+
+        if (this.StageObjectExists(stageObject)) {
+            console.warn("Tried to add stage object that already exists")
+            return
+        }
+
+        this.stageObjects.push(stageObject)
+
+        // If this scene is the active scene
+        if (this.game.activeScene == this) {
+            // add to PIXI stage
+            this.game.pixiApplication.stage.addChild(stageObject)
+        } // else, it gets added whenever the active scene is set
+
+        this.FireListener("stageObjectAdded", { stageObject: stageObject })
+    }
+
+    RemoveStageObject(stageObject) {
+        if (this.StageObjectExists(stageObject)) {
+            // remove from array
+            this.stageObjects.splice(this.stageObjects.indexOf(stageObject), 1)
+
+            // If this scene is the active scene
+            if (this.game.activeScene == this) {
+                // remove from PIXI stage
+                this.pixiApplication.stage.removeChild(stageObject)
+            }
+
+            this.FireListener("stageObjectRemoved", { stageObject: stageObject })
+        }
+    }
+
+    StageObjectExists(stageObject) {
+        return (this.stageObjects.indexOf(stageObject) != -1)
+    }
+
+    /**
+     * Adds game object to scene
+     * @param {GameObject} child 
+     */
+    AddChild(child) {
+        // overwriting GameNode func
+
+        // don't do anything if not adding a game object to scene, maaybe this'll change idk
+        if (child.isGameObject) {
+            // calls GameNode function first, note that this will fire child and descendant added events
+            super.AddChild(child)
+
+            // // fo the child's stage object first
+            // if(child.stageObject)
+            //     this.AddStageObject(child.stageObject)
+
+            // Recursively iterate through descendants and add stage objects if it finds one
+            // let descendants = [child]; // start at the current child and go down
+
+            // If child doesn't have children, don't do anything else
+            if(!child.children)
+                return;
+
+            // -- 
+
+            let childrenToIterate = [child]; // My algorithm needs to start with a to iterate array with only 1 value of the first child to start searching
+
+            // this is an array where each index represents a layer of children. The value represents the index that was last check on that layer.
+            // E.g. If my array is [0,1,3] then I know that my most recently checked item was at layer 2 and its index was 3,
+            //      while the oldest item is at layer 0 and its index is 0.
+            // This comes in handy for below because I am going to be going down a layer of children, check if there's children then keep adding to indexes array
+            //  when there's no children, deal with the current value then if next index is it at end of array, go up a layer 
+
+            // NGL, a stack data structure might've been ideal for this algorithm because I need to get the last index first (Last-in-First-out)
+            // It's not needed tho plus this is javascript
+            
+            let iterationIndexes = [0]; // you have to start at layer 0, index 0 
+            let finishedIterating = false; 
+
+            while(finishedIterating){
+                let descendantIndex = iterationIndexes[iterationIndexes.length - 1]; // get the top layer
+                let iteratedDescendant = childrenToIterate[descendantIndex]
+                // does it have children?
+                if(iteratedDescendant.children.length != 0){
+                    // then keep going down layers
+                    iterationIndexes.push(0); // add zero to end of array which adds a new layer and it starts the new layer at index 0
+                    childrenToIterate = iteratedDescendant.children; // set children to iterate to new children
+
+                } else { // doesn't have children
+                    // deal with descendant, add stage object if it has one
+                    if(iteratedDescendant.stageObject)
+                        this.AddStageObject(iteratedDescendant.stageObject)
+
+                    // TO-DO turn below into while loop because it needs to go up recursively
+
+                    // The new index that the top layer's value was set to 
+                    // Move up index for this layer by 1, the ++x increments and returns the new value btw (for my sake)
+                    let newIndex = ++iterationIndexes[iterationIndexes.length - 1];
+
+                    // while the new value is outside of children array bounds. (Reached end of the current children to iterate array)
+                    while(newIndex == childrenToIterate.length){
+                        // go up one layer 
+                        // To see if there is a layer above this one (that isn't the start object) you check if .parent.parent exists
+                        // There can't be a situation where first object doesn't have children (checked in if statement earlier) but if u had that issue just check if .parent exists
+                        if(iteratedDescendant.parent.parent){
+                            // go up by one layer
+                            childrenToIterate = iteratedDescendant.parent.parent.children
+                            // remove top layer from indexes
+                            iterationIndexes.splice(iterationIndexes.length-1,1)
+                            // increment the new top layer index
+                            newIndex = ++iterationIndexes[iterationIndexes.length-1]
+
+                        }else{ // else, have iterated through all objects (reached end of first layer of children down from )
+                            finishedIterating = true;
+                            break; // escape 
+                        }   
+                    }
+                }
+            }
+
+
+            // while(descendants.length){
+
+            //     descendant = child.children
+            // }
+
+        } else {
+            console.warn("Tried to add a non GameObject child to scene")
+        }
+
+
+    }
+
+
+}
+
+// #endregion
 
 // #region GameObject Class
 
@@ -1015,6 +1183,7 @@ class Game extends EventSystem {
 class GameObject extends GameNode {
     stageObject; // the actual graphics object of the game object
     game; // the current game object
+    isGameObject = true;
     _isVisible = true;
     get isVisible() {
         return this._isVisible;
