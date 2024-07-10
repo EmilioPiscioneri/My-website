@@ -583,6 +583,9 @@ function BallsConnectToLineLoad(game) {
             .rect(0, 0, 1, 1)
             .fill("white"))
 
+    rect0.name = "rect0"
+    rect0.stageObject.name = "rect0"
+
     rect0.position = new Point(7, 16)
 
     // layer 1
@@ -593,6 +596,7 @@ function BallsConnectToLineLoad(game) {
             .fill("grey"))
 
     rect0_0.name = "rect0_0"
+    rect0_0.stageObject.name = "rect0_0"
 
     rect0_0.position = new Point(3, 15)
 
@@ -602,6 +606,7 @@ function BallsConnectToLineLoad(game) {
             .fill("grey"))
 
     rect0_1.name = "rect0_1"
+    rect0_1.stageObject.name = "rect0_1"
 
     rect0_1.position = new Point(11, 15)
 
@@ -613,6 +618,7 @@ function BallsConnectToLineLoad(game) {
             .fill("black"))
 
     rect0_0_0.name = "rect0_0_0"
+    rect0_0_0.stageObject.name = "rect0_0_0"
 
     rect0_0_0.position = new Point(1, 14)
 
@@ -622,6 +628,7 @@ function BallsConnectToLineLoad(game) {
             .fill("black"))
 
     rect0_0_1.name = "rect0_0_1"
+    rect0_0_1.stageObject.name = "rect0_0_1"
 
     rect0_0_1.position = new Point(5, 14)
 
@@ -631,6 +638,7 @@ function BallsConnectToLineLoad(game) {
             .fill("black"))
 
     rect0_1_0.name = "rect0_1_0"
+    rect0_1_0.stageObject.name = "rect0_1_0"
 
     rect0_1_0.position = new Point(9, 14)
 
@@ -640,6 +648,7 @@ function BallsConnectToLineLoad(game) {
             .fill("black"))
 
     rect0_1_1.name = "rect0_1_1"
+    rect0_1_1.stageObject.name = "rect0_1_1"
 
     rect0_1_1.position = new Point(13, 14)
 
@@ -651,7 +660,7 @@ function BallsConnectToLineLoad(game) {
 
     // add delays so children are added after scene is created
     if (afterScene) {
-        setTimeout(() => rect0.AddChild(rect0_0), firstDelay)
+        setTimeout(() => rect0.AddChild(rect0_0), firstDelay+delayInterval*6)
         setTimeout(() => rect0.AddChild(rect0_1), firstDelay + delayInterval)
         setTimeout(() => rect0_0.AddChild(rect0_0_0), firstDelay + delayInterval*3)
         setTimeout(() => rect0_0.AddChild(rect0_0_1), firstDelay + delayInterval*2)
@@ -686,7 +695,7 @@ function BallsConnectToLineLoad(game) {
     setTimeout(()=>rect0.RemoveChild(rect0_0),firstDelay+delayInterval*8)
     setTimeout(()=>rect0_1.RemoveChild(rect0_1_1),firstDelay+delayInterval*7.5)
 
-    // setTimeout(()=>testScene.RemoveChild(rect0),firstDelay+delayInterval*10)
+    setTimeout(()=>testScene.RemoveChild(rect0),firstDelay+delayInterval*10)
 
 
 
