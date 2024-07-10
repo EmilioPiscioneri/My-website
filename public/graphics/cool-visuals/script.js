@@ -656,17 +656,19 @@ function BallsConnectToLineLoad(game) {
         setTimeout(()=>rect0_1.AddChild(rect0_1_0),firstDelay+4000)
         setTimeout(()=>rect0_1.AddChild(rect0_1_1),firstDelay+3950)
     
-        // remove timeouts
-        setTimeout(()=>rect0.RemoveChild(rect0_0),firstDelay+7000)
-        setTimeout(()=>rect0_1.RemoveChild(rect0_1_0),firstDelay+6500)
+        
     }else{
         rect0.AddChild(rect0_0)
         rect0.AddChild(rect0_1)
-        rect0_0.AddChild(rect0_0_0),firstDelay+3000)
-        rect0_0.AddChild(rect0_0_1),firstDelay+2000)
-        rect0_1.AddChild(rect0_1_0),firstDelay+4000)
-        rect0_1.AddChild(rect0_1_1),firstDelay+3950)
+        rect0_0.AddChild(rect0_0_0)
+        rect0_0.AddChild(rect0_0_1)
+        rect0_1.AddChild(rect0_1_0)
+        rect0_1.AddChild(rect0_1_1)
     }
+    
+    // remove timeouts
+    setTimeout(()=>rect0.RemoveChild(rect0_0),firstDelay+7000)
+    setTimeout(()=>rect0_1.RemoveChild(rect0_1_0),firstDelay+6500)
     
     // // add to scene
     testScene.AddChild(rect0)
