@@ -263,7 +263,7 @@ class GameNode extends EventSystem {
         let ancestor = oldParent; // ancestor will change as each one gets iterated to it's own parent
         // keep going until ancestor is null
         while (ancestor) {
-            ancestor.FireListener("descendantRemoved", { descendant: childToAdd })
+            ancestor.FireListener("descendantRemoved", { descendant: childToRemove })
             ancestor = ancestor.parent; // go 1 layer higher
         }
 
@@ -1084,7 +1084,7 @@ class Scene extends GameNode {
             // If this scene is the active scene
             if (this.game.activeScene == this) {
                 // remove from PIXI stage
-                this.pixiApplication.stage.removeChild(stageObject)
+                this.game.pixiApplication.stage.removeChild(stageObject)
             }
 
             this.FireListener("stageObjectRemoved", { stageObject: stageObject })
@@ -1111,19 +1111,23 @@ class Scene extends GameNode {
 
 
 
-            // add stage obj for this child
-            this.AddStageObject(child.stageObject)
+
 
 
             // If child doesn't have children (rest of code has to do with descendants)
-            if (child.children.length == 0) 
+            if (child.children.length == 0) {
+                // add stage obj for this child
+                this.AddStageObject(child.stageObject)
+                // will get added later if it has children
                 return;
-            
+            }
+
+
 
             // from now on child obj has children
 
             // -------
-            
+
             // Recursively iterate through descendants and add stage objects if it finds one
 
             let childrenToIterate = [child]; // My algorithm needs to start with a to iterate array with only 1 value of the first child to start searching
@@ -1145,6 +1149,11 @@ class Scene extends GameNode {
                 let iteratedDescendant = childrenToIterate[descendantIndex]
                 console.log("iterationIndexes", iterationIndexes)
                 console.log("iteratedDescendant", iteratedDescendant.name)
+
+                // deal with descendant, add stage object if it has one
+                if (iteratedDescendant.stageObject)
+                    this.AddStageObject(iteratedDescendant.stageObject)
+
                 // does it have children?
                 if (iteratedDescendant.children.length != 0) {
                     // then keep going down layers
@@ -1152,9 +1161,7 @@ class Scene extends GameNode {
                     childrenToIterate = iteratedDescendant.children; // set children to iterate to new children
 
                 } else { // doesn't have children
-                    // deal with descendant, add stage object if it has one
-                    if (iteratedDescendant.stageObject)
-                        this.AddStageObject(iteratedDescendant.stageObject)
+
 
                     // The new index that the top layer's value was set to 
                     // Move up index for this layer by 1, the ++x increments and returns the new value btw (for my sake)
@@ -1179,8 +1186,6 @@ class Scene extends GameNode {
                     }
                 }
             }
-        }
-
         } else {
             console.warn("Tried to add a non GameObject child to scene")
         }
@@ -1197,6 +1202,13 @@ class Scene extends GameNode {
  * Currently, it is something that is renderable
  */
 class GameObject extends GameNode {
+    _currentScene;
+    // READ-ONLY value of the current scene that the GameObject is under (if any)
+    get currentScene() {
+        return this._currentScene;
+    }
+
+
     _stageObject; // the actual graphics object of the game object
     get stageObject() {
         return this._stageObject;
@@ -1205,29 +1217,76 @@ class GameObject extends GameNode {
         let oldStageObject = this._stageObject;
         this._stageObject = newStageObject;
 
-        // if this object doesn't have a parent don't do anything
-        if (!this.parent)
+        // do nothing if current scene is null
+        if (!this._currentScene)
             return;
 
-        // check if highest ancestor is the active stage
-        let highestAncestor = this.parent // start from current node
+        // check if current scene of game object is active scene
 
+        // if is the active scene, add new stage object and remove old 
+        if (this._currentScene && this._currentScene == this.game.activeScene) {
+            // only remove if they aren't null
+            if (oldStageObject)
+                this._currentScene.RemoveStageObject(oldStageObject)
+            // else
+            //     console.warn("2")
+
+            if (newStageObject) {
+                this._currentScene.AddStageObject(newStageObject);
+                // after you add the stage object, update its pos and size if meant to so it renders correctly
+                if (this.shareSize)
+                    this.updateStageObjectPosition();
+                if (this.shareSize) { 
+                    this.width = this.stageObject.width;
+                    this.height = this.stageObject.height;
+                }
+            }
+            else
+                console.warn("2")
+        } 
+
+        this.FireListener("stageObjectChanged");
+    }
+    // modify parent setter so that when it changes, it also updates .currentScene 
+    get parent() { return super.parent }
+    set parent(newParent) {
+        // keep inherited setter
+        super.parent = newParent;
+        // inject new code
+
+        // first check if newParent is null
+        if (newParent == null) {
+            // if there was an old scene
+            let oldScene = this._currentScene;
+            if (oldScene)
+                oldScene.RemoveStageObject(this.stageObject)
+            this._currentScene = null; // current scene is now null as there is no parent meaning no scene
+            return;
+        }
+
+        // check if highest ancestor is a scene
+        let highestAncestor = newParent // start from new parent
         // keep going until the next parent is null
-        while (highestAncestor.parent) {
+        while (highestAncestor && highestAncestor.parent) {
             highestAncestor = highestAncestor.parent
         }
 
-        // if is the active scene, add new stage object and remove old 
-        if (highestAncestor == this.game.activeScene) {
-            // only remove if they aren't null
-            if (oldStageObject)
-                highestAncestor.RemoveStageObject(oldStageObject)
-            if (newStageObject)
-                highestAncestor.AddStageObject(newStageObject);
-        } else {
-            console.warn("here")
+        // if is a scene, set to current scene
+        if (highestAncestor.isScene) {
+            let oldScene = this._currentScene;
+            this._currentScene = highestAncestor; // set to new scene
+
+            // Now remove current stage object from old scene and add to new one if the scenes aren't null
+            if (oldScene)
+                oldScene.RemoveStageObject(this.stageObject)
+            if (highestAncestor && this.parent != highestAncestor) // highestAncestor == new scene and not added to scene (stage object is already added in this situation)
+                highestAncestor.AddStageObject(this.stageObject);
         }
+
+
     }
+
+
     game; // the current game object
     isGameObject = true;
     _isVisible = true;
@@ -1258,23 +1317,7 @@ class GameObject extends GameNode {
     }
 
 
-    updateStageObjPosition() {
-        // only if shared pos
-        if (!this.sharePosition)
-            return;
 
-        // clone to avoid conflicts
-        let newPosition = new Point(this._position.x, this._position.y);
-        let canvasHeight = game.pixiApplication.canvas.height / this.game.pixelsPerUnit.y; // convert from pixels to units
-
-        newPosition.y = newPosition.y * -1 // inverse y
-            + canvasHeight - this.height // convert to bottom-left (currently top left)
-
-        // set the new pos, convert to pixel units first
-        this.stageObject.position = this.game.ConvertUnitsToPixels(newPosition);
-
-
-    }
 
     _position = new Point(0, 0);
 
@@ -1289,7 +1332,7 @@ class GameObject extends GameNode {
         this._position = new Point(newPosition.x, newPosition.y); // avoid conflicts with referenced pos
         // make changes
         if (this.sharePosition)
-            this.updateStageObjPosition();
+            this.updateStageObjectPosition();
 
         this.FireListener("positionChanged") // fire changed event
 
@@ -1334,7 +1377,7 @@ class GameObject extends GameNode {
             this.stageObject.height = newHeight * this.game.pixelsPerUnit.y;// convert units to pixels
         }
         if (this.sharePosition)
-            this.updateStageObjPosition();
+            this.updateStageObjectPosition();
         this.FireListener("heightChanged") // fire changed event
     }
 
@@ -1362,11 +1405,11 @@ class GameObject extends GameNode {
         super(); // calls constructor for inherited object
 
         if (stageObject == null)
-            throw new Error("Created a new game object with null graphics object")
+            throw new Error("Created a new game object with null stage object")
         if (game == null)
             throw new Error("Created a new game object with null game input")
-        this.stageObject = stageObject;
         this.game = game;
+        this.stageObject = stageObject;
 
         this.sharePosition = sharePosition;
         this.shareSize = shareSize;
@@ -1393,6 +1436,22 @@ class GameObject extends GameNode {
         // intialising position doesn't work?
         // this.position = this.stageObject.position; // run through the set function
 
+    }
+
+    updateStageObjectPosition() {
+        // only if shared pos
+        if (!this.sharePosition)
+            return;
+
+        // clone to avoid conflicts
+        let newPosition = new Point(this._position.x, this._position.y);
+        let canvasHeight = game.pixiApplication.canvas.height / this.game.pixelsPerUnit.y; // convert from pixels to units
+
+        newPosition.y = newPosition.y * -1 // inverse y
+            + canvasHeight - this.height // convert to bottom-left (currently top left)
+
+        // set the new pos, convert to pixel units first
+        this.stageObject.position = this.game.ConvertUnitsToPixels(newPosition);
     }
 
     Destruct() {
@@ -1427,7 +1486,7 @@ class Circle extends GameObject {
     // }
 
     // overwrite
-    updateStageObjPosition() {
+    updateStageObjectPosition() {
         // clone to avoid conflicts
         let newPosition = new Point(this._position.x, this._position.y);
         let canvasHeight = game.pixiApplication.canvas.height / this.game.pixelsPerUnit.y; // convert from pixels to units

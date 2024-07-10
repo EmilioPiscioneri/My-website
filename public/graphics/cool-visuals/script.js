@@ -565,17 +565,17 @@ function BallsConnectToLineLoad(game) {
     // ----------
 
     //-----------
-    
+
     // Game node and scene testing 
     let testScene = new Scene(game);
 
     // Add objects to scene
-    
+
     // For each rect the layer is represented by index and then its value is position in laywr
     // E.g. rect0_0 is layer 0->layer 1, index 0 
     // E.g. rect1 is layer0, index 1
-    
-    
+
+
     // layer 0
 
     let rect0 = new GameObject(game,
@@ -583,18 +583,18 @@ function BallsConnectToLineLoad(game) {
             .rect(0, 0, 1, 1)
             .fill("white"))
 
-    rect0.position = new Point(7,16)
-    
+    rect0.position = new Point(7, 16)
+
     // layer 1
 
     let rect0_0 = new GameObject(game,
         new PIXI.Graphics()
             .rect(0, 0, 1, 1)
             .fill("grey"))
-            
+
     rect0_0.name = "rect0_0"
 
-    rect0_0.position = new Point(3,15)
+    rect0_0.position = new Point(3, 15)
 
     let rect0_1 = new GameObject(game,
         new PIXI.Graphics()
@@ -603,10 +603,10 @@ function BallsConnectToLineLoad(game) {
 
     rect0_1.name = "rect0_1"
 
-    rect0_1.position = new Point(11,15)
-    
+    rect0_1.position = new Point(11, 15)
+
     // layer 2
-    
+
     let rect0_0_0 = new GameObject(game,
         new PIXI.Graphics()
             .rect(0, 0, 1, 1)
@@ -614,7 +614,7 @@ function BallsConnectToLineLoad(game) {
 
     rect0_0_0.name = "rect0_0_0"
 
-    rect0_0_0.position = new Point(1,15)
+    rect0_0_0.position = new Point(1, 14)
 
     let rect0_0_1 = new GameObject(game,
         new PIXI.Graphics()
@@ -623,8 +623,8 @@ function BallsConnectToLineLoad(game) {
 
     rect0_0_1.name = "rect0_0_1"
 
-    rect0_0_1.position = new Point(2,15)
-    
+    rect0_0_1.position = new Point(5, 14)
+
     let rect0_1_0 = new GameObject(game,
         new PIXI.Graphics()
             .rect(0, 0, 1, 1)
@@ -632,8 +632,8 @@ function BallsConnectToLineLoad(game) {
 
     rect0_1_0.name = "rect0_1_0"
 
-    rect0_1_0.position = new Point(9,15)
-    
+    rect0_1_0.position = new Point(9, 14)
+
     let rect0_1_1 = new GameObject(game,
         new PIXI.Graphics()
             .rect(0, 0, 1, 1)
@@ -641,38 +641,54 @@ function BallsConnectToLineLoad(game) {
 
     rect0_1_1.name = "rect0_1_1"
 
-    rect0_1_1.position = new Point(13,15)
+    rect0_1_1.position = new Point(13, 14)
 
     let firstDelay = 1000; // ms
+    let delayInterval = 500;
 
     // add children after scene is created
-    let afterScene = false
-    
-    if(afterScene){
-        setTimeout(()=>rect0.AddChild(rect0_0),firstDelay)
-        setTimeout(()=>rect0.AddChild(rect0_1),firstDelay+1000)
-        setTimeout(()=>rect0_0.AddChild(rect0_0_0),firstDelay+3000)
-        setTimeout(()=>rect0_0.AddChild(rect0_0_1),firstDelay+2000)
-        setTimeout(()=>rect0_1.AddChild(rect0_1_0),firstDelay+4000)
-        setTimeout(()=>rect0_1.AddChild(rect0_1_1),firstDelay+3950)
-    
-        
-    }else{
+    let afterScene = true
+
+    // add delays so children are added after scene is created
+    if (afterScene) {
+        setTimeout(() => rect0.AddChild(rect0_0), firstDelay)
+        setTimeout(() => rect0.AddChild(rect0_1), firstDelay + delayInterval)
+        setTimeout(() => rect0_0.AddChild(rect0_0_0), firstDelay + delayInterval*3)
+        setTimeout(() => rect0_0.AddChild(rect0_0_1), firstDelay + delayInterval*2)
+        setTimeout(() => rect0_1.AddChild(rect0_1_0), firstDelay + delayInterval*4)
+        setTimeout(() => rect0_1.AddChild(rect0_1_1), firstDelay + delayInterval*3.7)
+        // after x seconds, change a child's stage object. This should update correctly
+        setTimeout(() => {
+            // Same as https://www.w3schools.com/graphics/canvas_gradients.asp
+            let gradientFill = new PIXI.FillGradient(0,0,0,1) // only do gradient along y-axis 
+            gradientFill.addColorStop(0, "blue")
+            gradientFill.addColorStop(1, "red")
+            rect0_1_1.stageObject = new PIXI.Graphics()
+                //  .rect(0,0,1,1)
+                 .roundRect(0,0,1,1,0.1)
+                //  .fill("red")
+                 .fill(gradientFill)
+
+            // console.log(rect0_1_1)
+        }, firstDelay+delayInterval*5);
+    } else {
         rect0.AddChild(rect0_0)
         rect0.AddChild(rect0_1)
         rect0_0.AddChild(rect0_0_0)
         rect0_0.AddChild(rect0_0_1)
         rect0_1.AddChild(rect0_1_0)
         rect0_1.AddChild(rect0_1_1)
-    }
-    
-    // remove timeouts
-    setTimeout(()=>rect0.RemoveChild(rect0_0),firstDelay+7000)
-    setTimeout(()=>rect0_1.RemoveChild(rect0_1_0),firstDelay+6500)
-    
-    // // add to scene
-    testScene.AddChild(rect0)
 
+
+    }
+
+    // remove timeouts
+    setTimeout(()=>rect0.RemoveChild(rect0_0),firstDelay+8000)
+    setTimeout(()=>rect0_1.RemoveChild(rect0_1_1),firstDelay+7500)
+
+
+    // add to scene
+    testScene.AddChild(rect0)
 
     game.activeScene = testScene;
 
