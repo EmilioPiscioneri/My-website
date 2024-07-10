@@ -683,8 +683,11 @@ function BallsConnectToLineLoad(game) {
     }
 
     // remove timeouts
-    setTimeout(()=>rect0.RemoveChild(rect0_0),firstDelay+8000)
-    setTimeout(()=>rect0_1.RemoveChild(rect0_1_1),firstDelay+7500)
+    setTimeout(()=>rect0.RemoveChild(rect0_0),firstDelay+delayInterval*8)
+    setTimeout(()=>rect0_1.RemoveChild(rect0_1_1),firstDelay+delayInterval*7.5)
+
+    // setTimeout(()=>testScene.RemoveChild(rect0),firstDelay+delayInterval*10)
+
 
 
     // add to scene
