@@ -373,8 +373,8 @@ function BallsConnectToLineLoad(game) {
                     ball.velocity = ballVelocity;
 
                     // Now add to scene and list of balls array
-                    ballsInScene.push(ball);
-                    mainScene.AddChild(ball);
+                    // ballsInScene.push(ball);
+                    // mainScene.AddChild(ball);
 
                 }
             }
@@ -529,6 +529,9 @@ function BallsConnectToLineLoad(game) {
     uiLayout.width = 5;
     uiLayout.height = 5
     uiLayout.alpha = 0.75;
+
+    uiLayout.name = "uiLayout"
+    uiLayout.stageObject.name = "uiLayout"
 
     // mainScene.AddChild(layout)
 

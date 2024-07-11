@@ -157,12 +157,11 @@ class EventSystem {
 class GameNode extends EventSystem {
     children = [];
 
+
     _parent = null;
+    // Readon-only value of node above this one
     get parent() {
         return this._parent;
-    }
-    set parent(newParent) {
-        this._parent = newParent;
     }
 
     constructor() {
@@ -211,7 +210,7 @@ class GameNode extends EventSystem {
         if (childToAdd.parent)
             throw new Error("Tried to add a child to node that already has a parent, perhaps its parent has already been added?")
         this.children.push(childToAdd);
-        childToAdd.parent = this; // set new parent
+        childToAdd._parent = this; // set new parent
         this.FireListener("childAdded", { child: childToAdd })
 
         // Recursively fire the descendant added to all parents (ancestors) above the current node
@@ -252,7 +251,7 @@ class GameNode extends EventSystem {
         let oldParent = childToRemove.parent
 
         // Want the parent to be null before the child/descendant removed events are fired
-        childToRemove.parent = null;
+        childToRemove._parent = null;
 
         // clean it up
         if (callDestructor)
@@ -299,13 +298,13 @@ class GameNode extends EventSystem {
     */
     Destruct(destructChildren = true) {
         super.Destruct()
-        
+
         // recursively destruct this nodes children (if any)
-        if(destructChildren){
-            for(let child of this.children){
+        if (destructChildren) {
+            for (let child of this.children) {
                 child.Destruct(destructChildren)
             }
-            
+
         }
     }
 }
@@ -987,7 +986,7 @@ class Scene extends GameNode {
 
 
         this.FireListener("stageObjectAdded", { stageObject: stageObject })
-        // console.log("added stage object", stageObject.name)
+        console.log("added stage object", stageObject.name)
     }
 
     RemoveStageObject(stageObject) {
@@ -1027,8 +1026,7 @@ class Scene extends GameNode {
 
         // If child doesn't have children (rest of code has to do with descendants)
         if (child.children.length == 0) {
-            // add stage obj for this child
-            this.AddStageObject(child.stageObject)
+            child._SetCurrentScene(this) // adds stage obj to scene
             // will get added later if it has children
             return;
         }
@@ -1059,9 +1057,7 @@ class Scene extends GameNode {
             console.log("iterationIndexes", iterationIndexes)
             console.log("iteratedDescendant", iteratedDescendant.name)
 
-            // deal with descendant, add stage object if it has one
-            if (iteratedDescendant.stageObject)
-                this.AddStageObject(iteratedDescendant.stageObject)
+            iteratedDescendant._SetCurrentScene(this) // adds stage obj to scene
 
             // does it have children?
             if (iteratedDescendant.children.length != 0) {
@@ -1104,7 +1100,7 @@ class Scene extends GameNode {
      * @param {Boolean} callDestructor Whether to call child's Destruct method after remove
      * @param {Boolean} destructDescendants Whether to call child's descendants's Destruct methods after remove
      */
-    RemoveChild(child, callDestructor, destructDescendants) {
+    RemoveChild(child, callDestructor = true, destructDescendants = true) {
         // overwriting GameNode func
 
         // calls GameNode function first, note that this will fire child and descendant removed events
@@ -1112,45 +1108,49 @@ class Scene extends GameNode {
 
         // If child doesn't have children (rest of code has to do with descendants)
         if (child.children.length == 0) {
+            // set new scene
+            child._SetCurrentScene(null)
             // add stage obj for this child
             this.RemoveStageObject(child.stageObject)
             // will get removed later if it has children
         } else {
 
             // Else the child obj has children
-    
+
             // -------
-    
+
             // Recursively iterate through descendants and add remove objects if it finds one
-    
+
             // see .AddChild for algorithm explanation
-    
+
             let childrenToIterate = [child];
-    
+
             let iterationIndexes = [0]; // you have to start at layer 0, index 0 
             let finishedIterating = false;
-    
+
             while (!finishedIterating) {
                 let descendantIndex = iterationIndexes[iterationIndexes.length - 1]; // get the top layer
                 let iteratedDescendant = childrenToIterate[descendantIndex]
                 console.log("iterationIndexes", iterationIndexes)
                 console.log("iteratedDescendant", iteratedDescendant.name)
-    
+
+                // no longer a part of a scene
+                iteratedDescendant._SetCurrentScene(null)
                 // deal with descendant, add stage object if it has one
                 if (iteratedDescendant.stageObject)
                     this.RemoveStageObject(iteratedDescendant.stageObject)
-    
+
                 // does it have children?
                 if (iteratedDescendant.children.length != 0) {
                     // then keep going down layers
                     iterationIndexes.push(0); // add zero to end of array which adds a new layer and it starts the new layer at index 0
                     childrenToIterate = iteratedDescendant.children; // set children to iterate to new children
-    
+
                 } else { // doesn't have children
                     // The new index that the top layer's value was set to 
                     // Move up index for this layer by 1, the ++x increments and returns the new value btw (for my sake)
                     let newIndex = ++iterationIndexes[iterationIndexes.length - 1];
-    
+
                     // while the new value is outside of children array bounds. (Reached end of the current children to iterate array)
                     while (newIndex == childrenToIterate.length) {
                         // go up one layer 
@@ -1170,12 +1170,12 @@ class Scene extends GameNode {
                 }
             }
         }
-        
+
         // deal with removed child's destructor
-        if(callDestructor) {
+        if (callDestructor) {
             child.Destruct(destructDescendants)
         }
-            
+
     }
 
 
@@ -1193,6 +1193,25 @@ class GameObject extends GameNode {
     // READ-ONLY value of the current scene that the GameObject is under (if any)
     get currentScene() {
         return this._currentScene;
+    }
+
+
+    // Only to be called by internal classes, do not touch
+    _SetCurrentScene(newScene) {
+        // set's the current scene and removes stage object from old scene
+        let oldScene = this._currentScene;
+        // TODO Move setter code here
+        this._currentScene = newScene; // set to new scene
+
+        // if has stage obj
+        if (this.stageObject) {
+            // Now remove current stage object from old scene and add to new one if the scenes aren't null
+            if (oldScene)
+                oldScene.RemoveStageObject(this.stageObject)
+            if (newScene) 
+                newScene.AddStageObject(this.stageObject);
+        }
+
     }
 
 
@@ -1233,44 +1252,6 @@ class GameObject extends GameNode {
         }
 
         this.FireListener("stageObjectChanged");
-    }
-    // modify parent setter so that when it changes, it also updates .currentScene 
-    get parent() { return super.parent }
-    set parent(newParent) {
-        // keep inherited setter
-        super.parent = newParent;
-        // inject new code
-
-        // first check if newParent is null
-        if (newParent == null) {
-            // if there was an old scene
-            let oldScene = this._currentScene;
-            if (oldScene)
-                oldScene.RemoveStageObject(this.stageObject)
-            this._currentScene = null; // current scene is now null as there is no parent meaning no scene
-            return;
-        }
-
-        // check if highest ancestor is a scene
-        let highestAncestor = newParent // start from new parent
-        // keep going until the next parent is null
-        while (highestAncestor && highestAncestor.parent) {
-            highestAncestor = highestAncestor.parent
-        }
-
-        // if is a scene, set to current scene
-        if (highestAncestor.isScene) {
-            let oldScene = this._currentScene;
-            this._currentScene = highestAncestor; // set to new scene
-
-            // Now remove current stage object from old scene and add to new one if the scenes aren't null
-            if (oldScene)
-                oldScene.RemoveStageObject(this.stageObject)
-            if (highestAncestor && this.parent != highestAncestor) // highestAncestor == new scene and not added to scene (stage object is already added in this situation)
-                highestAncestor.AddStageObject(this.stageObject);
-        }
-
-
     }
 
 
@@ -1460,11 +1441,10 @@ class GameObject extends GameNode {
         // NOTE: calling the baseclass will change the parent which ends up adding the child to the scene, so skip it first
         super.AddChild(child)
 
-        // first check if there is a current scene for this child
-        if (!this._currentScene)
-            return;
+        child._SetCurrentScene(this._currentScene) // set its scene as this one (might be null)
 
         // from now on there is a scene, this means we can add to its stage
+
 
         // If child doesn't have children do nothing (rest of code has to do with descendants)
         if (child.children.length == 0) {
@@ -1488,7 +1468,7 @@ class GameObject extends GameNode {
         // NGL, a stack data structure might've been ideal for this algorithm because I need to get the last index first (Last-in-First-out)
         // It's not needed tho plus this is javascript
 
-        let iterationIndexes = [0,0]; // you have to start at layer 1, index 0 because we skip layer 0 (first node already is added)
+        let iterationIndexes = [0, 0]; // you have to start at layer 1, index 0 because we skip layer 0 (first node already is added)
         let finishedIterating = false;
 
         while (!finishedIterating) {
@@ -1497,9 +1477,8 @@ class GameObject extends GameNode {
             console.log("iterationIndexes", iterationIndexes)
             console.log("iteratedDescendant", iteratedDescendant.name)
 
-            // deal with descendant, add stage object if it has one
-            if (iteratedDescendant.stageObject)
-                this._currentScene.AddStageObject(iteratedDescendant.stageObject)
+            // set descendant scene to this one
+            iteratedDescendant._SetCurrentScene(this._currentScene) // adds stage obj to scene
 
             // does it have children?
             if (iteratedDescendant.children.length != 0) {
@@ -1539,16 +1518,14 @@ class GameObject extends GameNode {
     /**
      * Removes GameObject child from GameObject and unrenders the child's and its descendant's stageObjects
      * @param {GameObject} child 
+     * @param {Boolean} callDestructor Whether to call child's Destruct method after remove
+     * @param {Boolean} destructDescendants Whether to call child's descendants's Destruct methods after remove
      */
-    RemoveChild(child) {
+    RemoveChild(child, callDestructor = true, destructDescendants = true) {
         // overwriting GameNode func
 
         // calls GameNode function first, note that this will fire child and descendant removed events
         super.RemoveChild(child)
-        
-        // first check if there is a current scene for this child
-        if (!this._currentScene)
-            return;
 
         // from now on there is a scene, this means we can remove from its stage
 
@@ -1557,63 +1534,71 @@ class GameObject extends GameNode {
             // add stage obj for this child
             this._currentScene.RemoveStageObject(child.stageObject)
             // will get removed later if it has children
-            return;
-        }
-
-        // from now on child obj has children
+        } else {
+            // else the child obj has children
 
 
 
-        // -------
+            // -------
 
-        // Recursively iterate through descendants and add remove objects if it finds one
+            // Recursively iterate through descendants and add remove objects if it finds one
 
-        // see .AddChild for algorithm explanation
+            // see .AddChild for algorithm explanation
 
-        let childrenToIterate = [child];
+            let childrenToIterate = [child];
 
-        let iterationIndexes = [0]; // you have to start at layer 0, index 0 
-        let finishedIterating = false;
+            let iterationIndexes = [0]; // you have to start at layer 0, index 0 
+            let finishedIterating = false;
 
-        while (!finishedIterating) {
-            let descendantIndex = iterationIndexes[iterationIndexes.length - 1]; // get the top layer
-            let iteratedDescendant = childrenToIterate[descendantIndex]
-            console.log("iterationIndexes", iterationIndexes)
-            console.log("iteratedDescendant", iteratedDescendant.name)
+            while (!finishedIterating) {
+                let descendantIndex = iterationIndexes[iterationIndexes.length - 1]; // get the top layer
+                let iteratedDescendant = childrenToIterate[descendantIndex]
+                console.log("iterationIndexes", iterationIndexes)
+                console.log("iteratedDescendant", iteratedDescendant.name)
 
-            // deal with descendant, add stage object if it has one
-            if (iteratedDescendant.stageObject)
-                this._currentScene.RemoveStageObject(iteratedDescendant.stageObject)
+                // set descendant scene to null
+                iteratedDescendant._SetCurrentScene(null)
+                // deal with descendant, add stage object if it has one and curent scene isn't null
+                if (iteratedDescendant.stageObject && this._currentScene)
+                    this._currentScene.RemoveStageObject(iteratedDescendant.stageObject)
 
-            // does it have children?
-            if (iteratedDescendant.children.length != 0) {
-                // then keep going down layers
-                iterationIndexes.push(0); // add zero to end of array which adds a new layer and it starts the new layer at index 0
-                childrenToIterate = iteratedDescendant.children; // set children to iterate to new children
+                // does it have children?
+                if (iteratedDescendant.children.length != 0) {
+                    // then keep going down layers
+                    iterationIndexes.push(0); // add zero to end of array which adds a new layer and it starts the new layer at index 0
+                    childrenToIterate = iteratedDescendant.children; // set children to iterate to new children
 
-            } else { // doesn't have children
-                // The new index that the top layer's value was set to 
-                // Move up index for this layer by 1, the ++x increments and returns the new value btw (for my sake)
-                let newIndex = ++iterationIndexes[iterationIndexes.length - 1];
+                } else { // doesn't have children
+                    // The new index that the top layer's value was set to 
+                    // Move up index for this layer by 1, the ++x increments and returns the new value btw (for my sake)
+                    let newIndex = ++iterationIndexes[iterationIndexes.length - 1];
 
-                // while the new value is outside of children array bounds. (Reached end of the current children to iterate array)
-                while (newIndex == childrenToIterate.length) {
-                    // go up one layer 
-                    // However, we stop when the only layer to go up is the first starting child (only 1 value in array), this means we've come full circle
-                    if (iterationIndexes.length - 1 != 1) {
-                        // go up by one layer
-                        childrenToIterate = iteratedDescendant.parent.parent.children
-                        // remove top layer from indexes
-                        iterationIndexes.splice(iterationIndexes.length - 1, 1)
-                        // increment the new top layer index
-                        newIndex = ++iterationIndexes[iterationIndexes.length - 1]
-                    } else { // else, have iterated through all objects (reached end of first layer of children down from )
-                        finishedIterating = true;
-                        break; // escape 
+                    // while the new value is outside of children array bounds. (Reached end of the current children to iterate array)
+                    while (newIndex == childrenToIterate.length) {
+                        // go up one layer 
+                        // However, we stop when the only layer to go up is the first starting child (only 1 value in array), this means we've come full circle
+                        if (iterationIndexes.length - 1 != 1) {
+                            // go up by one layer
+                            childrenToIterate = iteratedDescendant.parent.parent.children
+                            // remove top layer from indexes
+                            iterationIndexes.splice(iterationIndexes.length - 1, 1)
+                            // increment the new top layer index
+                            newIndex = ++iterationIndexes[iterationIndexes.length - 1]
+                        } else { // else, have iterated through all objects (reached end of first layer of children down from )
+                            finishedIterating = true;
+                            break; // escape 
+                        }
                     }
                 }
             }
         }
+
+        // deal with removed child's destructor
+        if (callDestructor) {
+            child.Destruct(destructDescendants)
+        }
+
+
     }
 
     Destruct() {
