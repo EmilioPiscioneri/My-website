@@ -151,7 +151,8 @@ function RemoveLoader(loaderToRemove) {
 
 }
 
-
+// create a main scene
+let mainScene = new Scene(game)
 
 // -- scripts to load --
 let ballsConnectToLineScript = new ScriptLoader(game, BallsConnectToLineLoad, BallsConnectToLineOnTick, BallsConnectToLineUnload)
@@ -306,7 +307,7 @@ function BallsConnectToLineLoad(game) {
         while (ballsInScene.length > 0) {
             let line = linesInScene[0];
             // remove from scene and call destructor
-            game.RemoveGameObject(line, true)
+            mainScene.RemoveChild(line, true)
             linesInScene.shift() // clear out array
         }
     }
@@ -372,7 +373,7 @@ function BallsConnectToLineLoad(game) {
 
                     // Now add to scene and list of balls array
                     ballsInScene.push(ball);
-                    game.AddGameObject(ball);
+                    mainScene.AddChild(ball);
 
                 }
             }
@@ -534,10 +535,9 @@ function BallsConnectToLineLoad(game) {
     // game.AddGameObject(ballPullStrengthLabel)
     // game.AddGameObject(ballPullStrengthSlider)
 
-    game.AddGameObject(uiLayout)
+    mainScene.AddChild(uiLayout)
 
-    // second param is add as game object to the Game as well as layout
-    uiLayout.AddGameObject(lineCountTextLbl, true)
+    uiLayout.AddChild(lineCountTextLbl)
 
     // So we have two text container inherited objects and whenever they are under the layout and their text changes it fitsredraw background which messes up its positioning
     // When under the Game it does not do that. Confusing
@@ -546,14 +546,14 @@ function BallsConnectToLineLoad(game) {
     // game.AddGameObject(gridVisibilityBtn)
     // gridVisibilityBtn.position = new Point(4,4)
     // uiLayout.AddGameObject(textInput, true)
-    uiLayout.AddGameObject(gridVisibilityBtn, true)
+    uiLayout.AddChild(gridVisibilityBtn)
     // game.AddGameObject(textInput)
 
     // textInput.zIndex = 2; // nothing to do w zIndex
-    uiLayout.AddGameObject(ballPullStrengthLabel, true)
-    uiLayout.AddGameObject(ballPullStrengthSlider, true)
-    uiLayout.AddGameObject(ballPushStrengthLabel, true)
-    uiLayout.AddGameObject(ballPushStrengthSlider, true)
+    uiLayout.AddChild(ballPullStrengthLabel)
+    uiLayout.AddChild(ballPullStrengthSlider)
+    uiLayout.AddChild(ballPushStrengthLabel)
+    uiLayout.AddChild(ballPushStrengthSlider)
 
     // uiLayout.backgroundFill = "grey"
 
