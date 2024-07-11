@@ -773,6 +773,16 @@ class Game extends EventSystem {
 
         // loop through game objects once
         let gameObjectsTotal = activeScene.children.length;
+
+        // ok so the exclude same and repeated pairs collision optimisation theory requires me to have indexes
+        // This was fine until I no longer had a 1D array of game objects
+        // However the indexes are only used such that two objects never are tested against each other twice.
+        // Now that I have introduced a node structure we no longer have a 1D array of objects but a web.
+        // Both times we iterate a node (and its descendants) we can just add to an index as both times we iterate the objects will be iterated in the same order
+        // Hmm okay maybe not because the indexes are used to actually access the 1D array in a specific order
+        
+
+        
         for (let firstGameObjIndex = 0; firstGameObjIndex < gameObjectsTotal - 1; firstGameObjIndex++) {
             let firstGameObj = activeScene.children[firstGameObjIndex];
             // Don't do anything if this object is static. There is nothing to change on this object
