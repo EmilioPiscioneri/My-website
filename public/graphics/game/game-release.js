@@ -650,104 +650,6 @@ class Game extends EventSystem {
         this.FireListener("tick");
     }
 
-    // Handler for when key is pressed down
-    // OnKeyDown = (eventData) => {
-    //     this.FireListener("keyDown", eventData)
-    // }
-
-    // #region ADD/REMOVE GMOBJ
-
-    /**
-     * Adds a game object to scene, can only add one per scene
-     * @param {GameObject} objectToAdd The game object to add to scene
-     */
-    AddGameObject(objectToAdd) {
-        // // make sure it doesn't exist otherwise when it is added, it just doesn't duplicate 
-        // if (this.DoesGameObjectExist(objectToAdd)) {
-        //     console.warn("Tried to add an object that already exists")
-        //     return;
-        // }
-
-        // this.gameObjects.push(objectToAdd)
-        // this.pixiApplication.stage.addChild(objectToAdd.stageObject)
-        // // if others, add them too
-        // if (objectToAdd.otherGameObjects)
-        //     this.AddGameObjects(objectToAdd.otherGameObjects);
-    }
-
-    /**
-     * Adds array of game objects to scene
-     * @param {Array.<GameObject>} gameObjects The game object to add to scene
-     */
-    AddGameObjects(gameObjects) {
-        if (!Array.isArray(gameObjects))
-            throw new Error("Passed game objects isn't an array")
-        for (const gameObj of gameObjects) {
-            this.AddGameObject(gameObj);
-        }
-    }
-
-    /**
-     * Removes an object from the game  
-     * @param {GameObject} objectToRemove Game object to remove
-     * @param {Boolean} callDestructor After gameobject is removed, whether to call its destruct function (deletes graphics object too)
-     * 
-     */
-    RemoveGameObject(objectToRemove, callDestructor) {
-        // if (this.DoesGameObjectExist(objectToRemove)) {
-        //     // remove from array
-        //     this.gameObjects.splice(this.gameObjects.indexOf(objectToRemove), 1)
-
-        //     // remove from stage
-        //     this.pixiApplication.stage.removeChild(objectToRemove.stageObject)
-        //     // clean it up
-        //     if (callDestructor)
-        //         objectToRemove.Destruct();
-        //     // if the object has others to remove
-        //     if (objectToRemove.otherGameObjects)
-        //         this.RemoveGameObjects(objectToRemove.otherGameObjects); // remove the others
-        // }
-    }
-
-    /**
-     * Removes an array of object from the game
-     * @param {Array.<GameObject>} gameObjects Array of game objects to remove
-     * @param {Boolean} callDestructor After gameobject is removed, whether to call its destruct function (deletes graphics object too)
-     */
-    RemoveGameObjects(gameObjects, callDestructor) {
-        if (!Array.isArray(gameObjects))
-            throw new Error("Passed game objects isn't an array")
-        for (const gameObj of gameObjects) {
-            this.RemoveGameObject(gameObj, callDestructor);
-        }
-    }
-
-    /**
-     * Remove all objects from the game
-     * @param {Boolean} callDestructor After gameobject is removed, whether to call its destruct function (deletes graphics object too)
-     */
-    RemoveAllGameObjects(callDestructor) {
-        this.RemoveGameObjects(this.gameObjects, callDestructor)
-    }
-
-    /**
-     * Checks if a game object's graphic object exists in game stage
-     * @param {GameObject} objectToFind 
-     * @returns true or false
-     */
-    DoesGameObjectExist(objectToFind) {
-        return (this.gameObjects.indexOf(objectToFind) != -1)
-
-        // game stage children doesn't mtter because it will handle errors
-        // if found in both game stage and game objects array
-        // return (this.gameObjects.indexOf(objectToFind) != -1 &&
-        //     this.pixiApplication.stage.children.indexOf(objectToFind.stageObject) != -1)
-    }
-
-    // #endregion
-
-
-
     // Updates game physics on tick
     PhysicsTickUpdate() {
         // don't continue when paused
@@ -1966,9 +1868,6 @@ class TextContainer extends GameObject {
     // corresponding Game TEXT LABEL which holds PIXI text object
     textLabelObject;
 
-    // array of other game objects that correspond to this text container. These will need to be destroyed by game when this text container is destroyed
-    otherGameObjects = [];
-
     get text() { return this.textLabelObject.text }
     set text(newText) {
         this.textLabelObject.text = newText
@@ -2127,7 +2026,7 @@ class TextContainer extends GameObject {
 
         // Set object
         this.textLabelObject = textLabelObject;
-        this.otherGameObjects.push(this.textLabelObject);
+        this.AddChild(this.textLabelObject);
 
         // Update width to based off text size + padding to start 
 
@@ -2397,7 +2296,7 @@ class TextInput extends TextContainer {
 
         this.caretObject = caretObject;
 
-        this.otherGameObjects.push(this.caretObject);
+        this.AddChild(this.caretObject);
 
         this.placeholderText = placeholderText;
         this.displayingPlaceholderText = true; // start as displaying
@@ -2713,9 +2612,6 @@ class Slider extends UIElement {
         this.FireListener("valueChanged")
     }
 
-    // array of other game objects that correspond to this text container. These will need to be destroyed by game when this text container is destroyed
-    otherGameObjects = [];
-
     isSliderFocused
 
     slidingBall; // just a circle game object which is used to slide. Maybe I'll add support for sprites later idk.
@@ -2819,7 +2715,7 @@ class Slider extends UIElement {
         // create the circle that'll follow slider
         this.slidingBall = new Circle(game, 0, 0, 0.1);
         this.slidingBall.physicsEnabled = false;
-        this.otherGameObjects.push(this.slidingBall);
+        this.AddChild(this.slidingBall);
 
 
 
@@ -3038,8 +2934,6 @@ class GameObjectLayout extends GameObject {
 
     }
 
-    ManagedObjects = []; // list of game objects under the layout that it will fit content to 
-
     // In Game units, dependant on vertical or horizontal layout
     spaceBetweenObjects = 0.25;
 
@@ -3138,8 +3032,8 @@ class GameObjectLayout extends GameObject {
     UpdateObjectsZIndex() {
         let layoutzIndex = this.zIndex;
 
-        for (let objIndex = 0; objIndex < this.ManagedObjects.length; objIndex++) {
-            let gameObj = this.ManagedObjects[objIndex]
+        for (let objIndex = 0; objIndex < this.children.length; objIndex++) {
+            let gameObj = this.children[objIndex]
             // gameObj.stageObject.zIndex = newVal + objIndex + 1; // + 1 to make it 1 based indexing
             gameObj.stageObject.zIndex = layoutzIndex + 1; // jsut make it 1 higher than layout background
         }
@@ -3150,7 +3044,7 @@ class GameObjectLayout extends GameObject {
     // Call this whenever you need to recalcaulate the positions of the objects underneath the layout
     // calls fit layout after
     CalculateObjectPositions = () => {
-        let totalObjects = this.ManagedObjects.length;
+        let totalObjects = this.children.length;
 
         // Vertical down positioning
 
@@ -3174,13 +3068,13 @@ class GameObjectLayout extends GameObject {
 
         // loop thru managed objects and change position according to previous ones
         for (let objIndex = 0; objIndex < totalObjects; objIndex++) {
-            let iteratedObj = this.ManagedObjects[objIndex]
+            let iteratedObj = this.children[objIndex]
 
 
 
             if (!iteratedObj) {
                 // an iterated obj is invalid, just ignore
-                console.warn("Found invalid object under layout managed objects:", this.ManagedObjects)
+                console.warn("Found invalid object under layout childrens:", this.children)
                 continue;
             }
 
@@ -3228,7 +3122,7 @@ class GameObjectLayout extends GameObject {
     // gets the size of inner content
     GetManagedSize = () => {
         // if no objects under layout just return nothing
-        if (this.ManagedObjects.length == 0)
+        if (this.children.length == 0)
             return new Point()
 
 
@@ -3237,31 +3131,31 @@ class GameObjectLayout extends GameObject {
         // for vertical orientations
         if (this.layoutOrientation == LayoutOrientation.VerticalDown || this.layoutOrientation == LayoutOrientation.VerticalUp) {
             // for x just get largest width
-            xSize = this.ManagedObjects[0].width
-            for (const obj of this.ManagedObjects) {
+            xSize = this.children[0].width
+            for (const obj of this.children) {
                 if (obj.width > xSize)
                     xSize = obj.width
             }
 
             // for y it is the sum of all heights + space between objects *objects length-1
             let totalHeight = 0;
-            for (const obj of this.ManagedObjects) {
+            for (const obj of this.children) {
                 totalHeight += obj.height
             }
 
-            ySize = totalHeight + this.spaceBetweenObjects * (this.ManagedObjects.length - 1)
+            ySize = totalHeight + this.spaceBetweenObjects * (this.children.length - 1)
 
         } else { // horizontal orientations
             // for x it is the sum of all widths + space between objects *objects length-1
             let totalWidth = 0;
-            for (const obj of this.ManagedObjects) {
+            for (const obj of this.children) {
                 totalWidth += obj.width
             }
-            xSize = totalWidth + this.spaceBetweenObjects * (this.ManagedObjects.length - 1)
+            xSize = totalWidth + this.spaceBetweenObjects * (this.children.length - 1)
 
             // for y just get largest height
-            ySize = this.ManagedObjects[0].height
-            for (const obj of this.ManagedObjects) {
+            ySize = this.children[0].height
+            for (const obj of this.children) {
                 if (obj.height > ySize)
                     ySize = obj.height
             }
@@ -3405,29 +3299,22 @@ class GameObjectLayout extends GameObject {
     /**
      * add object to layout
      * @param {GameObject} objectToAdd self explanatory
-     * @param {Boolean} addToGame whether or not to also add the game object to the main "Game" object for u 
      */
-    AddGameObject(objectToAdd, addToGame = true) {
-        if (!objectToAdd)
-            throw new Error("Tried to add a game object to layout that isn't valid")
-
-        if (addToGame)
-            this.game.AddGameObject(objectToAdd)
-
-        // For vertical down
+    AddChild(objectToAdd, addToGame = true) {
+        self.AddChild(objectToAdd)
 
         //on change make sure content fits accordingly
         objectToAdd.AddEventListener("widthChanged", this.CalculateObjectPositions, this) // make sure content fits
         objectToAdd.AddEventListener("heightChanged", this.CalculateObjectPositions, this) // when height changes, so does the positions of each object
 
-        this.ManagedObjects.push(objectToAdd)
         //update 
         this.CalculateObjectPositions()
         this.UpdateObjectsZIndex();
     }
 
     // remove object from layout
-    RemoveGameObject(objectToRemove) {
+    RemoveChild(objectToRemove) {
+        self.RemoveChild(objectToRemove)
         // For vertical down
         objectToAdd.RemoveEventListener("widthChanged", this.CalculateObjectPositions)
         objectToAdd.RemoveEventListener("heightChanged", this.CalculateObjectPositions)
