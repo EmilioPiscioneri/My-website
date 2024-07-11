@@ -293,6 +293,98 @@ class GameNode extends EventSystem {
         return (this.children.indexOf(nodeToFind) != -1)
     }
 
+    /**
+     * This is a function that is called for every iterated descendant. Passes in descendant as param
+     * @callback DescendantFunction
+     * @param {GameNode} descendant The currently iterated descendant
+     */
+
+    /**
+     * Iterates through a node's descendants 
+     * @param {DescendantFunction} callbackPerDescendant function to call per each descendant. Passes in descendant as first param
+     * @param {Boolean} includeSelf Whether to also run a function for the node itself
+     */
+    IterateDescendants(callbackPerDescendant, includeSelf = false) {
+        // If node doesn't have children (rest of code has to do with descendants)
+        if (this.children.length == 0) {
+            // will get added later if it has children
+            return;
+        }
+
+        // from now on child obj has children
+
+        // -------
+
+        // Recursively iterate through descendants and add stage objects if it finds one
+
+
+
+        let childrenToIterate;
+        let iterationIndexes;
+        // If we want to include this node
+        if (includeSelf) {
+            childrenToIterate = [this]; // start from this node
+            iterationIndexes = [0]; // you have to start at layer 0, index 0 
+        } else {
+            childrenToIterate = this.children; // start from children
+            iterationIndexes = [0, 0]; // you have to start at layer 1, index 0 because you skip layer 0 (this node)
+        }
+
+
+
+        // this is an array where each index represents a layer of children. The value represents the index that was last check on that layer.
+        // E.g. If my array is [0,1,3] then I know that my most recently checked item was at layer 2 and its index was 3,
+        //      while the oldest item is at layer 0 and its index is 0.
+        // This comes in handy for below because I am going to be going down a layer of children, check if there's children then keep adding to indexes array
+        //  when there's no children, deal with the current value then if next index is it at end of array, go up a layer 
+
+        // NGL, a stack data structure might've been ideal for this algorithm because I need to get the last index first (Last-in-First-out)
+        // It's not needed tho plus this is javascript
+
+
+        let finishedIterating = false;
+
+        while (!finishedIterating) {
+            let descendantIndex = iterationIndexes[iterationIndexes.length - 1]; // get the top layer
+            let iteratedDescendant = childrenToIterate[descendantIndex]
+            // console.log("iterationIndexes", iterationIndexes)
+            // console.log("iteratedDescendant", iteratedDescendant.name)
+
+            // call the callback with iterated one
+            callbackPerDescendant(iteratedDescendant);
+
+            // does it have children?
+            if (iteratedDescendant.children.length != 0) {
+                // then keep going down layers
+                iterationIndexes.push(0); // add zero to end of array which adds a new layer and it starts the new layer at index 0
+                childrenToIterate = iteratedDescendant.children; // set children to iterate to new children
+
+            } else { // doesn't have children
+
+                // The new index that the top layer's value was set to 
+                // Move up index for this layer by 1, the ++x increments and returns the new value btw (for my sake)
+                let newIndex = ++iterationIndexes[iterationIndexes.length - 1];
+
+                // while the new value is outside of children array bounds. (Reached end of the current children to iterate array)
+                while (newIndex == childrenToIterate.length) {
+                    // go up one layer 
+                    // However, we stop when the only layer to go up is the first starting child (only 1 value in array), this means we've come full circle
+                    if (iterationIndexes.length - 1 != 1) {
+                        // go up by one layer
+                        childrenToIterate = iteratedDescendant.parent.parent.children
+                        // remove top layer from indexes
+                        iterationIndexes.splice(iterationIndexes.length - 1, 1)
+                        // increment the new top layer index
+                        newIndex = ++iterationIndexes[iterationIndexes.length - 1]
+                    } else { // else, have iterated through all objects (reached end of first layer of children down from )
+                        finishedIterating = true;
+                        break; // escape 
+                    }
+                }
+            }
+        }
+    }
+
     /** Deal with descendants and other items for garbage collector
     * @param {Boolean} [destructChildren] whether to recursively destruct a Node's children as well
     */
@@ -430,7 +522,6 @@ class Game extends EventSystem {
     pixiApplication = new PIXI.Application();
     graphicsContainer = null; // a div where graphics go 
     // defaultBackgroundColor = "#4f4f4f"
-    gameObjects = []; // an array of all game objects in scene 
     ticker; // a PIXI ticker object that is for this game obvject
     globalPhysicsEnabled = true; // Maybe you don't want physics idk
     // gravitational acceleration constant in game units/second (only on y)
@@ -665,21 +756,25 @@ class Game extends EventSystem {
         // don't continue when paused
         if (this.paused)
             return;
-        let calculatedCollisionPairs = [];
-
-
-
-
 
         // Then, calculate all collision updates
 
         // See Excluding same and repeated pairs theory as to how I avoid repeating the same game objects twice
         // in collision loops 
 
+        // scene with game objects to loop thru
+        let activeScene = this.activeScene;
+
+        // make sure we have an actual scene rn
+        if (!activeScene) {
+            console.warn("Physics tick couldn't run, no active scene set")
+            return;
+        }
+
         // loop through game objects once
-        let gameObjectsTotal = this.gameObjects.length;
+        let gameObjectsTotal = activeScene.children.length;
         for (let firstGameObjIndex = 0; firstGameObjIndex < gameObjectsTotal - 1; firstGameObjIndex++) {
-            let firstGameObj = this.gameObjects[firstGameObjIndex];
+            let firstGameObj = activeScene.children[firstGameObjIndex];
             // Don't do anything if this object is static. There is nothing to change on this object
             if (firstGameObj.static)
                 continue;
@@ -700,7 +795,7 @@ class Game extends EventSystem {
             if (firstGameObj.collider)
                 // then for each game object compare it's collision with another
                 for (let secondGameObjIndex = firstGameObjIndex + 1; secondGameObjIndex < gameObjectsTotal; secondGameObjIndex++) {
-                    let secondGameObj = this.gameObjects[secondGameObjIndex];
+                    let secondGameObj = activeScene.children[secondGameObjIndex];
 
 
                     // don't do any updates when game is paused
@@ -871,19 +966,19 @@ class Game extends EventSystem {
     // Then sets the new calculated values to the aproppriate ones under game object
     CalculateNewVelocityAndPos(gameObj) {
         // First calculate all velocity updates for objects
-        let gameStage = this.pixiApplication.stage; // contains all the rendered children
 
         // check should interact with physics
         if (!gameObj.physicsEnabled)
             return;
 
-        // the position is relative to parent so I'll just make it so only parent can move for now
-        if (gameObj.stageObject.parent != gameStage)
-            return;
-
         // Don't need to move if static, can't have velocity
         if (gameObj.static)
             return;
+
+        if (gameObj.name) {
+            console.log("looping", gameObj.name)
+        }
+
 
 
         // --- apply physics ---
@@ -986,7 +1081,7 @@ class Scene extends GameNode {
 
 
         this.FireListener("stageObjectAdded", { stageObject: stageObject })
-        console.log("added stage object", stageObject.name)
+        // console.log("added stage object", stageObject.name)
     }
 
     RemoveStageObject(stageObject) {
@@ -1037,60 +1132,13 @@ class Scene extends GameNode {
 
         // Recursively iterate through descendants and add stage objects if it finds one
 
-        let childrenToIterate = [child]; // My algorithm needs to start with a to iterate array with only 1 value of the first child to start searching
-
-        // this is an array where each index represents a layer of children. The value represents the index that was last check on that layer.
-        // E.g. If my array is [0,1,3] then I know that my most recently checked item was at layer 2 and its index was 3,
-        //      while the oldest item is at layer 0 and its index is 0.
-        // This comes in handy for below because I am going to be going down a layer of children, check if there's children then keep adding to indexes array
-        //  when there's no children, deal with the current value then if next index is it at end of array, go up a layer 
-
-        // NGL, a stack data structure might've been ideal for this algorithm because I need to get the last index first (Last-in-First-out)
-        // It's not needed tho plus this is javascript
-
-        let iterationIndexes = [0]; // you have to start at layer 0, index 0 
-        let finishedIterating = false;
-
-        while (!finishedIterating) {
-            let descendantIndex = iterationIndexes[iterationIndexes.length - 1]; // get the top layer
-            let iteratedDescendant = childrenToIterate[descendantIndex]
-            console.log("iterationIndexes", iterationIndexes)
-            console.log("iteratedDescendant", iteratedDescendant.name)
-
-            iteratedDescendant._SetCurrentScene(this) // adds stage obj to scene
-
-            // does it have children?
-            if (iteratedDescendant.children.length != 0) {
-                // then keep going down layers
-                iterationIndexes.push(0); // add zero to end of array which adds a new layer and it starts the new layer at index 0
-                childrenToIterate = iteratedDescendant.children; // set children to iterate to new children
-
-            } else { // doesn't have children
-
-
-                // The new index that the top layer's value was set to 
-                // Move up index for this layer by 1, the ++x increments and returns the new value btw (for my sake)
-                let newIndex = ++iterationIndexes[iterationIndexes.length - 1];
-
-                // while the new value is outside of children array bounds. (Reached end of the current children to iterate array)
-                while (newIndex == childrenToIterate.length) {
-                    // go up one layer 
-                    // However, we stop when the only layer to go up is the first starting child (only 1 value in array), this means we've come full circle
-                    if (iterationIndexes.length - 1 != 1) {
-                        // go up by one layer
-                        childrenToIterate = iteratedDescendant.parent.parent.children
-                        // remove top layer from indexes
-                        iterationIndexes.splice(iterationIndexes.length - 1, 1)
-                        // increment the new top layer index
-                        newIndex = ++iterationIndexes[iterationIndexes.length - 1]
-
-                    } else { // else, have iterated through all objects (reached end of first layer of children down from )
-                        finishedIterating = true;
-                        break; // escape 
-                    }
-                }
-            }
+         // define as anonymous to preserve "this"
+         let callbackPerDescendant = (iteratedDescendant) => {
+            // set to this scene 
+            iteratedDescendant._SetCurrentScene(this) // also adds stage obj to scene
         }
+
+        child.IterateDescendants(callbackPerDescendant, true) // include node in loop
 
     }
 
@@ -1121,54 +1169,13 @@ class Scene extends GameNode {
 
             // Recursively iterate through descendants and add remove objects if it finds one
 
-            // see .AddChild for algorithm explanation
-
-            let childrenToIterate = [child];
-
-            let iterationIndexes = [0]; // you have to start at layer 0, index 0 
-            let finishedIterating = false;
-
-            while (!finishedIterating) {
-                let descendantIndex = iterationIndexes[iterationIndexes.length - 1]; // get the top layer
-                let iteratedDescendant = childrenToIterate[descendantIndex]
-                console.log("iterationIndexes", iterationIndexes)
-                console.log("iteratedDescendant", iteratedDescendant.name)
-
-                // no longer a part of a scene
-                iteratedDescendant._SetCurrentScene(null)
-                // deal with descendant, add stage object if it has one
-                if (iteratedDescendant.stageObject)
-                    this.RemoveStageObject(iteratedDescendant.stageObject)
-
-                // does it have children?
-                if (iteratedDescendant.children.length != 0) {
-                    // then keep going down layers
-                    iterationIndexes.push(0); // add zero to end of array which adds a new layer and it starts the new layer at index 0
-                    childrenToIterate = iteratedDescendant.children; // set children to iterate to new children
-
-                } else { // doesn't have children
-                    // The new index that the top layer's value was set to 
-                    // Move up index for this layer by 1, the ++x increments and returns the new value btw (for my sake)
-                    let newIndex = ++iterationIndexes[iterationIndexes.length - 1];
-
-                    // while the new value is outside of children array bounds. (Reached end of the current children to iterate array)
-                    while (newIndex == childrenToIterate.length) {
-                        // go up one layer 
-                        // However, we stop when the only layer to go up is the first starting child (only 1 value in array), this means we've come full circle
-                        if (iterationIndexes.length - 1 != 1) {
-                            // go up by one layer
-                            childrenToIterate = iteratedDescendant.parent.parent.children
-                            // remove top layer from indexes
-                            iterationIndexes.splice(iterationIndexes.length - 1, 1)
-                            // increment the new top layer index
-                            newIndex = ++iterationIndexes[iterationIndexes.length - 1]
-                        } else { // else, have iterated through all objects (reached end of first layer of children down from )
-                            finishedIterating = true;
-                            break; // escape 
-                        }
-                    }
-                }
+            // define as anonymous to preserve "this"
+            let callbackPerDescendant = (iteratedDescendant) => {
+                // set to this scene 
+                iteratedDescendant._SetCurrentScene(null) // also adds stage obj to scene
             }
+
+            child.IterateDescendants(callbackPerDescendant, true) // include node in loop
         }
 
         // deal with removed child's destructor
@@ -1208,7 +1215,7 @@ class GameObject extends GameNode {
             // Now remove current stage object from old scene and add to new one if the scenes aren't null
             if (oldScene)
                 oldScene.RemoveStageObject(this.stageObject)
-            if (newScene) 
+            if (newScene)
                 newScene.AddStageObject(this.stageObject);
         }
 
@@ -1457,61 +1464,14 @@ class GameObject extends GameNode {
 
         // Recursively iterate through descendants and add stage objects if it finds one
 
-        let childrenToIterate = child.children; // Start at the child's children, this skips first child node
-
-        // this is an array where each index represents a layer of children. The value represents the index that was last check on that layer.
-        // E.g. If my array is [0,1,3] then I know that my most recently checked item was at layer 2 and its index was 3,
-        //      while the oldest item is at layer 0 and its index is 0.
-        // This comes in handy for below because I am going to be going down a layer of children, check if there's children then keep adding to indexes array
-        //  when there's no children, deal with the current value then if next index is it at end of array, go up a layer 
-
-        // NGL, a stack data structure might've been ideal for this algorithm because I need to get the last index first (Last-in-First-out)
-        // It's not needed tho plus this is javascript
-
-        let iterationIndexes = [0, 0]; // you have to start at layer 1, index 0 because we skip layer 0 (first node already is added)
-        let finishedIterating = false;
-
-        while (!finishedIterating) {
-            let descendantIndex = iterationIndexes[iterationIndexes.length - 1]; // get the top layer
-            let iteratedDescendant = childrenToIterate[descendantIndex]
-            console.log("iterationIndexes", iterationIndexes)
-            console.log("iteratedDescendant", iteratedDescendant.name)
-
-            // set descendant scene to this one
-            iteratedDescendant._SetCurrentScene(this._currentScene) // adds stage obj to scene
-
-            // does it have children?
-            if (iteratedDescendant.children.length != 0) {
-                // then keep going down layers
-                iterationIndexes.push(0); // add zero to end of array which adds a new layer and it starts the new layer at index 0
-                childrenToIterate = iteratedDescendant.children; // set children to iterate to new children
-
-            } else { // doesn't have children
-
-
-                // The new index that the top layer's value was set to 
-                // Move up index for this layer by 1, the ++x increments and returns the new value btw (for my sake)
-                let newIndex = ++iterationIndexes[iterationIndexes.length - 1];
-
-                // while the new value is outside of children array bounds. (Reached end of the current children to iterate array)
-                while (newIndex == childrenToIterate.length) {
-                    // go up one layer 
-                    // However, we stop when the only layer to go up is the first starting child (only 1 value in array), this means we've come full circle
-                    if (iterationIndexes.length - 1 != 1) {
-                        // go up by one layer
-                        childrenToIterate = iteratedDescendant.parent.parent.children
-                        // remove top layer from indexes
-                        iterationIndexes.splice(iterationIndexes.length - 1, 1)
-                        // increment the new top layer index
-                        newIndex = ++iterationIndexes[iterationIndexes.length - 1]
-
-                    } else { // else, have iterated through all objects (reached end of first layer of children down from )
-                        finishedIterating = true;
-                        break; // escape 
-                    }
-                }
-            }
+         // define as anonymous to preserve "this"
+         let callbackPerDescendant = (iteratedDescendant) => {
+            // set to this scene 
+            // console.log(iteratedDescendant)
+            iteratedDescendant._SetCurrentScene(this._currentScene) // also adds stage obj to scene
         }
+
+        child.IterateDescendants(callbackPerDescendant, false) // don't include node in loop
 
     }
 
@@ -1543,54 +1503,13 @@ class GameObject extends GameNode {
 
             // Recursively iterate through descendants and add remove objects if it finds one
 
-            // see .AddChild for algorithm explanation
-
-            let childrenToIterate = [child];
-
-            let iterationIndexes = [0]; // you have to start at layer 0, index 0 
-            let finishedIterating = false;
-
-            while (!finishedIterating) {
-                let descendantIndex = iterationIndexes[iterationIndexes.length - 1]; // get the top layer
-                let iteratedDescendant = childrenToIterate[descendantIndex]
-                console.log("iterationIndexes", iterationIndexes)
-                console.log("iteratedDescendant", iteratedDescendant.name)
-
-                // set descendant scene to null
-                iteratedDescendant._SetCurrentScene(null)
-                // deal with descendant, add stage object if it has one and curent scene isn't null
-                if (iteratedDescendant.stageObject && this._currentScene)
-                    this._currentScene.RemoveStageObject(iteratedDescendant.stageObject)
-
-                // does it have children?
-                if (iteratedDescendant.children.length != 0) {
-                    // then keep going down layers
-                    iterationIndexes.push(0); // add zero to end of array which adds a new layer and it starts the new layer at index 0
-                    childrenToIterate = iteratedDescendant.children; // set children to iterate to new children
-
-                } else { // doesn't have children
-                    // The new index that the top layer's value was set to 
-                    // Move up index for this layer by 1, the ++x increments and returns the new value btw (for my sake)
-                    let newIndex = ++iterationIndexes[iterationIndexes.length - 1];
-
-                    // while the new value is outside of children array bounds. (Reached end of the current children to iterate array)
-                    while (newIndex == childrenToIterate.length) {
-                        // go up one layer 
-                        // However, we stop when the only layer to go up is the first starting child (only 1 value in array), this means we've come full circle
-                        if (iterationIndexes.length - 1 != 1) {
-                            // go up by one layer
-                            childrenToIterate = iteratedDescendant.parent.parent.children
-                            // remove top layer from indexes
-                            iterationIndexes.splice(iterationIndexes.length - 1, 1)
-                            // increment the new top layer index
-                            newIndex = ++iterationIndexes[iterationIndexes.length - 1]
-                        } else { // else, have iterated through all objects (reached end of first layer of children down from )
-                            finishedIterating = true;
-                            break; // escape 
-                        }
-                    }
-                }
+             // define as anonymous to preserve "this"
+             let callbackPerDescendant = (iteratedDescendant) => {
+                // set to this scene 
+                iteratedDescendant._SetCurrentScene(null) // also adds stage obj to scene
             }
+    
+            child.IterateDescendants(callbackPerDescendant, true) // include node in loop
         }
 
         // deal with removed child's destructor

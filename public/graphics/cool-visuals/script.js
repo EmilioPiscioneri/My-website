@@ -373,8 +373,8 @@ function BallsConnectToLineLoad(game) {
                     ball.velocity = ballVelocity;
 
                     // Now add to scene and list of balls array
-                    // ballsInScene.push(ball);
-                    // mainScene.AddChild(ball);
+                    ballsInScene.push(ball);
+                    mainScene.AddChild(ball);
 
                 }
             }
@@ -695,10 +695,19 @@ function BallsConnectToLineLoad(game) {
     }
 
     // remove timeouts
-    setTimeout(()=>rect0.RemoveChild(rect0_0),firstDelay+delayInterval*8)
-    setTimeout(()=>rect0_1.RemoveChild(rect0_1_1),firstDelay+delayInterval*7.5)
+    // setTimeout(()=>rect0.RemoveChild(rect0_0),firstDelay+delayInterval*8)
+    // setTimeout(()=>rect0_1.RemoveChild(rect0_1_1),firstDelay+delayInterval*7.5)
 
-    setTimeout(()=>mainScene.RemoveChild(rect0),firstDelay+delayInterval*10)
+    // setTimeout(()=>mainScene.RemoveChild(rect0),firstDelay+delayInterval*10)
+
+    // for debugging
+    globalThis.rect0 = rect0
+    globalThis.rect0_0 = rect0_0
+    globalThis.rect0_1 = rect0_1
+    globalThis.rect0_0_0 = rect0_0_0
+    globalThis.rect0_0_1 = rect0_0_1
+    globalThis.rect0_1_0 = rect0_1_0
+    globalThis.rect0_1_1 = rect0_1_1
 
 
 
@@ -967,7 +976,7 @@ function ScreenBordersLoad(game) {
 
 function ScreenBordersOnTick(game) {
     // loop through all game objects if they're not static then make sure they're inside the screen bounds 
-    let gameObjectsInScene = game.gameObjects;
+    let gameObjectsInScene = mainScene.children;
 
     let canvasSize = GetCanvasSizeInUnits();
 
