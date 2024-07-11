@@ -293,9 +293,19 @@ class GameNode extends EventSystem {
         return (this.children.indexOf(nodeToFind) != -1)
     }
 
-    // Deal with descendants and other items for garbage collector
-    Destruct() {
+    /** Deal with descendants and other items for garbage collector
+    * @param {Boolean} [destructChildren] whether to recursively destruct a Node's children as well
+    */
+    Destruct(destructChildren = true) {
         super.Destruct()
+        
+        // recursively destruct this nodes children (if any)
+        if(destructChildren){
+            for(let child of this.children){
+                child.Destruct(destructChildren)
+            }
+            
+        }
     }
 }
 
@@ -1090,8 +1100,10 @@ class Scene extends GameNode {
     /**
      * Removes GameObject child from scene and unrenders the child's and its descendant's stageObjects
      * @param {GameObject} child 
+     * @param {Boolean} callDestructor Whether to call child's Destruct method after remove
+     * @param {Boolean} destructDescendants Whether to call child's descendants's Destruct methods after remove
      */
-    RemoveChild(child) {
+    RemoveChild(child, callDestructor, destructDescendants) {
         // overwriting GameNode func
 
         // calls GameNode function first, note that this will fire child and descendant removed events
@@ -1102,61 +1114,67 @@ class Scene extends GameNode {
             // add stage obj for this child
             this.RemoveStageObject(child.stageObject)
             // will get removed later if it has children
-            return;
-        }
+        } else {
 
-        // from now on child obj has children
-
-        // -------
-
-        // Recursively iterate through descendants and add remove objects if it finds one
-
-        // see .AddChild for algorithm explanation
-
-        let childrenToIterate = [child];
-
-        let iterationIndexes = [0]; // you have to start at layer 0, index 0 
-        let finishedIterating = false;
-
-        while (!finishedIterating) {
-            let descendantIndex = iterationIndexes[iterationIndexes.length - 1]; // get the top layer
-            let iteratedDescendant = childrenToIterate[descendantIndex]
-            console.log("iterationIndexes", iterationIndexes)
-            console.log("iteratedDescendant", iteratedDescendant.name)
-
-            // deal with descendant, add stage object if it has one
-            if (iteratedDescendant.stageObject)
-                this.RemoveStageObject(iteratedDescendant.stageObject)
-
-            // does it have children?
-            if (iteratedDescendant.children.length != 0) {
-                // then keep going down layers
-                iterationIndexes.push(0); // add zero to end of array which adds a new layer and it starts the new layer at index 0
-                childrenToIterate = iteratedDescendant.children; // set children to iterate to new children
-
-            } else { // doesn't have children
-                // The new index that the top layer's value was set to 
-                // Move up index for this layer by 1, the ++x increments and returns the new value btw (for my sake)
-                let newIndex = ++iterationIndexes[iterationIndexes.length - 1];
-
-                // while the new value is outside of children array bounds. (Reached end of the current children to iterate array)
-                while (newIndex == childrenToIterate.length) {
-                    // go up one layer 
-                    // However, we stop when the only layer to go up is the first starting child (only 1 value in array), this means we've come full circle
-                    if (iterationIndexes.length - 1 != 1) {
-                        // go up by one layer
-                        childrenToIterate = iteratedDescendant.parent.parent.children
-                        // remove top layer from indexes
-                        iterationIndexes.splice(iterationIndexes.length - 1, 1)
-                        // increment the new top layer index
-                        newIndex = ++iterationIndexes[iterationIndexes.length - 1]
-                    } else { // else, have iterated through all objects (reached end of first layer of children down from )
-                        finishedIterating = true;
-                        break; // escape 
+            // Else the child obj has children
+    
+            // -------
+    
+            // Recursively iterate through descendants and add remove objects if it finds one
+    
+            // see .AddChild for algorithm explanation
+    
+            let childrenToIterate = [child];
+    
+            let iterationIndexes = [0]; // you have to start at layer 0, index 0 
+            let finishedIterating = false;
+    
+            while (!finishedIterating) {
+                let descendantIndex = iterationIndexes[iterationIndexes.length - 1]; // get the top layer
+                let iteratedDescendant = childrenToIterate[descendantIndex]
+                console.log("iterationIndexes", iterationIndexes)
+                console.log("iteratedDescendant", iteratedDescendant.name)
+    
+                // deal with descendant, add stage object if it has one
+                if (iteratedDescendant.stageObject)
+                    this.RemoveStageObject(iteratedDescendant.stageObject)
+    
+                // does it have children?
+                if (iteratedDescendant.children.length != 0) {
+                    // then keep going down layers
+                    iterationIndexes.push(0); // add zero to end of array which adds a new layer and it starts the new layer at index 0
+                    childrenToIterate = iteratedDescendant.children; // set children to iterate to new children
+    
+                } else { // doesn't have children
+                    // The new index that the top layer's value was set to 
+                    // Move up index for this layer by 1, the ++x increments and returns the new value btw (for my sake)
+                    let newIndex = ++iterationIndexes[iterationIndexes.length - 1];
+    
+                    // while the new value is outside of children array bounds. (Reached end of the current children to iterate array)
+                    while (newIndex == childrenToIterate.length) {
+                        // go up one layer 
+                        // However, we stop when the only layer to go up is the first starting child (only 1 value in array), this means we've come full circle
+                        if (iterationIndexes.length - 1 != 1) {
+                            // go up by one layer
+                            childrenToIterate = iteratedDescendant.parent.parent.children
+                            // remove top layer from indexes
+                            iterationIndexes.splice(iterationIndexes.length - 1, 1)
+                            // increment the new top layer index
+                            newIndex = ++iterationIndexes[iterationIndexes.length - 1]
+                        } else { // else, have iterated through all objects (reached end of first layer of children down from )
+                            finishedIterating = true;
+                            break; // escape 
+                        }
                     }
                 }
             }
         }
+        
+        // deal with removed child's destructor
+        if(callDestructor) {
+            child.Destruct(destructDescendants)
+        }
+            
     }
 
 
