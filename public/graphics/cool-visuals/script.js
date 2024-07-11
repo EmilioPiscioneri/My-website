@@ -160,6 +160,7 @@ let screenBordersScript = new ScriptLoader(game, ScreenBordersLoad, ScreenBorder
 
 function main() {
     game.AddEventListener("tick", mainTickerHandler);
+    game.activeScene = mainScene
 
     // First load the game borders
     AddLoader(screenBordersScript)
@@ -514,7 +515,7 @@ function BallsConnectToLineLoad(game) {
 
     gameObjEventsToDestroy.push([gridVisibilityBtn, "pointerup", HandleGridVisibilityBtnUp])
 
-    // game.AddGameObject(ballPullStrengthSlider)
+    // mainScene.AddChild(ballPullStrengthSlider)
     // game.AddGameObject(ballPullStrengthLabel)
 
 
@@ -529,11 +530,11 @@ function BallsConnectToLineLoad(game) {
     uiLayout.height = 5
     uiLayout.alpha = 0.75;
 
-    // game.AddGameObject(layout)
+    // mainScene.AddChild(layout)
 
 
-    // game.AddGameObject(ballPullStrengthLabel)
-    // game.AddGameObject(ballPullStrengthSlider)
+    // mainScene.AddChild(ballPullStrengthLabel)
+    // mainScene.AddChild(ballPullStrengthSlider)
 
     mainScene.AddChild(uiLayout)
 
@@ -567,7 +568,6 @@ function BallsConnectToLineLoad(game) {
     //-----------
 
     // Game node and scene testing 
-    let testScene = new Scene(game);
 
     // Add objects to scene
 
@@ -695,14 +695,13 @@ function BallsConnectToLineLoad(game) {
     setTimeout(()=>rect0.RemoveChild(rect0_0),firstDelay+delayInterval*8)
     setTimeout(()=>rect0_1.RemoveChild(rect0_1_1),firstDelay+delayInterval*7.5)
 
-    setTimeout(()=>testScene.RemoveChild(rect0),firstDelay+delayInterval*10)
+    setTimeout(()=>mainScene.RemoveChild(rect0),firstDelay+delayInterval*10)
 
 
 
     // add to scene
-    testScene.AddChild(rect0)
+    mainScene.AddChild(rect0)
 
-    game.activeScene = testScene;
 
 
 
@@ -741,7 +740,7 @@ function RemovePreviousLines() {
     while (linesInScene.length > 0) {
         let line = linesInScene[0];
         // remove from scene and call destructor
-        game.RemoveGameObject(line, true)
+        mainScene.RemoveChild(line, true)
         linesInScene.shift() // clear out array
     }
 }
@@ -848,7 +847,7 @@ function DrawAllLines() {
             line.gravityEnabled = false;
 
             // add to scene
-            game.AddGameObject(line);
+            mainScene.AddChild(line);
             // add to list of created lines
             linesInScene.push(line);
 

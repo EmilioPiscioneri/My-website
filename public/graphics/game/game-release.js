@@ -236,9 +236,10 @@ class GameNode extends EventSystem {
      * Removes a specified child from node
      * @param {GameNode} childToRemove 
      * @param {Boolean} callDestructor After node is removed, whether to call its destruct function
+     * @param {Boolean} destructDescendants Whether to call child's descendants's Destruct methods after remove
      * @returns Whether the remove waas successfull or not
      */
-    RemoveChild(childToRemove, callDestructor) {
+    RemoveChild(childToRemove, callDestructor = true, destructDescendants = true) {
         // If child doesn't exist return false
         if (!this.ContainsChild(childToRemove)) {
             return false
@@ -255,7 +256,7 @@ class GameNode extends EventSystem {
 
         // clean it up
         if (callDestructor)
-            childToRemove.Destruct();
+            childToRemove.Destruct(destructDescendants);
 
         this.FireListener("childRemoved", { child: childToRemove })
 
@@ -986,7 +987,7 @@ class Scene extends GameNode {
 
 
         this.FireListener("stageObjectAdded", { stageObject: stageObject })
-        console.log("added stage object", stageObject.name)
+        // console.log("added stage object", stageObject.name)
     }
 
     RemoveStageObject(stageObject) {
@@ -3319,7 +3320,7 @@ class GameObjectLayout extends GameObject {
      * @param {GameObject} objectToAdd self explanatory
      */
     AddChild(objectToAdd, addToGame = true) {
-        self.AddChild(objectToAdd)
+        super.AddChild(objectToAdd)
 
         //on change make sure content fits accordingly
         objectToAdd.AddEventListener("widthChanged", this.CalculateObjectPositions, this) // make sure content fits
@@ -3332,7 +3333,7 @@ class GameObjectLayout extends GameObject {
 
     // remove object from layout
     RemoveChild(objectToRemove) {
-        self.RemoveChild(objectToRemove)
+        super.RemoveChild(objectToRemove)
         // For vertical down
         objectToAdd.RemoveEventListener("widthChanged", this.CalculateObjectPositions)
         objectToAdd.RemoveEventListener("heightChanged", this.CalculateObjectPositions)
