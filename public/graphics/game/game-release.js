@@ -986,7 +986,7 @@ class Game extends EventSystem {
             return;
 
         if (gameObj.name) {
-            console.log("looping", gameObj.name)
+            // console.log("looping", gameObj.name)
         }
 
 
