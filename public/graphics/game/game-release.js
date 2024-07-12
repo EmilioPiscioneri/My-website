@@ -212,6 +212,7 @@ class GameNode extends EventSystem {
         this.children.push(childToAdd);
         childToAdd._parent = this; // set new parent
         this.FireListener("childAdded", { child: childToAdd })
+        childToAdd.FireListener("parentChanged")
 
         // Recursively fire the descendant added to all parents (ancestors) above the current node
         let ancestor = this.parent; // ancestor will change as each one gets iterated to it's own parent
@@ -252,12 +253,13 @@ class GameNode extends EventSystem {
 
         // Want the parent to be null before the child/descendant removed events are fired
         childToRemove._parent = null;
+        this.FireListener("childRemoved", { child: childToRemove })
+        childToRemove.FireListener("parentChanged")
 
         // clean it up
         if (callDestructor)
             childToRemove.Destruct(destructDescendants);
 
-        this.FireListener("childRemoved", { child: childToRemove })
 
         // Recursively fire the descendant added to all parents (ancestors) above the current node
         let ancestor = oldParent; // ancestor will change as each one gets iterated to it's own parent
