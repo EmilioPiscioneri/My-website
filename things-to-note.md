@@ -6,4 +6,6 @@
 
 - I named GameNodes "GameNode" and not just Node because Node is a native js class.
 
-- For scenes, child added event gets fired first then the stage object added events are fired. Same for removed events 
+- For scenes, child added event gets fired first then the stage object added events are fired. Same for removed events
+
+- Whenever you change a GameObject's .stageObject or call its .Destruct() method, it will destroy its old stageObject to prevent memory leaks 

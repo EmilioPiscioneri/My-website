@@ -780,9 +780,9 @@ class Game extends EventSystem {
         // Now that I have introduced a node structure we no longer have a 1D array of objects but a web.
         // Both times we iterate a node (and its descendants) we can just add to an index as both times we iterate the objects will be iterated in the same order
         // Hmm okay maybe not because the indexes are used to actually access the 1D array in a specific order
-        
 
-        
+
+
         for (let firstGameObjIndex = 0; firstGameObjIndex < gameObjectsTotal - 1; firstGameObjIndex++) {
             let firstGameObj = activeScene.children[firstGameObjIndex];
             // Don't do anything if this object is static. There is nothing to change on this object
@@ -1142,8 +1142,8 @@ class Scene extends GameNode {
 
         // Recursively iterate through descendants and add stage objects if it finds one
 
-         // define as anonymous to preserve "this"
-         let callbackPerDescendant = (iteratedDescendant) => {
+        // define as anonymous to preserve "this"
+        let callbackPerDescendant = (iteratedDescendant) => {
             // set to this scene 
             iteratedDescendant._SetCurrentScene(this) // also adds stage obj to scene
         }
@@ -1238,7 +1238,7 @@ class GameObject extends GameNode {
     }
     set stageObject(newStageObject) {
         let oldStageObject = this._stageObject;
-        this._stageObject = newStageObject;
+
 
         // do nothing if current scene is null
         if (!this._currentScene)
@@ -1248,9 +1248,12 @@ class GameObject extends GameNode {
 
         // if is the active scene, add new stage object and remove old 
         if (this._currentScene && this._currentScene == this.game.activeScene) {
-            // only remove if they aren't null
-            if (oldStageObject)
+            // only remove if oldStageObject isn't null
+            if (oldStageObject) {
+                // destruct the old stage object (still the current one)
+                this.DestructStageObject();
                 this._currentScene.RemoveStageObject(oldStageObject)
+            }
             // else
             //     console.warn("2")
 
@@ -1267,6 +1270,9 @@ class GameObject extends GameNode {
             else
                 console.warn("2")
         }
+
+        // set new stage object
+        this._stageObject = newStageObject;
 
         this.FireListener("stageObjectChanged");
     }
@@ -1474,8 +1480,8 @@ class GameObject extends GameNode {
 
         // Recursively iterate through descendants and add stage objects if it finds one
 
-         // define as anonymous to preserve "this"
-         let callbackPerDescendant = (iteratedDescendant) => {
+        // define as anonymous to preserve "this"
+        let callbackPerDescendant = (iteratedDescendant) => {
             // set to this scene 
             // console.log(iteratedDescendant)
             iteratedDescendant._SetCurrentScene(this._currentScene) // also adds stage obj to scene
@@ -1513,12 +1519,12 @@ class GameObject extends GameNode {
 
             // Recursively iterate through descendants and add remove objects if it finds one
 
-             // define as anonymous to preserve "this"
-             let callbackPerDescendant = (iteratedDescendant) => {
+            // define as anonymous to preserve "this"
+            let callbackPerDescendant = (iteratedDescendant) => {
                 // set to this scene 
                 iteratedDescendant._SetCurrentScene(null) // also adds stage obj to scene
             }
-    
+
             child.IterateDescendants(callbackPerDescendant, true) // include node in loop
         }
 
@@ -1530,14 +1536,24 @@ class GameObject extends GameNode {
 
     }
 
+    // Does not set .stageObject to null, ONLY destructs the current .stageObject value 
+    DestructStageObject() {
+        //  avoids circular references
+        this.stageObject.parentGameObject = null;
+        // if it has a destroy function, call it
+        if (this.stageObject.destroy) {
+            this.stageObject.destroy()
+        }
+
+
+    }
+
     Destruct() {
         // Called the inherited class's destruct class
         super.Destruct();
 
-        // Destroy the graphics object if it exists and has destory function
-        if (this.stageObject && this.stageObject.destroy) {
-            this.stageObject.destroy();
-        }
+        // Destroy the stage object
+        this.DestructStageObject()
     }
 }
 
