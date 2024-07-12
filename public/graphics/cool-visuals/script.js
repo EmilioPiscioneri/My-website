@@ -997,7 +997,6 @@ function ScreenBordersOnTick(game) {
         if (gameObject.isACircle) {
             objectX -= gameObject.width / 2;
             objectY -= gameObject.height / 2;
-
         }
 
         // check x-axis is out of left
@@ -1020,6 +1019,17 @@ function ScreenBordersOnTick(game) {
             objectY = canvasSize.height - gameObject.height
             gameObject.velocity.y = -Math.abs(gameObject.velocity.y);
         }
-    }, false)
+
+        // set new x and y
+
+        // remove offset
+        if (gameObject.isACircle) {
+            objectX += gameObject.width / 2;
+            objectY += gameObject.height / 2;
+        }
+
+        gameObject.x = objectX
+        gameObject.y = objectY
+    })
 
 }
