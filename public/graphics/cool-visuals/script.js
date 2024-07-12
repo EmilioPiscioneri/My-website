@@ -653,6 +653,8 @@ function BallsConnectToLineLoad(game) {
     rect0_1_1.name = "rect0_1_1"
     rect0_1_1.stageObject.name = "rect0_1_1"
 
+    // rect0_1_1.static = true 
+
     rect0_1_1.position = new Point(13, 14)
 
     let firstDelay = 1000; // ms
@@ -663,26 +665,26 @@ function BallsConnectToLineLoad(game) {
 
     // add delays so children are added after scene is created
     if (afterScene) {
-        setTimeout(() => rect0.AddChild(rect0_0), firstDelay+delayInterval*6)
+        setTimeout(() => rect0.AddChild(rect0_0), firstDelay + delayInterval * 6)
         setTimeout(() => rect0.AddChild(rect0_1), firstDelay + delayInterval)
-        setTimeout(() => rect0_0.AddChild(rect0_0_0), firstDelay + delayInterval*3)
-        setTimeout(() => rect0_0.AddChild(rect0_0_1), firstDelay + delayInterval*2)
-        setTimeout(() => rect0_1.AddChild(rect0_1_0), firstDelay + delayInterval*4)
-        setTimeout(() => rect0_1.AddChild(rect0_1_1), firstDelay + delayInterval*3.7)
+        setTimeout(() => rect0_0.AddChild(rect0_0_0), firstDelay + delayInterval * 3)
+        setTimeout(() => rect0_0.AddChild(rect0_0_1), firstDelay + delayInterval * 2)
+        setTimeout(() => rect0_1.AddChild(rect0_1_0), firstDelay + delayInterval * 4)
+        setTimeout(() => rect0_1.AddChild(rect0_1_1), firstDelay + delayInterval * 3.7)
         // after x seconds, change a child's stage object. This should update correctly
         setTimeout(() => {
             // Same as https://www.w3schools.com/graphics/canvas_gradients.asp
-            let gradientFill = new PIXI.FillGradient(0,0,0,1) // only do gradient along y-axis 
+            let gradientFill = new PIXI.FillGradient(0, 0, 0, 1) // only do gradient along y-axis 
             gradientFill.addColorStop(0, "blue")
             gradientFill.addColorStop(1, "red")
             rect0_1_1.stageObject = new PIXI.Graphics()
                 //  .rect(0,0,1,1)
-                 .roundRect(0,0,1,1,0.1)
+                .roundRect(0, 0, 1, 1, 0.1)
                 //  .fill("red")
-                 .fill(gradientFill)
+                .fill(gradientFill)
 
             // console.log(rect0_1_1)
-        }, firstDelay+delayInterval*5);
+        }, firstDelay + delayInterval * 5.5);
     } else {
         rect0.AddChild(rect0_0)
         rect0.AddChild(rect0_1)
@@ -976,14 +978,15 @@ function ScreenBordersLoad(game) {
 
 function ScreenBordersOnTick(game) {
     // loop through all game objects if they're not static then make sure they're inside the screen bounds 
-    let gameObjectsInScene = mainScene.children;
+    // let gameObjectsInScene = mainScene.children;
 
     let canvasSize = GetCanvasSizeInUnits();
 
-    for (const gameObject of gameObjectsInScene) {
+    // iterate through all descendant game objects in scene. Function runs per descendant
+    mainScene.IterateDescendants((gameObject) => {
         // do nothing when static (not moving)
         if (gameObject.static)
-            continue; // skip
+            return; // skip
 
         // else check if position is out of bounds and then move accordingly and change velocity
 
@@ -1017,6 +1020,6 @@ function ScreenBordersOnTick(game) {
             objectY = canvasSize.height - gameObject.height
             gameObject.velocity.y = -Math.abs(gameObject.velocity.y);
         }
-    }
+    }, false)
 
 }

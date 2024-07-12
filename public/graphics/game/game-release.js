@@ -299,12 +299,14 @@ class GameNode extends EventSystem {
      * @param {GameNode} descendant The currently iterated descendant
      */
 
+    count = 0
     /**
      * Iterates through a node's descendants 
      * @param {DescendantFunction} callbackPerDescendant function to call per each descendant. Passes in descendant as first param
      * @param {Boolean} includeSelf Whether to also run a function for the node itself
      */
     IterateDescendants(callbackPerDescendant, includeSelf = false) {
+        let cCount = this.count++
         // If node doesn't have children (rest of code has to do with descendants)
         if (this.children.length == 0) {
             // will get added later if it has children
@@ -341,12 +343,16 @@ class GameNode extends EventSystem {
         // NGL, a stack data structure might've been ideal for this algorithm because I need to get the last index first (Last-in-First-out)
         // It's not needed tho plus this is javascript
 
-
+        // console.log("iterating", childrenToIterate)
         let finishedIterating = false;
 
         while (!finishedIterating) {
             let descendantIndex = iterationIndexes[iterationIndexes.length - 1]; // get the top layer
             let iteratedDescendant = childrenToIterate[descendantIndex]
+            // console.log("--------")
+            // console.log("iterationIndexes", iterationIndexes, "iterating length", childrenToIterate.length, "descendantIndex", descendantIndex, "count", cCount,)
+            // console.log("iteratedDescendant", iteratedDescendant)
+
             // console.log("iterationIndexes", iterationIndexes)
             // console.log("iteratedDescendant", iteratedDescendant.name)
 
@@ -364,6 +370,9 @@ class GameNode extends EventSystem {
                 // The new index that the top layer's value was set to 
                 // Move up index for this layer by 1, the ++x increments and returns the new value btw (for my sake)
                 let newIndex = ++iterationIndexes[iterationIndexes.length - 1];
+                // this will keep going up each layer inside while loop. Needs to be initialised first
+                // we need this variable because in order to go up the layers, we need to a node which is constantly moving up
+                let parentOfChildrenToIterate;
 
                 // while the new value is outside of children array bounds. (Reached end of the current children to iterate array)
                 while (newIndex == childrenToIterate.length) {
@@ -371,11 +380,23 @@ class GameNode extends EventSystem {
                     // However, we stop when the only layer to go up is the first starting child (only 1 value in array), this means we've come full circle
                     if (iterationIndexes.length - 1 != 1) {
                         // go up by one layer
-                        childrenToIterate = iteratedDescendant.parent.parent.children
+
+                        // if not initialised
+                        if (!parentOfChildrenToIterate)
+                            parentOfChildrenToIterate = iteratedDescendant.parent.parent
+                        else // else initialised, go up a layer continuously
+                            parentOfChildrenToIterate = parentOfChildrenToIterate.parent
+
+                        childrenToIterate = parentOfChildrenToIterate.children
                         // remove top layer from indexes
                         iterationIndexes.splice(iterationIndexes.length - 1, 1)
                         // increment the new top layer index
                         newIndex = ++iterationIndexes[iterationIndexes.length - 1]
+                        // if (iteratedDescendant) {
+                        //     console.log("parentOfChildrenToIterate", parentOfChildrenToIterate)
+                        //     console.log("parentOfChildrenToIterate.children", parentOfChildrenToIterate.children)
+                        // }
+
                     } else { // else, have iterated through all objects (reached end of first layer of children down from )
                         finishedIterating = true;
                         break; // escape 
@@ -761,6 +782,7 @@ class Game extends EventSystem {
 
         // See Excluding same and repeated pairs theory as to how I avoid repeating the same game objects twice
         // in collision loops 
+        // Aso see Exclude same & pairs for nodes theory for how I dealt with the optimisation once node were added
 
         // scene with game objects to loop thru
         let activeScene = this.activeScene;
@@ -771,23 +793,20 @@ class Game extends EventSystem {
             return;
         }
 
-        // loop through game objects once
-        let gameObjectsTotal = activeScene.children.length;
-
-        // ok so the exclude same and repeated pairs collision optimisation theory requires me to have indexes
-        // This was fine until I no longer had a 1D array of game objects
-        // However the indexes are only used such that two objects never are tested against each other twice.
-        // Now that I have introduced a node structure we no longer have a 1D array of objects but a web.
-        // Both times we iterate a node (and its descendants) we can just add to an index as both times we iterate the objects will be iterated in the same order
-        // Hmm okay maybe not because the indexes are used to actually access the 1D array in a specific order
+        // loop through stageObjects (stage objects have .parentGameObject value) once
+        let stageObjectsTotal = activeScene.stageObjects.length;
 
 
 
-        for (let firstGameObjIndex = 0; firstGameObjIndex < gameObjectsTotal - 1; firstGameObjIndex++) {
-            let firstGameObj = activeScene.children[firstGameObjIndex];
+        for (let firstGameObjIndex = 0; firstGameObjIndex < stageObjectsTotal - 1; firstGameObjIndex++) {
+            let stageObj1 = activeScene.stageObjects[firstGameObjIndex]
+            let firstGameObj = activeScene.stageObjects[firstGameObjIndex].parentGameObject; // get game obj from stage obj
             // Don't do anything if this object is static. There is nothing to change on this object
             if (firstGameObj.static)
                 continue;
+
+            if (!firstGameObj)
+                throw new Error("first game obj null")
 
 
             // Record the current position
@@ -804,9 +823,11 @@ class Game extends EventSystem {
             // first check if this object has a collider
             if (firstGameObj.collider)
                 // then for each game object compare it's collision with another
-                for (let secondGameObjIndex = firstGameObjIndex + 1; secondGameObjIndex < gameObjectsTotal; secondGameObjIndex++) {
-                    let secondGameObj = activeScene.children[secondGameObjIndex];
-
+                for (let secondGameObjIndex = firstGameObjIndex + 1; secondGameObjIndex < stageObjectsTotal; secondGameObjIndex++) {
+                    let stageObj2 = activeScene.stageObjects[secondGameObjIndex]
+                    let secondGameObj = activeScene.stageObjects[secondGameObjIndex].parentGameObject; // get game obj from stage obj
+                    if (!secondGameObj)
+                        throw new Error("second game obj null")
 
                     // don't do any updates when game is paused
                     if (this.paused)
@@ -1162,14 +1183,15 @@ class Scene extends GameNode {
         // overwriting GameNode func
 
         // calls GameNode function first, note that this will fire child and descendant removed events
-        super.RemoveChild(child)
+        super.RemoveChild(child, false) // don't destruct now, do it later
 
         // If child doesn't have children (rest of code has to do with descendants)
         if (child.children.length == 0) {
+            // remove stage obj for this child
+            this.RemoveStageObject(child.stageObject)
             // set new scene
             child._SetCurrentScene(null)
-            // add stage obj for this child
-            this.RemoveStageObject(child.stageObject)
+
             // will get removed later if it has children
         } else {
 
@@ -1255,9 +1277,10 @@ class GameObject extends GameNode {
         if (this._currentScene && this._currentScene == this.game.activeScene) {
             // only remove if oldStageObject isn't null
             if (oldStageObject) {
+                // remove from scene first because it will cause conflicts when iterating destructed stage objects
+                this._currentScene.RemoveStageObject(oldStageObject)
                 // destruct the old stage object 
                 this.DestructStageObject();
-                this._currentScene.RemoveStageObject(oldStageObject)
             }
             // else
             //     console.warn("2")
@@ -1267,13 +1290,6 @@ class GameObject extends GameNode {
                 newStageObject.parentGameObject = this
 
                 this._currentScene.AddStageObject(newStageObject);
-                // after you add the stage object, update its pos and size if meant to so it renders correctly
-                if (this.shareSize)
-                    this.updateStageObjectPosition();
-                if (this.shareSize) {
-                    this.width = newStageObject.width;
-                    this.height = newStageObject.height;
-                }
             }
             else
                 console.warn("2")
@@ -1281,6 +1297,15 @@ class GameObject extends GameNode {
 
         // set new stage object
         this._stageObject = newStageObject;
+        if (newStageObject) {
+            // after you add the stage object, update its pos and size if meant to so it renders correctly
+            if (this.sharePosition)
+                this.updateStageObjectPosition();
+            if (this.shareSize) {
+                this.width = newStageObject.width;
+                this.height = newStageObject.height;
+            }
+        }
 
         this.FireListener("stageObjectChanged");
     }
@@ -1550,8 +1575,14 @@ class GameObject extends GameNode {
         // onytl do stuff if stage object isn't null
         if (!this.stageObject)
             return;
+
+        //DEBUGGING
+        if (this._currentScene && this._currentScene.StageObjectExists(this.stageObject))
+            throw new Error("DESTRUCTING STAGE OBJECT THAT EXISTS IN SCENE")
+
         //  avoids circular references
         this.stageObject.parentGameObject = null;
+
         // if it has a destroy function, call it
         if (this.stageObject.destroy) {
             this.stageObject.destroy()
@@ -1561,9 +1592,9 @@ class GameObject extends GameNode {
         this._stageObject = null
     }
 
-    Destruct() {
+    Destruct(destructDescendants = true) {
         // Called the inherited class's destruct class
-        super.Destruct();
+        super.Destruct(destructDescendants);
 
         // Destroy the stage object
         this.DestructStageObject()
