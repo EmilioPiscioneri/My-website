@@ -1241,8 +1241,13 @@ class GameObject extends GameNode {
 
 
         // do nothing if current scene is null
-        if (!this._currentScene)
+        if (!this._currentScene) {
+            // set new stage object
+            this._stageObject = newStageObject;
+            // set its parent
+            newStageObject.parentGameObject = this
             return;
+        }
 
         // check if current scene of game object is active scene
 
@@ -1250,7 +1255,7 @@ class GameObject extends GameNode {
         if (this._currentScene && this._currentScene == this.game.activeScene) {
             // only remove if oldStageObject isn't null
             if (oldStageObject) {
-                // destruct the old stage object (still the current one)
+                // destruct the old stage object 
                 this.DestructStageObject();
                 this._currentScene.RemoveStageObject(oldStageObject)
             }
@@ -1258,13 +1263,16 @@ class GameObject extends GameNode {
             //     console.warn("2")
 
             if (newStageObject) {
+                // set new stage object's parent game obj value
+                newStageObject.parentGameObject = this
+
                 this._currentScene.AddStageObject(newStageObject);
                 // after you add the stage object, update its pos and size if meant to so it renders correctly
                 if (this.shareSize)
                     this.updateStageObjectPosition();
                 if (this.shareSize) {
-                    this.width = this.stageObject.width;
-                    this.height = this.stageObject.height;
+                    this.width = newStageObject.width;
+                    this.height = newStageObject.height;
                 }
             }
             else
@@ -1352,7 +1360,7 @@ class GameObject extends GameNode {
     }
     set width(newWidth) {
         this._width = newWidth;
-        if (this.shareSize) {
+        if (this.shareSize && this.stageObject) {
             this.stageObject.width = newWidth * this.game.pixelsPerUnit.x;// convert units to pixels
         }
         this.FireListener("widthChanged") // fire changed event
@@ -1364,7 +1372,7 @@ class GameObject extends GameNode {
     }
     set height(newHeight) {
         this._height = newHeight;
-        if (this.shareSize) {
+        if (this.shareSize && this.stageObject) {
             this.stageObject.height = newHeight * this.game.pixelsPerUnit.y;// convert units to pixels
         }
         if (this.sharePosition)
@@ -1430,8 +1438,8 @@ class GameObject extends GameNode {
     }
 
     updateStageObjectPosition() {
-        // only if shared pos
-        if (!this.sharePosition)
+        // only continue if shared pos true and stage object is not null
+        if (!this.sharePosition || !this.stageObject)
             return;
 
         // clone to avoid conflicts
@@ -1443,6 +1451,7 @@ class GameObject extends GameNode {
 
         // set the new pos, convert to pixel units first
         this.stageObject.position = this.game.ConvertUnitsToPixels(newPosition);
+
     }
 
     /**
@@ -1464,10 +1473,10 @@ class GameObject extends GameNode {
         // NOTE: calling the baseclass will change the parent which ends up adding the child to the scene, so skip it first
         super.AddChild(child)
 
+
         child._SetCurrentScene(this._currentScene) // set its scene as this one (might be null)
 
         // from now on there is a scene, this means we can add to its stage
-
 
         // If child doesn't have children do nothing (rest of code has to do with descendants)
         if (child.children.length == 0) {
@@ -1536,8 +1545,11 @@ class GameObject extends GameNode {
 
     }
 
-    // Does not set .stageObject to null, ONLY destructs the current .stageObject value 
+    // sets ._stageObject to null, destructs the current .stageObject value if it isn't null 
     DestructStageObject() {
+        // onytl do stuff if stage object isn't null
+        if (!this.stageObject)
+            return;
         //  avoids circular references
         this.stageObject.parentGameObject = null;
         // if it has a destroy function, call it
@@ -1545,7 +1557,8 @@ class GameObject extends GameNode {
             this.stageObject.destroy()
         }
 
-
+        // set this stage object to null (avoids code trying to interface with the object which shouldn't be accessed anymore)
+        this._stageObject = null
     }
 
     Destruct() {
@@ -1646,6 +1659,8 @@ class UIElement extends GameObject {
 
 
         // console.log("Position changed on UI to", newPosition)
+        if (!this.stageObject)
+            return;
         this._position = new Point(newPosition.x, newPosition.y);
         let pixelPos = this.game.ConvertUnitsToRawPixels(newPosition)
         pixelPos.y -= this.stageObject.height;
@@ -1930,9 +1945,10 @@ class TextContainer extends GameObject {
     };
 
     // whether background graphics is visible
-    get isVisible() { return this.stageObject.visible }
+    get isVisible() { if (this.stageObject) { return this.stageObject.visible } else return false }
     set isVisible(newVisibility) {
-        this.stageObject.visible = newVisibility;
+        if (this.stageObject)
+            this.stageObject.visible = newVisibility;
     }
 
 

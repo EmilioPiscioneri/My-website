@@ -49,3 +49,5 @@ a
 ### game.js V 0.3 below
 
 - I decided to add GameNodes even though PIXI js already has a parent-child structure with stage objects. I did this because as with most of the things I am adding where PIXI already implements them, it gives me more control and better compatability with my own code. For example, I reversed the y axis and want origins which is much easier to implement if I just make my own classes. Back to nodes, I wanted to make them their own class because I wanted to add functionality to child/descendant added/removed events and also for the positioning of lower level nodes. As GameObjects (Inherits Node) go down in their child structure I wanted to add relative and absolute positions which I can't currently do with PIXI. This also enables me to easily add and remove children which is something I was finding different classes were sharing the same necessity for
+
+- I added a custom .parentGameObject value to PIXI stage objects because I need it for an optimisation and it doesn't overwrite any of pixi's current attributes
