@@ -1270,7 +1270,7 @@ class GameObject extends GameNode {
             // set new stage object
             this._stageObject = newStageObject;
             // set its parent
-            if(newStageObject)
+            if (newStageObject)
                 newStageObject.parentGameObject = this
             return;
         }
@@ -1592,8 +1592,8 @@ class GameObject extends GameNode {
         }
 
         // prevents weird memory leaks when adding and removing lot to scene
-        
-        
+
+
         this.stageObject.destroy()
 
         // set this stage object to null (avoids code trying to interface with the object which shouldn't be accessed anymore)
@@ -1612,9 +1612,9 @@ class GameObject extends GameNode {
 // #endregion
 
 // The circle graphics context is shared for all circles. This presents recalcualting the vertices each time, maybe redunadant but eh
-let circleGraphicsContext = new PIXI.GraphicsContext()
-    .circle(0, 0, 100)
-    .fill("white");
+// let circleGraphicsContext = new PIXI.GraphicsContext()
+//     .circle(0, 0, 100)
+//     .fill("white");
 
 /**
  * A circle game object with graphics already done for you.
@@ -1644,6 +1644,36 @@ class Circle extends GameObject {
 
     isACircle = true;
 
+    // In order to do colors (including stroke) you're going to need to redraw the rect each time there's a change
+
+    // when you set the stroke it'll update
+    _stroke;
+    get stroke() { return this._stroke }
+    set stroke(newStroke) {
+        this._stroke = newStroke;
+        this.RedrawBackground(true);
+    }
+
+    // when you set the fill it'll update
+    _fill = "#FFFFFF"
+    get fill() { return this._fill }
+    set fill(newFill) {
+        this._fill = newFill;
+        this.RedrawBackground(true);
+    }
+
+    get width(){return super.width}
+    set width(newWidth){
+        super.width = newWidth
+        this.RedrawBackground();
+    }
+    
+    get height(){return super.height}
+    set height(newHeight){
+        super.height = newHeight
+        this.RedrawBackground();
+    }
+
 
 
     /**
@@ -1659,7 +1689,10 @@ class Circle extends GameObject {
         //     .circle(0, 0, radius)
         //     .fill("white"); // can just change color with tint
 
-        let circleStageObject = new PIXI.Graphics(circleGraphicsContext)
+        // let circleStageObject = new PIXI.Graphics(circleGraphicsContext)
+        let circleStageObject = new PIXI.Graphics()
+        .circle(0,0,64)
+        .fill("white")
 
         circleStageObject.width = radius * 2;
         circleStageObject.height = radius * 2;
@@ -1671,6 +1704,37 @@ class Circle extends GameObject {
         // Initialise position
         this.x = x;
         this.y = y;
+    }
+
+    // bypass stroke check will make it so it redraws background regardless of if the object has a stroke
+    RedrawBackground(bypassStrokeCheck = false) {
+        // only redraw if has stroke (fill will mean nothing chnages unless fill does change color or smthn)
+        if (!this._stroke && !bypassStrokeCheck) {
+            return
+        }
+
+
+        // first clear the current visual
+        this.stageObject.clear();
+        // redraw circle and fill with size
+
+        let pixelWidth = this._width * this.game.pixelsPerUnit.x;
+
+
+        this.stageObject
+            .circle(0, 0, pixelWidth/2)
+            // .rect(0, -pixelHeight, pixelWidth, pixelHeight) // no need
+        if(this._fill)    
+            this.stageObject.fill(this._fill)
+
+        // if (this._backgroundStroke) {
+        // this.stageObject
+            this.stageObject.stroke(this._stroke)
+        // }
+
+        this.stageObject.scale = new PIXI.Point(1, 1); // For some reaosn the scale gets changed?? PIXI.JS must have a bug idk had me scratching my head
+
+        this.stageObject.interactive = true; // set back to true
 
 
     }

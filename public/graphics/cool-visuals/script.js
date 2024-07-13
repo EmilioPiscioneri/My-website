@@ -554,6 +554,11 @@ function ConstellationVisualLoad(game) {
 
     // intialise
     radiusObj = new Circle(game, 0,0, pushPullRadius)
+    radiusObj.fill = null
+    radiusObj.stroke = {
+        color: "white",
+        width: 2
+    }
     radiusObj.isVisible = false;
     radiusObj.static = true
     objectsToDestroy.push(radiusObj)
