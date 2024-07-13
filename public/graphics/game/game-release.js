@@ -277,12 +277,13 @@ class GameNode extends EventSystem {
      * Removes an array of nodes from children 
      * @param {Array.<Node>} childrenToRemove 
      * @param {Boolean} callDestructor After node is removed, whether to call its destruct function
+     * @param {Boolean} destructDescendants Whether to call child's descendants's Destruct methods after remove
      */
-    RemoveChildren(childrenToRemove, callDestructor) {
+    RemoveChildren(childrenToRemove, callDestructor = true, destructDescendants = true) {
         if (!Array.isArray(childrenToRemove))
             throw new Error("Passed children aren't an array")
         for (const node of childrenToRemove) {
-            this.RemoveChild(node, callDestructor);
+            this.RemoveChild(node, callDestructor, destructDescendants);
         }
     }
 
@@ -1537,7 +1538,7 @@ class GameObject extends GameNode {
         // overwriting GameNode func
 
         // calls GameNode function first, note that this will fire child and descendant removed events
-        super.RemoveChild(child)
+        super.RemoveChild(child, false) // don't destruct now, do it later
 
         // from now on there is a scene, this means we can remove from its stage
 
@@ -2184,7 +2185,7 @@ class TextContainer extends GameObject {
         // destroy both objects is done in game remove object
 
         // remove all events
-        for (const eventDataToDestroy of eventDataToDestroy) {
+        for (const eventDataToDestroy of this.eventsToDestroy) {
             eventDataToDestroy[0].removeEventListener(eventDataToDestroy[1], eventDataToDestroy[2])
         }
     }
@@ -2890,7 +2891,7 @@ class Slider extends UIElement {
         // destroy both objects is done in game remove object
 
         // remove all events
-        for (const eventDataToDestroy of eventDataToDestroy) {
+        for (const eventDataToDestroy of this.eventsToDestroy) {
             eventDataToDestroy[0].removeEventListener(eventDataToDestroy[1], eventDataToDestroy[2])
         }
     }

@@ -61,6 +61,8 @@ class ScriptLoader extends EventSystem {
      * Call when you want to unload the script. Game is passed in as parameter.
      */
     Unload() {
+        // disable OnTick
+        this._onTickFunction == null;
         // check if function exists and is valid
         if (typeof (this._unloadFunction) == "function")
             this._unloadFunction(this.game);
@@ -155,8 +157,9 @@ function RemoveLoader(loaderToRemove) {
 let mainScene = new Scene(game)
 
 // -- scripts to load --
-let ballsConnectToLineScript = new ScriptLoader(game, BallsConnectToLineLoad, BallsConnectToLineOnTick, BallsConnectToLineUnload)
+let constellationVisualScript = new ScriptLoader(game, ConstellationVisualLoad, ConstellationVisualOnTick, ConstellationVisualUnload)
 let screenBordersScript = new ScriptLoader(game, ScreenBordersLoad, ScreenBordersOnTick)
+let nodeTestScript = new ScriptLoader(game, nodeTestLoad, null, nodeTestUnload)
 
 function main() {
     game.AddEventListener("tick", mainTickerHandler);
@@ -165,153 +168,33 @@ function main() {
     // First load the game borders
     AddLoader(screenBordersScript)
     // then actually load the ball visual
-    AddLoader(ballsConnectToLineScript)
 
-    // Game node and scene testing 
+    // let count = 0;
+    // function lag() {
+    //     for (let index = 0; index < 50; index++) {
+    //         AddLoader(constellationVisualScript)
+    //         RemoveLoader(constellationVisualScript)
+    //     }
+    //     count++;
+    //     console.log("lag",count)
+    //     if (count > 20) {
+    //         AddLoader(constellationVisualScript)
+    //         return;
+    //     }
+    //     setTimeout(lag, 500)
+    // }
+    // lag();
 
-    // Add objects to scene
+    AddLoader(constellationVisualScript)
 
-    // For each rect the layer is represented by index and then its value is position in laywr
-    // E.g. rect0_0 is layer 0->layer 1, index 0 
-    // E.g. rect1 is layer0, index 1
+    // setTimeout(()=>RemoveLoader(constellationVisualScript),3000); // test that it unloads properly
 
-
-    // layer 0
-
-    let rect0 = new GameObject(game,
-        new PIXI.Graphics()
-            .rect(0, 0, 1, 1)
-            .fill("white"))
-
-    rect0.name = "rect0"
-    rect0.stageObject.name = "rect0"
-
-    rect0.position = new Point(7, 16)
-
-    // layer 1
-
-    let rect0_0 = new GameObject(game,
-        new PIXI.Graphics()
-            .rect(0, 0, 1, 1)
-            .fill("grey"))
-
-    rect0_0.name = "rect0_0"
-    rect0_0.stageObject.name = "rect0_0"
-
-    rect0_0.position = new Point(3, 15)
-
-    let rect0_1 = new GameObject(game,
-        new PIXI.Graphics()
-            .rect(0, 0, 1, 1)
-            .fill("grey"))
-
-    rect0_1.name = "rect0_1"
-    rect0_1.stageObject.name = "rect0_1"
-
-    rect0_1.position = new Point(11, 15)
-
-    // layer 2
-
-    let rect0_0_0 = new GameObject(game,
-        new PIXI.Graphics()
-            .rect(0, 0, 1, 1)
-            .fill("black"))
-
-    rect0_0_0.name = "rect0_0_0"
-    rect0_0_0.stageObject.name = "rect0_0_0"
-
-    rect0_0_0.position = new Point(1, 14)
-
-    let rect0_0_1 = new GameObject(game,
-        new PIXI.Graphics()
-            .rect(0, 0, 1, 1)
-            .fill("black"))
-
-    rect0_0_1.name = "rect0_0_1"
-    rect0_0_1.stageObject.name = "rect0_0_1"
-
-    rect0_0_1.position = new Point(5, 14)
-
-    let rect0_1_0 = new GameObject(game,
-        new PIXI.Graphics()
-            .rect(0, 0, 1, 1)
-            .fill("black"))
-
-    rect0_1_0.name = "rect0_1_0"
-    rect0_1_0.stageObject.name = "rect0_1_0"
-
-    rect0_1_0.position = new Point(9, 14)
-
-    let rect0_1_1 = new GameObject(game,
-        new PIXI.Graphics()
-            .rect(0, 0, 1, 1)
-            .fill("black"))
-
-    rect0_1_1.name = "rect0_1_1"
-    rect0_1_1.stageObject.name = "rect0_1_1"
-
-    // rect0_1_1.static = true 
-
-    rect0_1_1.position = new Point(13, 14)
-
-    let firstDelay = 1000; // ms
-    let delayInterval = 500;
-
-    // add children after scene is created
-    let afterScene = true
-
-    // add delays so children are added after scene is created
-    if (afterScene) {
-        setTimeout(() => rect0.AddChild(rect0_0), firstDelay + delayInterval * 6)
-        setTimeout(() => rect0.AddChild(rect0_1), firstDelay + delayInterval)
-        setTimeout(() => rect0_0.AddChild(rect0_0_0), firstDelay + delayInterval * 3)
-        setTimeout(() => rect0_0.AddChild(rect0_0_1), firstDelay + delayInterval * 2)
-        setTimeout(() => rect0_1.AddChild(rect0_1_0), firstDelay + delayInterval * 4)
-        setTimeout(() => rect0_1.AddChild(rect0_1_1), firstDelay + delayInterval * 3.7)
-        // after x seconds, change a child's stage object. This should update correctly
-        setTimeout(() => {
-            // Same as https://www.w3schools.com/graphics/canvas_gradients.asp
-            let gradientFill = new PIXI.FillGradient(0, 0, 0, 1) // only do gradient along y-axis 
-            gradientFill.addColorStop(0, "blue")
-            gradientFill.addColorStop(1, "red")
-            rect0_1_1.stageObject = new PIXI.Graphics()
-                //  .rect(0,0,1,1)
-                .roundRect(0, 0, 1, 1, 0.1)
-                //  .fill("red")
-                .fill(gradientFill)
-
-            // console.log(rect0_1_1)
-        }, firstDelay + delayInterval * 5.5);
-    } else {
-        rect0.AddChild(rect0_0)
-        rect0.AddChild(rect0_1)
-        rect0_0.AddChild(rect0_0_0)
-        rect0_0.AddChild(rect0_0_1)
-        rect0_1.AddChild(rect0_1_0)
-        rect0_1.AddChild(rect0_1_1)
-
-
-    }
-
-    // remove timeouts
-    // setTimeout(()=>rect0.RemoveChild(rect0_0),firstDelay+delayInterval*8)
-    // setTimeout(()=>rect0_1.RemoveChild(rect0_1_1),firstDelay+delayInterval*7.5)
-
-    // setTimeout(()=>mainScene.RemoveChild(rect0),firstDelay+delayInterval*10)
-
-    // for debugging
-    globalThis.rect0 = rect0
-    globalThis.rect0_0 = rect0_0
-    globalThis.rect0_1 = rect0_1
-    globalThis.rect0_0_0 = rect0_0_0
-    globalThis.rect0_0_1 = rect0_0_1
-    globalThis.rect0_1_0 = rect0_1_0
-    globalThis.rect0_1_1 = rect0_1_1
+    // for testing if nodes work properly
+    // AddLoader(nodeTestScript);
+    // setTimeout(()=>RemoveLoader(nodeTestScript),8000);
 
 
 
-    // add to scene
-    // mainScene.AddChild(rect0)
 
 
     // console.log(game.pixiApplication.stage.getChildAt(null) == null)
@@ -345,9 +228,9 @@ function GetRandomRange(min, max) {
     return Math.random() * (max - min) + min;
 }
 
-//#region balls to line script
+//#region constellation visual script
 
-let objectsToDestroy = [];
+let objectsToDestroy = []; // other objects to recursively destory that aren't in other arrays (such as UI elements)
 let leftPointerDown = false; // If left mouse or pointer is down on screen
 let rightPointerDown = false; // If right mouse or pointer is down on screen
 // events to destroy
@@ -431,7 +314,7 @@ function GenerateGridSegments(segmentQuantities) {
     return newGridSegments
 }
 
-function BallsConnectToLineLoad(game) {
+function ConstellationVisualLoad(game) {
     game.backgroundColor = "#353535"; // set better color for contrast
     // Just push game objects inwards if out of screen bounds. Easier than dealing with static objects
 
@@ -722,6 +605,9 @@ function BallsConnectToLineLoad(game) {
     uiLayout.AddChild(ballPushStrengthLabel)
     uiLayout.AddChild(ballPushStrengthSlider)
 
+    // all unaccounted for/leftover objects to be recursively destroyed when unloading scene
+    objectsToDestroy.push(uiLayout);
+
     // uiLayout.backgroundFill = "grey"
 
 
@@ -779,17 +665,21 @@ function ShowGrid() {
         columns: gridSegments[0].length
     }
 
+    // alpha of grid lines
+    let lineAlpha = 0.5;
+
     // generate a line for each row
-    for (let rowIndex = 0; rowIndex < segmentQuantities.rows+1; rowIndex++) {
+    for (let rowIndex = 0; rowIndex < segmentQuantities.rows + 1; rowIndex++) {
         // row y pos cos its just a vertical line
         let rowYPos = canvasSize.height / segmentQuantities.rows * rowIndex;
         // from start to end of line
         let startPos = new Point(0, rowYPos);
         let endPos = new Point(canvasSize.width, rowYPos)
 
-        console.log(startPos,endPos)
+        // console.log(startPos,endPos)
 
         let newLine = new GameObject(game, CreateLineGraphics(startPos, endPos, 2), false, false);
+        newLine.alpha = lineAlpha
 
         gridLines.push(newLine);
 
@@ -797,28 +687,30 @@ function ShowGrid() {
     }
 
     // generate a line for each column
-    for (let columnIndex = 0; columnIndex < segmentQuantities.columns+1; columnIndex++) {
+    for (let columnIndex = 0; columnIndex < segmentQuantities.columns + 1; columnIndex++) {
         // column y pos cos its just a vertical line
         let colXPos = canvasSize.width / segmentQuantities.rows * columnIndex;
         // from start to end of line
-        let startPos = new Point(colXPos,0);
-        let endPos = new Point(colXPos,canvasSize.height)
+        let startPos = new Point(colXPos, 0);
+        let endPos = new Point(colXPos, canvasSize.height)
 
         // console.log(startPos,endPos)
 
         let newLine = new GameObject(game, CreateLineGraphics(startPos, endPos, 2), false, false);
-
+        newLine.alpha = lineAlpha
         gridLines.push(newLine);
 
         mainScene.AddChild(newLine)
     }
 
 
+
+
 }
 
 function HideGrid() {
     // remove grid lines from scene
-    mainScene.RemoveChildren(gridLines)
+    mainScene.RemoveChildren(gridLines, true, true)
 
     gridVisibilityBtn.text = "Show grid"
 
@@ -828,12 +720,20 @@ let linesInScene = [];
 let lineWidth = 1; // in pixels
 function RemovePreviousLines() {
 
-    while (linesInScene.length > 0) {
-        let line = linesInScene[0];
-        // remove from scene and call destructor
-        mainScene.RemoveChild(line, true)
-        linesInScene.shift() // clear out array
-    }
+    mainScene.RemoveChildren(linesInScene, true, true)
+    linesInScene = []// fine to use cos no references
+
+    // while (linesInScene.length > 0) {
+    //     let line = linesInScene[0];
+    //     // remove from scene and call destructor
+    //     mainScene.RemoveChild(line, true)
+    //     linesInScene.shift() // clear out array
+    // }
+}
+
+function RemoveAllBalls() {
+    mainScene.RemoveChildren(ballsInScene, true, true)
+    ballsInScene = [] // fine to use cos no references
 }
 
 // creates line graphics from two points and returns it
@@ -1021,19 +921,16 @@ function UpdateText(game) {
         lineCountTextLbl.text = lineCountTextDefault + linesInScene.length
 }
 
-function BallsConnectToLineOnTick(game) {
+function ConstellationVisualOnTick(game) {
     // deal with user inputs (like pointer or keyboard and stuff)
     ProcessUserInputs(game);
 
     // draw new lines (removes old)
     DrawAllLines();
     UpdateText(game);
-
-
-
 }
 
-function BallsConnectToLineUnload(game) {
+function ConstellationVisualUnload(game) {
     // remove all events
     for (const eventDataToDestroy of pixiEventsToDestroy) {
         eventDataToDestroy[0].removeEventListener(eventDataToDestroy[1], eventDataToDestroy[2])
@@ -1043,11 +940,23 @@ function BallsConnectToLineUnload(game) {
         eventDataToDestroy[0].RemoveEventListener(eventDataToDestroy[1], eventDataToDestroy[2])
     }
 
+    // destroy all objects
+
+    // start with ones in arrays by calling their predone remove functions
+    RemovePreviousLines();
+    RemoveAllBalls();
+    HideGrid();
+
+    // now remove the rest
+    mainScene.RemoveChildren(objectsToDestroy, true, true)
+
+
+
 }
 
 // #endregion
 
-// screen borders scrtipt
+// #region screen borders scrtipt
 
 function ScreenBordersLoad(game) {
     // console.log(GetCanvasSize());
@@ -1110,3 +1019,167 @@ function ScreenBordersOnTick(game) {
     })
 
 }
+
+// # endregion
+
+// #region node testing
+
+let rect0
+let rect0_0
+let rect0_1
+let rect0_1_1
+
+// tests that nodes are ordered and operate properly
+function nodeTestLoad(game) {
+    // Game node and scene testing 
+
+    // Add objects to scene
+
+    // For each rect the layer is represented by index and then its value is position in laywr
+    // E.g. rect0_0 is layer 0->layer 1, index 0 
+    // E.g. rect1 is layer0, index 1
+
+
+    // layer 0
+
+    rect0 = new GameObject(game,
+        new PIXI.Graphics()
+            .rect(0, 0, 1, 1)
+            .fill("white"))
+
+    rect0.name = "rect0"
+    rect0.stageObject.name = "rect0"
+
+    rect0.position = new Point(7, 16)
+
+    // layer 1
+
+    rect0_0 = new GameObject(game,
+        new PIXI.Graphics()
+            .rect(0, 0, 1, 1)
+            .fill("grey"))
+
+    rect0_0.name = "rect0_0"
+    rect0_0.stageObject.name = "rect0_0"
+
+    rect0_0.position = new Point(3, 15)
+
+    rect0_1 = new GameObject(game,
+        new PIXI.Graphics()
+            .rect(0, 0, 1, 1)
+            .fill("grey"))
+
+    rect0_1.name = "rect0_1"
+    rect0_1.stageObject.name = "rect0_1"
+
+    rect0_1.position = new Point(11, 15)
+
+    // layer 2
+
+    let rect0_0_0 = new GameObject(game,
+        new PIXI.Graphics()
+            .rect(0, 0, 1, 1)
+            .fill("black"))
+
+    rect0_0_0.name = "rect0_0_0"
+    rect0_0_0.stageObject.name = "rect0_0_0"
+
+    rect0_0_0.position = new Point(1, 14)
+
+    let rect0_0_1 = new GameObject(game,
+        new PIXI.Graphics()
+            .rect(0, 0, 1, 1)
+            .fill("black"))
+
+    rect0_0_1.name = "rect0_0_1"
+    rect0_0_1.stageObject.name = "rect0_0_1"
+
+    rect0_0_1.position = new Point(5, 14)
+
+    let rect0_1_0 = new GameObject(game,
+        new PIXI.Graphics()
+            .rect(0, 0, 1, 1)
+            .fill("black"))
+
+    rect0_1_0.name = "rect0_1_0"
+    rect0_1_0.stageObject.name = "rect0_1_0"
+
+    rect0_1_0.position = new Point(9, 14)
+
+    rect0_1_1 = new GameObject(game,
+        new PIXI.Graphics()
+            .rect(0, 0, 1, 1)
+            .fill("black"))
+
+    rect0_1_1.name = "rect0_1_1"
+    rect0_1_1.stageObject.name = "rect0_1_1"
+
+    // rect0_1_1.static = true 
+
+    rect0_1_1.position = new Point(13, 14)
+
+    let firstDelay = 1000; // ms
+    let delayInterval = 500;
+
+    // add children after scene is created
+    let afterScene = true
+
+    // add delays so children are added after scene is created
+    if (afterScene) {
+        setTimeout(() => rect0.AddChild(rect0_0), firstDelay + delayInterval * 6)
+        setTimeout(() => rect0.AddChild(rect0_1), firstDelay + delayInterval)
+        setTimeout(() => rect0_0.AddChild(rect0_0_0), firstDelay + delayInterval * 3)
+        setTimeout(() => rect0_0.AddChild(rect0_0_1), firstDelay + delayInterval * 2)
+        setTimeout(() => rect0_1.AddChild(rect0_1_0), firstDelay + delayInterval * 4)
+        setTimeout(() => rect0_1.AddChild(rect0_1_1), firstDelay + delayInterval * 3.7)
+        // after x seconds, change a child's stage object. This should update correctly
+        setTimeout(() => {
+            // Same as https://www.w3schools.com/graphics/canvas_gradients.asp
+            let gradientFill = new PIXI.FillGradient(0, 0, 0, 1) // only do gradient along y-axis 
+            gradientFill.addColorStop(0, "blue")
+            gradientFill.addColorStop(1, "red")
+            rect0_1_1.stageObject = new PIXI.Graphics()
+                //  .rect(0,0,1,1)
+                .roundRect(0, 0, 1, 1, 0.1)
+                //  .fill("red")
+                .fill(gradientFill)
+
+            // console.log(rect0_1_1)
+        }, firstDelay + delayInterval * 5.5);
+    } else {
+        rect0.AddChild(rect0_0)
+        rect0.AddChild(rect0_1)
+        rect0_0.AddChild(rect0_0_0)
+        rect0_0.AddChild(rect0_0_1)
+        rect0_1.AddChild(rect0_1_0)
+        rect0_1.AddChild(rect0_1_1)
+
+
+    }
+
+    // remove children
+
+
+    // for debugging
+    // globalThis.rect0 = rect0
+    // globalThis.rect0_0 = rect0_0
+    // globalThis.rect0_1 = rect0_1
+    // globalThis.rect0_0_0 = rect0_0_0
+    // globalThis.rect0_0_1 = rect0_0_1
+    // globalThis.rect0_1_0 = rect0_1_0
+    // globalThis.rect0_1_1 = rect0_1_1
+
+
+
+    // add to scene
+    mainScene.AddChild(rect0)
+}
+
+function nodeTestUnload(game) {
+    let delayInterval = 500;
+    setTimeout(() => rect0.RemoveChild(rect0_0), delayInterval * 2)
+    setTimeout(() => rect0_1.RemoveChild(rect0_1_1), delayInterval * 3)
+    setTimeout(() => mainScene.RemoveChild(rect0), delayInterval * 5)
+}
+
+// #endregion
