@@ -301,14 +301,14 @@ class GameNode extends EventSystem {
      * @param {GameNode} descendant The currently iterated descendant
      */
 
-    count = 0
+    // count = 0
     /**
      * Iterates through a node's descendants 
      * @param {DescendantFunction} callbackPerDescendant function to call per each descendant. Passes in descendant as first param
      * @param {Boolean} includeSelf Whether to also run a function for the node itself
      */
     IterateDescendants(callbackPerDescendant, includeSelf = false) {
-        let cCount = this.count++
+        // let cCount = this.count++
         // If node doesn't have children (rest of code has to do with descendants)
         if (this.children.length == 0) {
             // will get added later if it has children

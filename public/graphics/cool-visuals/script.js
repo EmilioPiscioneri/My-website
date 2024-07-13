@@ -167,6 +167,151 @@ function main() {
     // then actually load the ball visual
     AddLoader(ballsConnectToLineScript)
 
+    // Game node and scene testing 
+
+    // Add objects to scene
+
+    // For each rect the layer is represented by index and then its value is position in laywr
+    // E.g. rect0_0 is layer 0->layer 1, index 0 
+    // E.g. rect1 is layer0, index 1
+
+
+    // layer 0
+
+    let rect0 = new GameObject(game,
+        new PIXI.Graphics()
+            .rect(0, 0, 1, 1)
+            .fill("white"))
+
+    rect0.name = "rect0"
+    rect0.stageObject.name = "rect0"
+
+    rect0.position = new Point(7, 16)
+
+    // layer 1
+
+    let rect0_0 = new GameObject(game,
+        new PIXI.Graphics()
+            .rect(0, 0, 1, 1)
+            .fill("grey"))
+
+    rect0_0.name = "rect0_0"
+    rect0_0.stageObject.name = "rect0_0"
+
+    rect0_0.position = new Point(3, 15)
+
+    let rect0_1 = new GameObject(game,
+        new PIXI.Graphics()
+            .rect(0, 0, 1, 1)
+            .fill("grey"))
+
+    rect0_1.name = "rect0_1"
+    rect0_1.stageObject.name = "rect0_1"
+
+    rect0_1.position = new Point(11, 15)
+
+    // layer 2
+
+    let rect0_0_0 = new GameObject(game,
+        new PIXI.Graphics()
+            .rect(0, 0, 1, 1)
+            .fill("black"))
+
+    rect0_0_0.name = "rect0_0_0"
+    rect0_0_0.stageObject.name = "rect0_0_0"
+
+    rect0_0_0.position = new Point(1, 14)
+
+    let rect0_0_1 = new GameObject(game,
+        new PIXI.Graphics()
+            .rect(0, 0, 1, 1)
+            .fill("black"))
+
+    rect0_0_1.name = "rect0_0_1"
+    rect0_0_1.stageObject.name = "rect0_0_1"
+
+    rect0_0_1.position = new Point(5, 14)
+
+    let rect0_1_0 = new GameObject(game,
+        new PIXI.Graphics()
+            .rect(0, 0, 1, 1)
+            .fill("black"))
+
+    rect0_1_0.name = "rect0_1_0"
+    rect0_1_0.stageObject.name = "rect0_1_0"
+
+    rect0_1_0.position = new Point(9, 14)
+
+    let rect0_1_1 = new GameObject(game,
+        new PIXI.Graphics()
+            .rect(0, 0, 1, 1)
+            .fill("black"))
+
+    rect0_1_1.name = "rect0_1_1"
+    rect0_1_1.stageObject.name = "rect0_1_1"
+
+    // rect0_1_1.static = true 
+
+    rect0_1_1.position = new Point(13, 14)
+
+    let firstDelay = 1000; // ms
+    let delayInterval = 500;
+
+    // add children after scene is created
+    let afterScene = true
+
+    // add delays so children are added after scene is created
+    if (afterScene) {
+        setTimeout(() => rect0.AddChild(rect0_0), firstDelay + delayInterval * 6)
+        setTimeout(() => rect0.AddChild(rect0_1), firstDelay + delayInterval)
+        setTimeout(() => rect0_0.AddChild(rect0_0_0), firstDelay + delayInterval * 3)
+        setTimeout(() => rect0_0.AddChild(rect0_0_1), firstDelay + delayInterval * 2)
+        setTimeout(() => rect0_1.AddChild(rect0_1_0), firstDelay + delayInterval * 4)
+        setTimeout(() => rect0_1.AddChild(rect0_1_1), firstDelay + delayInterval * 3.7)
+        // after x seconds, change a child's stage object. This should update correctly
+        setTimeout(() => {
+            // Same as https://www.w3schools.com/graphics/canvas_gradients.asp
+            let gradientFill = new PIXI.FillGradient(0, 0, 0, 1) // only do gradient along y-axis 
+            gradientFill.addColorStop(0, "blue")
+            gradientFill.addColorStop(1, "red")
+            rect0_1_1.stageObject = new PIXI.Graphics()
+                //  .rect(0,0,1,1)
+                .roundRect(0, 0, 1, 1, 0.1)
+                //  .fill("red")
+                .fill(gradientFill)
+
+            // console.log(rect0_1_1)
+        }, firstDelay + delayInterval * 5.5);
+    } else {
+        rect0.AddChild(rect0_0)
+        rect0.AddChild(rect0_1)
+        rect0_0.AddChild(rect0_0_0)
+        rect0_0.AddChild(rect0_0_1)
+        rect0_1.AddChild(rect0_1_0)
+        rect0_1.AddChild(rect0_1_1)
+
+
+    }
+
+    // remove timeouts
+    // setTimeout(()=>rect0.RemoveChild(rect0_0),firstDelay+delayInterval*8)
+    // setTimeout(()=>rect0_1.RemoveChild(rect0_1_1),firstDelay+delayInterval*7.5)
+
+    // setTimeout(()=>mainScene.RemoveChild(rect0),firstDelay+delayInterval*10)
+
+    // for debugging
+    globalThis.rect0 = rect0
+    globalThis.rect0_0 = rect0_0
+    globalThis.rect0_1 = rect0_1
+    globalThis.rect0_0_0 = rect0_0_0
+    globalThis.rect0_0_1 = rect0_0_1
+    globalThis.rect0_1_0 = rect0_1_0
+    globalThis.rect0_1_1 = rect0_1_1
+
+
+
+    // add to scene
+    // mainScene.AddChild(rect0)
 
 
     // console.log(game.pixiApplication.stage.getChildAt(null) == null)
@@ -216,6 +361,8 @@ let lineCountTextDefault = "Line count: "
 let gridVisibilityBtn;
 let gridIsVisible = false;
 var textInput;
+// array of grid line game oebjects
+let gridLines = [];
 // pull
 let ballPullStrengthSlider;
 let ballPullStrengthLabel;
@@ -229,22 +376,66 @@ let ballsPushStrength = 3;
 let uiLayout;
 
 
+/**
+ * - grid theory -
+ * A 2D array of grid segments, indexed by [row][column] or [y][x]
+ * Each index contains a point which represents the bottom-left of the segment. 
+ * The grid is basically divided so a certain amount of balls will generate in each segment to keep things consistent and spread out.
+ * The bounds of a segment can be gotten because the size of each segment is fixed among them all
+*/
+
+
+// grid segments to generate whenever there is a change
+let gridSegments;
+
+// grid is generated from bottom to top and left to right. Each segment is a 
+// returns created grid segments array
+// segmentQuantities is an object with {rows: number, columns: number}
+function GenerateGridSegments(segmentQuantities) {
+    // error check
+    if (!segmentQuantities)
+        throw new Error("segment quantities is null")
+    if (segmentQuantities.columns <= 0)
+        throw new Error("Need to have at least 1 grid segments on x axis")
+    if (segmentQuantities.rows <= 0)
+        throw new Error("Need to have at least 1 grid segments on y axis")
+
+    newGridSegments = [];
+
+    // get size in units
+    let canvasSize = GetCanvasSizeInUnits();
+
+    // Get the size of each segment
+    let segmentSize = new Point(
+        canvasSize.width / segmentQuantities.columns,
+        canvasSize.height / segmentQuantities.rows)
+
+    for (let rowIndex = 0; rowIndex < segmentQuantities.rows; rowIndex++) {
+        let rowSegments = []; // the row segments to add to grid segments array
+
+        // the y position of each segment on this row
+        // remember it's generated top down and each segment is bottom-left
+        // so bottom will be 0 y and top will be canvas height - segmentSize.y
+        let yPosition = segmentSize.y * rowIndex;
+
+        // then for this row, do columns
+        for (let columnIndex = 0; columnIndex < segmentQuantities.columns; columnIndex++) {
+            // now add 
+            let segmentPos = new Point(segmentSize.x * columnIndex, yPosition)
+            rowSegments.push(segmentPos)
+        }
+
+        newGridSegments.push(rowSegments)
+    }
+
+    return newGridSegments
+}
+
 function BallsConnectToLineLoad(game) {
     game.backgroundColor = "#353535"; // set better color for contrast
     // Just push game objects inwards if out of screen bounds. Easier than dealing with static objects
 
     // #region Create a grid
-
-    /**
-     * - grid theory -
-     * A 2D array of grid segments, indexed by [row][column] or [y][x]
-     * Each index contains a point which represents the bottom-left of the segment. 
-     * The grid is basically divided so a certain amount of balls will generate in each segment to keep things consistent and spread out.
-     * The bounds of a segment can be gotten because the size of each segment is fixed among them all
-     */
-
-    // get size in units
-    let canvasSize = GetCanvasSizeInUnits();
 
     // How many segments the grid will be divided to among each axis. Each number must be greater than 0
     // E.g. 1 rows means just the whole screen on y axis while 3 columns means 3 different sections with 2 dividing lines in total on x axis
@@ -253,48 +444,10 @@ function BallsConnectToLineLoad(game) {
         columns: 6
     };
 
-    // error check
-    if (segmentQuantities.x <= 0)
-        throw new Error("Need to have at least 1 grid segments on x axis")
-    if (segmentQuantities.y <= 0)
-        throw new Error("Need to have at least 1 grid segments on y axis")
 
-    // Get the size of each segment
-    let segmentSize = new Point(
-        canvasSize.width / segmentQuantities.columns,
-        canvasSize.height / segmentQuantities.rows)
-
-    // populate grid segments
-
-    // grid is generated from bottom to top nad left to right
-
-    // returns created grid segments array
-    function GenerateGridSegments() {
-        let gridSegments = [];
-
-        for (let rowIndex = 0; rowIndex < segmentQuantities.rows; rowIndex++) {
-            let rowSegments = []; // the row segments to add to grid segments array
-
-            // the y position of each segment on this row
-            // remember it's generated top down and each segment is bottom-left
-            // so bottom will be 0 y and top will be canvas height - segmentSize.y
-            let yPosition = segmentSize.y * rowIndex;
-
-            // then for this row, do columns
-            for (let columnIndex = 0; columnIndex < segmentQuantities.columns; columnIndex++) {
-                // now add 
-                let segmentPos = new Point(segmentSize.x * columnIndex, yPosition)
-                rowSegments.push(segmentPos)
-            }
-
-            gridSegments.push(rowSegments)
-        }
-
-        return gridSegments
-    }
 
     // just generate for now
-    let gridSegments = GenerateGridSegments();
+    gridSegments = GenerateGridSegments(segmentQuantities);
 
     let ballsPerSegment = 4; // arbitrary number for now
 
@@ -313,10 +466,20 @@ function BallsConnectToLineLoad(game) {
         }
     }
 
+    // get size in units
+    let canvasSize = GetCanvasSizeInUnits();
+
+    // Get the size of each grid segment
+    let segmentSize = new Point(
+        canvasSize.width / segmentQuantities.columns,
+        canvasSize.height / segmentQuantities.rows)
+
     // generates balls and puts them on the canvas, gives them a velocity too
     // This isn't done inside the generate segments loop because you may want to keep the same grid but just generate new balls u feel me
     function GenerateBalls(gridSegments) {
         RemovePreviousBalls();
+
+
 
         // mm balls
 
@@ -570,151 +733,7 @@ function BallsConnectToLineLoad(game) {
 
     //-----------
 
-    // Game node and scene testing 
 
-    // Add objects to scene
-
-    // For each rect the layer is represented by index and then its value is position in laywr
-    // E.g. rect0_0 is layer 0->layer 1, index 0 
-    // E.g. rect1 is layer0, index 1
-
-
-    // layer 0
-
-    let rect0 = new GameObject(game,
-        new PIXI.Graphics()
-            .rect(0, 0, 1, 1)
-            .fill("white"))
-
-    rect0.name = "rect0"
-    rect0.stageObject.name = "rect0"
-
-    rect0.position = new Point(7, 16)
-
-    // layer 1
-
-    let rect0_0 = new GameObject(game,
-        new PIXI.Graphics()
-            .rect(0, 0, 1, 1)
-            .fill("grey"))
-
-    rect0_0.name = "rect0_0"
-    rect0_0.stageObject.name = "rect0_0"
-
-    rect0_0.position = new Point(3, 15)
-
-    let rect0_1 = new GameObject(game,
-        new PIXI.Graphics()
-            .rect(0, 0, 1, 1)
-            .fill("grey"))
-
-    rect0_1.name = "rect0_1"
-    rect0_1.stageObject.name = "rect0_1"
-
-    rect0_1.position = new Point(11, 15)
-
-    // layer 2
-
-    let rect0_0_0 = new GameObject(game,
-        new PIXI.Graphics()
-            .rect(0, 0, 1, 1)
-            .fill("black"))
-
-    rect0_0_0.name = "rect0_0_0"
-    rect0_0_0.stageObject.name = "rect0_0_0"
-
-    rect0_0_0.position = new Point(1, 14)
-
-    let rect0_0_1 = new GameObject(game,
-        new PIXI.Graphics()
-            .rect(0, 0, 1, 1)
-            .fill("black"))
-
-    rect0_0_1.name = "rect0_0_1"
-    rect0_0_1.stageObject.name = "rect0_0_1"
-
-    rect0_0_1.position = new Point(5, 14)
-
-    let rect0_1_0 = new GameObject(game,
-        new PIXI.Graphics()
-            .rect(0, 0, 1, 1)
-            .fill("black"))
-
-    rect0_1_0.name = "rect0_1_0"
-    rect0_1_0.stageObject.name = "rect0_1_0"
-
-    rect0_1_0.position = new Point(9, 14)
-
-    let rect0_1_1 = new GameObject(game,
-        new PIXI.Graphics()
-            .rect(0, 0, 1, 1)
-            .fill("black"))
-
-    rect0_1_1.name = "rect0_1_1"
-    rect0_1_1.stageObject.name = "rect0_1_1"
-
-    // rect0_1_1.static = true 
-
-    rect0_1_1.position = new Point(13, 14)
-
-    let firstDelay = 1000; // ms
-    let delayInterval = 500;
-
-    // add children after scene is created
-    let afterScene = true
-
-    // add delays so children are added after scene is created
-    if (afterScene) {
-        setTimeout(() => rect0.AddChild(rect0_0), firstDelay + delayInterval * 6)
-        setTimeout(() => rect0.AddChild(rect0_1), firstDelay + delayInterval)
-        setTimeout(() => rect0_0.AddChild(rect0_0_0), firstDelay + delayInterval * 3)
-        setTimeout(() => rect0_0.AddChild(rect0_0_1), firstDelay + delayInterval * 2)
-        setTimeout(() => rect0_1.AddChild(rect0_1_0), firstDelay + delayInterval * 4)
-        setTimeout(() => rect0_1.AddChild(rect0_1_1), firstDelay + delayInterval * 3.7)
-        // after x seconds, change a child's stage object. This should update correctly
-        setTimeout(() => {
-            // Same as https://www.w3schools.com/graphics/canvas_gradients.asp
-            let gradientFill = new PIXI.FillGradient(0, 0, 0, 1) // only do gradient along y-axis 
-            gradientFill.addColorStop(0, "blue")
-            gradientFill.addColorStop(1, "red")
-            rect0_1_1.stageObject = new PIXI.Graphics()
-                //  .rect(0,0,1,1)
-                .roundRect(0, 0, 1, 1, 0.1)
-                //  .fill("red")
-                .fill(gradientFill)
-
-            // console.log(rect0_1_1)
-        }, firstDelay + delayInterval * 5.5);
-    } else {
-        rect0.AddChild(rect0_0)
-        rect0.AddChild(rect0_1)
-        rect0_0.AddChild(rect0_0_0)
-        rect0_0.AddChild(rect0_0_1)
-        rect0_1.AddChild(rect0_1_0)
-        rect0_1.AddChild(rect0_1_1)
-
-
-    }
-
-    // remove timeouts
-    // setTimeout(()=>rect0.RemoveChild(rect0_0),firstDelay+delayInterval*8)
-    // setTimeout(()=>rect0_1.RemoveChild(rect0_1_1),firstDelay+delayInterval*7.5)
-
-    // setTimeout(()=>mainScene.RemoveChild(rect0),firstDelay+delayInterval*10)
-
-    // for debugging
-    globalThis.rect0 = rect0
-    globalThis.rect0_0 = rect0_0
-    globalThis.rect0_1 = rect0_1
-    globalThis.rect0_0_0 = rect0_0_0
-    globalThis.rect0_0_1 = rect0_0_1
-    globalThis.rect0_1_0 = rect0_1_0
-    globalThis.rect0_1_1 = rect0_1_1
-
-
-
-    // add to scene
-    mainScene.AddChild(rect0)
 
 
 
@@ -725,12 +744,12 @@ function BallsConnectToLineLoad(game) {
 
 function HandleGridVisibilityBtnUp() {
     if (gridIsVisible) {
-        gridIsVisible = false
         HideGrid();
+        gridIsVisible = false
     }
     else {
-        gridIsVisible = true
         ShowGrid();
+        gridIsVisible = true
     }
 
 }
@@ -740,9 +759,67 @@ function HandleGridVisibilityBtnUp() {
 function ShowGrid() {
     gridVisibilityBtn.text = "Hide grid"
 
+    // generate grid lines for scene
+    if (!newGridSegments)
+        throw new Error("grid segments is null, this shouldn't happen")
+
+    // grid segments are 
+    /**
+     * A 2D array of grid segments, indexed by [row][column] or [y][x]
+     * Each index contains a point which represents the bottom-left of the segment. 
+     * The grid is basically divided so a certain amount of balls will generate in each segment to keep things consistent and spread out.
+     * The bounds of a segment can be gotten because the size of each segment is fixed among them all
+    */
+
+    let canvasSize = GetCanvasSizeInUnits();
+
+    // get segment quantities. Each row will have equal amounts of columns btw
+    let segmentQuantities = {
+        rows: gridSegments.length,
+        columns: gridSegments[0].length
+    }
+
+    // generate a line for each row
+    for (let rowIndex = 0; rowIndex < segmentQuantities.rows+1; rowIndex++) {
+        // row y pos cos its just a vertical line
+        let rowYPos = canvasSize.height / segmentQuantities.rows * rowIndex;
+        // from start to end of line
+        let startPos = new Point(0, rowYPos);
+        let endPos = new Point(canvasSize.width, rowYPos)
+
+        console.log(startPos,endPos)
+
+        let newLine = new GameObject(game, CreateLineGraphics(startPos, endPos, 2), false, false);
+
+        gridLines.push(newLine);
+
+        mainScene.AddChild(newLine)
+    }
+
+    // generate a line for each column
+    for (let columnIndex = 0; columnIndex < segmentQuantities.columns+1; columnIndex++) {
+        // column y pos cos its just a vertical line
+        let colXPos = canvasSize.width / segmentQuantities.rows * columnIndex;
+        // from start to end of line
+        let startPos = new Point(colXPos,0);
+        let endPos = new Point(colXPos,canvasSize.height)
+
+        // console.log(startPos,endPos)
+
+        let newLine = new GameObject(game, CreateLineGraphics(startPos, endPos, 2), false, false);
+
+        gridLines.push(newLine);
+
+        mainScene.AddChild(newLine)
+    }
+
+
 }
 
 function HideGrid() {
+    // remove grid lines from scene
+    mainScene.RemoveChildren(gridLines)
+
     gridVisibilityBtn.text = "Show grid"
 
 }
@@ -762,7 +839,7 @@ function RemovePreviousLines() {
 // creates line graphics from two points and returns it
 
 /**
- * Create line graphics to add to scene
+ * Create line graphics to add to scene. Keep in mind lines shouldn't share pos and size
  * @param {*} point1 point 1 of line in GAME UNITS
  * @param {*} point2 point 2 of line in GAME UNITS
  * @param {Number} strokeWidth stroke width in PIXELS 
