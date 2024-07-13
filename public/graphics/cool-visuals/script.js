@@ -160,6 +160,7 @@ let mainScene = new Scene(game)
 let constellationVisualScript = new ScriptLoader(game, ConstellationVisualLoad, ConstellationVisualOnTick, ConstellationVisualUnload)
 let screenBordersScript = new ScriptLoader(game, ScreenBordersLoad, ScreenBordersOnTick)
 let nodeTestScript = new ScriptLoader(game, nodeTestLoad, null, nodeTestUnload)
+let memoryLeakTestScript = new ScriptLoader(game, memoryLeakLoad, null, memoryLeakUnload)
 
 function main() {
     game.AddEventListener("tick", mainTickerHandler);
@@ -169,31 +170,14 @@ function main() {
     AddLoader(screenBordersScript)
     // then actually load the ball visual
 
-    // let count = 0;
-    // function lag() {
-    //     for (let index = 0; index < 50; index++) {
-    //         AddLoader(constellationVisualScript)
-    //         RemoveLoader(constellationVisualScript)
-    //     }
-    //     count++;
-    //     console.log("lag",count)
-    //     if (count > 20) {
-    //         AddLoader(constellationVisualScript)
-    //         return;
-    //     }
-    //     setTimeout(lag, 500)
-    // }
-    // lag();
-
     AddLoader(constellationVisualScript)
-
     // setTimeout(()=>RemoveLoader(constellationVisualScript),3000); // test that it unloads properly
 
     // for testing if nodes work properly
     // AddLoader(nodeTestScript);
     // setTimeout(()=>RemoveLoader(nodeTestScript),8000);
 
-
+    // AddLoader(memoryLeakTestScript)
 
 
 
@@ -243,7 +227,12 @@ let lineCountTextLbl;
 let lineCountTextDefault = "Line count: "
 let gridVisibilityBtn;
 let gridIsVisible = false;
-var textInput;
+let radiusVisibilityBtn
+let radiusVisible = false;
+let radiusObj; // gets initialised in load function to save redrawing each time it loads
+let textInput;
+let uiLayout;
+
 // array of grid line game oebjects
 let gridLines = [];
 // pull
@@ -255,8 +244,10 @@ let ballsPullStrength = 5;
 let ballPushStrengthSlider
 let ballPushStrengthLabel;
 let ballPushStrengthDefaultText = "Ball push strength: ";
-let ballsPushStrength = 3;
-let uiLayout;
+let ballsPushStrength = 5;
+
+// pull/push
+let pushPullRadius = 3; // distance to ball required to pull/push from the pointer
 
 
 /**
@@ -545,7 +536,7 @@ function ConstellationVisualLoad(game) {
 
     ballPushStrengthSlider.AddEventListener("valueChanged", HandlePushStrengthChanged, ballPushStrengthLabel)
 
-    let radiusVisibilityBtn = new Button(game, "Show push/pull radius", false);
+    radiusVisibilityBtn = new Button(game, "Show push/pull radius", false);
 
     radiusVisibilityBtn.fontSize = 22;
     radiusVisibilityBtn.backgroundStroke = {
@@ -557,9 +548,16 @@ function ConstellationVisualLoad(game) {
 
     // game.AddGameObject(gridVisibilityBtn)
 
-    radiusVisibilityBtn.AddEventListener("pointerUp", HandleGridVisibilityBtnUp)
+    radiusVisibilityBtn.AddEventListener("pointerUp", HandleRadiusBtnUp)
 
-    gameObjEventsToDestroy.push([gridVisibilityBtn, "pointerup", HandleGridVisibilityBtnUp])
+    gameObjEventsToDestroy.push([radiusVisibilityBtn, "pointerup", HandleRadiusBtnUp])
+
+    // intialise
+    radiusObj = new Circle(game, 0,0, pushPullRadius)
+    radiusObj.isVisible = false;
+    radiusObj.static = true
+    objectsToDestroy.push(radiusObj)
+    mainScene.AddChild(radiusObj);
 
     // mainScene.AddChild(ballPullStrengthSlider)
     // game.AddGameObject(ballPullStrengthLabel)
@@ -597,6 +595,7 @@ function ConstellationVisualLoad(game) {
     // gridVisibilityBtn.position = new Point(4,4)
     // uiLayout.AddGameObject(textInput, true)
     uiLayout.AddChild(gridVisibilityBtn)
+    uiLayout.AddChild(radiusVisibilityBtn);
     // game.AddGameObject(textInput)
 
     // textInput.zIndex = 2; // nothing to do w zIndex
@@ -638,6 +637,17 @@ function HandleGridVisibilityBtnUp() {
         gridIsVisible = true
     }
 
+}
+
+function HandleRadiusBtnUp(){
+    if (radiusVisible) {
+        HideRadius();
+        radiusVisible = false
+    }
+    else {
+        ShowRadius();
+        radiusVisible = true
+    }
 }
 
 // #endregion
@@ -714,6 +724,31 @@ function HideGrid() {
 
     gridVisibilityBtn.text = "Show grid"
 
+}
+
+function ShowRadius(){
+    radiusVisibilityBtn.text = "Hide push/pull radius"
+
+    // move and make visible
+    moveRadiusToPointer();
+    radiusObj.isVisible = true;
+    
+}
+
+function HideRadius(){
+    radiusVisibilityBtn.text = "Show push/pull radius"
+
+    radiusObj.isVisible = false
+}
+
+function resizeRadius(){
+    // set width and height to diameter
+    radiusObj.width = pushPullRadius * 2;
+    radiusObj.height = pushPullRadius * 2;
+}
+
+function moveRadiusToPointer(){
+    radiusObj.position = game.pointerPos;
 }
 
 let linesInScene = [];
@@ -852,7 +887,6 @@ function DrawAllLines() {
 // For ball to mouse view my graph
 // https://www.desmos.com/calculator/dl8hdrfrmx 
 
-let ballPullArea = 3; // distance to ball required to puul from the pointer
 function PullAllBallsToMouse(game) {
     // get pointer pos from the game
     let pointerPos = game.pointerPos;
@@ -862,7 +896,7 @@ function PullAllBallsToMouse(game) {
         // lowkey the distance value (uses square root) isn't too laggy huh
         let distanceToMouse = VecMath.Distance(ball.position, pointerPos); // distance of ball to mouse
         // must be close enough to ball
-        if (distanceToMouse >= ballPullArea)
+        if (distanceToMouse >= pushPullRadius)
             continue;
         // ball to mouse pos vector
         let ballToPointerVector = VecMath.SubtractVecs(pointerPos, ball.position)
@@ -879,7 +913,6 @@ function PullAllBallsToMouse(game) {
 }
 
 // let ballsPushStrength = 10;
-let ballPushArea = 3; // distance to ball required to push from the pointer
 function PushAllBallsAwayFromMouse(game) {
     // get pointer pos from the game
     let pointerPos = game.pointerPos;
@@ -891,7 +924,7 @@ function PushAllBallsAwayFromMouse(game) {
         // But just use square distance because it will push more
         let distanceToMouse = VecMath.Distance(ball.position, pointerPos); // distance of ball to mouse
         // must be close enough to ball
-        if (distanceToMouse >= ballPushArea)
+        if (distanceToMouse >= pushPullRadius)
             continue;
         // ball to mouse pos vector. You then inverse this (* -1) to get the push away effect
         let ballToPointerVector = VecMath.ScalarMultiplyVec(VecMath.SubtractVecs(pointerPos, ball.position), -1)
@@ -914,6 +947,7 @@ function ProcessUserInputs(game) {
     } else if (rightPointerDown) {
         PushAllBallsAwayFromMouse(game);
     }
+    
 }
 
 function UpdateText(game) {
@@ -928,6 +962,8 @@ function ConstellationVisualOnTick(game) {
     // draw new lines (removes old)
     DrawAllLines();
     UpdateText(game);
+    if(radiusVisible)
+        moveRadiusToPointer();
 }
 
 function ConstellationVisualUnload(game) {
@@ -1023,6 +1059,8 @@ function ScreenBordersOnTick(game) {
 // # endregion
 
 // #region node testing
+
+
 
 let rect0
 let rect0_0
@@ -1183,3 +1221,82 @@ function nodeTestUnload(game) {
 }
 
 // #endregion
+
+// #region memory leak testing
+
+let testBtn;
+let testingText;
+let testAmntSlider;
+let testAmntSliderText;
+let testingLayout;
+
+function memoryLeakLoad(game) {
+    testingLayout = new GameObjectLayout(game);
+    testBtn = new Button(game, "Begin test")
+    testBtn.backgroundStroke = {
+        color: "black",
+        width: 2
+    }
+
+    testingText = new TextLabel(game, "Not started")
+
+    testAmntSlider = new Slider(game, 10000, 1000000, 10000, 100000)
+
+    let textDefault = "Amount of objects to use for test: "
+    testAmntSliderText = new TextLabel(game, textDefault + testAmntSlider.value)
+
+    testAmntSlider.AddEventListener("valueChanged", () => {
+        testAmntSliderText.text = textDefault + testAmntSlider.value
+    })
+
+    testingLayout.AddChild(testBtn)
+    testingLayout.AddChild(testingText)
+    testingLayout.AddChild(testAmntSliderText)
+    testingLayout.AddChild(testAmntSlider)
+
+    testingLayout.position = new Point(2, 10)
+
+
+    mainScene.AddChild(testingLayout)
+    testBtn.AddEventListener("pointerUp", () => {
+        testingText.text = "testing ..."
+        setTimeout(() => {
+            for (let i = 0; i < testAmntSlider.value; i++) {
+                let testGraphics = new Graphics().rect(0, 0, 1, 1);
+                game.pixiApplication.stage.addChild(testGraphics)
+                // PIXI.updateTransformAndChildren(testGraphics, game.pixiApplication.stage.renderGroup.updateTick++, 0)
+                // game.pixiApplication.stage.renderGroup.updateRenderable(testGraphics)
+                // game.pixiApplication.stage.renderGroup.runOnRender()
+                game.pixiApplication.stage.removeChild(testGraphics)
+                // game.pixiApplication.stage.renderGroup.addRenderGroupChild(testGraphics)
+                
+                testGraphics.destroy()
+                // testGraphics.parentRenderGroup = game.pixiApplication.stage.renderGroup
+
+                // let testObj = new GameObject(game, null, false, false)
+                // // let testObj = new GameObject(game, null, false, false)
+                // mainScene.AddChild(testObj)
+                // mainScene.RemoveChild(testObj, true, true)
+            }
+            testingText.text = "testing done!"
+
+            console.log()
+
+        }, 50)
+        // let testGraphics = new Graphics().rect(0, 0, 1, 1);
+        // game.pixiApplication.stage.addChild(testGraphics)
+        // game.pixiApplication.stage.removeChild(testGraphics)
+        // testGraphics.destroy();
+        // globalThis.temp1 = testGraphics
+        // console.log(game.pixiApplication.stage.renderGroup)
+        // console.log(game.pixiApplication.stage.renderGroup.childrenToUpdate[1].list)
+
+    })
+
+
+}
+
+function memoryLeakUnload(game) {
+
+}
+

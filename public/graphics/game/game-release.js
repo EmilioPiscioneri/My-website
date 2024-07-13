@@ -1270,7 +1270,8 @@ class GameObject extends GameNode {
             // set new stage object
             this._stageObject = newStageObject;
             // set its parent
-            newStageObject.parentGameObject = this
+            if(newStageObject)
+                newStageObject.parentGameObject = this
             return;
         }
 
@@ -1431,8 +1432,8 @@ class GameObject extends GameNode {
     constructor(game, stageObject, sharePosition = true, shareSize = true) {
         super(); // calls constructor for inherited object
 
-        if (stageObject == null)
-            throw new Error("Created a new game object with null stage object")
+        // if (stageObject == null)
+        //     throw new Error("Created a new game object with null stage object")
         if (game == null)
             throw new Error("Created a new game object with null game input")
         this.game = game;
@@ -1586,10 +1587,14 @@ class GameObject extends GameNode {
         //  avoids circular references
         this.stageObject.parentGameObject = null;
 
-        // if it has a destroy function, call it
-        if (this.stageObject.destroy) {
-            this.stageObject.destroy()
+        if (!this.stageObject.destroy) {
+            throw new Error("PIXI stage object does not have a destroy method??")
         }
+
+        // prevents weird memory leaks when adding and removing lot to scene
+        
+        
+        this.stageObject.destroy()
 
         // set this stage object to null (avoids code trying to interface with the object which shouldn't be accessed anymore)
         this._stageObject = null
