@@ -792,7 +792,7 @@ class Game extends EventSystem {
 
         // make sure we have an actual scene rn
         if (!activeScene) {
-            console.warn("Physics tick couldn't run, no active scene set")
+            // console.warn("Physics tick couldn't run, no active scene set")
             return;
         }
 

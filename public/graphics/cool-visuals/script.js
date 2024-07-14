@@ -223,8 +223,10 @@ let gameObjEventsToDestroy = []; // Has an array of arrays each with [objectSubs
 let ballsInScene = []; // array of game objects of balls
 
 // UI
+let ballCountTextLbl;
+let ballCountDefaultText = "Balls in scene: "
 let lineCountTextLbl;
-let lineCountDefaultText = "Line count: "
+let lineCountDefaultText = "Lines in scene: "
 let gridVisibilityBtn;
 let gridIsVisible = false;
 let radiusVisibilityBtn
@@ -236,6 +238,13 @@ let radiusSlider;
 let ballsPerSegmentDefaultText = "Balls per segment: ";
 let ballsPerSegmentSlider;
 let ballsPerSegment = 4;
+let gridRows = 6;
+let gridColumns = 6;
+let gridRowsSlider;
+let gridColumnsSlider;
+let gridRowsDefaultText = "Grid rows: "
+let gridColumnsDefaultText = "Grid columns: "
+
 let reloadBtn;
 let reloading = false; // If currently reloading visual
 
@@ -312,7 +321,9 @@ function GenerateGridSegments(segmentQuantities) {
 }
 
 // will create and load all UI for script
-function LoadUI() {
+function GenerateUI() {
+    let canvasSize = GetCanvasSizeInUnits();
+
     // Define layout where all UI game objects will be underneath to make them look ordered
     uiLayout = new GameObjectLayout(game);
 
@@ -355,6 +366,17 @@ function LoadUI() {
 
     // create new game text game object
     lineCountTextLbl = new TextLabel(game, lineCountDefaultText, true, {
+        fontFamily: 'Arial',
+        fontSize: 22,
+        fill: "white",
+        stroke: {
+            color: "black",
+            width: 2,
+        },
+        align: 'left',
+    });
+
+    ballCountTextLbl = new TextLabel(game, lineCountDefaultText, true, {
         fontFamily: 'Arial',
         fontSize: 22,
         fill: "white",
@@ -495,6 +517,33 @@ function LoadUI() {
     gameObjEventsToDestroy.push([reloadBtn, "pointerUp", ReloadVisual])
 
 
+    let gridColumnsText = new TextLabel(game, gridColumnsDefaultText + gridColumns)
+    gridColumnsText.fontSize = 22;
+
+    gridColumnsSlider = new Slider(game, 1, 10, 1, gridColumns)
+    // bps = balls per segment
+    function handleGridColumnsSliderChanged() {
+        gridColumns = gridColumnsSlider.value
+        gridColumnsText.text = gridColumnsDefaultText + gridColumns
+    }
+    handleGridColumnsSliderChanged();
+    gridColumnsSlider.AddEventListener("valueChanged", handleGridColumnsSliderChanged)
+    gameObjEventsToDestroy.push([gridColumnsSlider, "valueChanged", handleGridColumnsSliderChanged])
+
+    let gridRowsText = new TextLabel(game, gridRowsDefaultText + gridRows)
+    gridRowsText.fontSize = 22;
+
+    gridRowsSlider = new Slider(game, 1, 10, 1, gridRows)
+    // bps = balls per segment
+    function handleGridRowsSliderChanged() {
+        gridRows = gridRowsSlider.value
+        gridRowsText.text = gridRowsDefaultText + gridRows
+    }
+    handleGridRowsSliderChanged();
+    gridRowsSlider.AddEventListener("valueChanged", handleGridRowsSliderChanged)
+    gameObjEventsToDestroy.push([gridRowsSlider, "valueChanged", handleGridRowsSliderChanged])
+
+
     // mainScene.AddChild(ballPullStrengthSlider)
     // game.AddGameObject(ballPullStrengthLabel)
 
@@ -519,8 +568,9 @@ function LoadUI() {
     // mainScene.AddChild(ballPullStrengthLabel)
     // mainScene.AddChild(ballPullStrengthSlider)
 
-    mainScene.AddChild(uiLayout)
+    // setup layout
 
+    uiLayout.AddChild(ballCountTextLbl)
     uiLayout.AddChild(lineCountTextLbl)
 
     // So we have two text container inherited objects and whenever they are under the layout and their text changes it fitsredraw background which messes up its positioning
@@ -544,45 +594,37 @@ function LoadUI() {
     uiLayout.AddChild(gridVisibilityBtn)
     uiLayout.AddChild(ballsPerSegmentText);
     uiLayout.AddChild(ballsPerSegmentSlider);
+    uiLayout.AddChild(gridRowsText)
+    uiLayout.AddChild(gridRowsSlider)
+    uiLayout.AddChild(gridColumnsText)
+    uiLayout.AddChild(gridColumnsSlider)
     uiLayout.AddChild(reloadBtn)
+
+    // add layout to scene
+    mainScene.AddChild(uiLayout)
 
     // all unaccounted for/leftover objects to be recursively destroyed when unloading scene
     objectsToDestroy.push(uiLayout);
 }
 
-function ConstellationVisualLoad(game) {
-    game.backgroundColor = "#353535"; // set better color for contrast
-    // Just push game objects inwards if out of screen bounds. Easier than dealing with static objects
-
-    // #region Create a grid
+// generates balls and puts them on the canvas, gives them a velocity too
+function GenerateBalls() {
+    // remove any balls rendered in scene already
+    RemoveAllBalls();
 
     // How many segments the grid will be divided to among each axis. Each number must be greater than 0
     // E.g. 1 rows means just the whole screen on y axis while 3 columns means 3 different sections with 2 dividing lines in total on x axis
     let segmentQuantities = {
-        rows: 6,
-        columns: 6
+        rows: gridRows,
+        columns: gridColumns
     };
-
-
 
     // just generate for now
     gridSegments = GenerateGridSegments(segmentQuantities);
 
-
-
     let ballMagnitudeRange = [0.75, 1]; // range of a ball's magnitude. First unit vector is generated and then this magnitude is applied
 
     let ballRadiusRange = [0.075, 0.1]; // range of a ball's radius
-
-    // removes all previous balls, for when you want to change ball count and redraw all of them
-    function RemovePreviousBalls() {
-        while (ballsInScene.length > 0) {
-            let line = linesInScene[0];
-            // remove from scene and call destructor
-            mainScene.RemoveChild(line, true)
-            linesInScene.shift() // clear out array
-        }
-    }
 
     // get size in units
     let canvasSize = GetCanvasSizeInUnits();
@@ -592,99 +634,90 @@ function ConstellationVisualLoad(game) {
         canvasSize.width / segmentQuantities.columns,
         canvasSize.height / segmentQuantities.rows)
 
-    // generates balls and puts them on the canvas, gives them a velocity too
-    // This isn't done inside the generate segments loop because you may want to keep the same grid but just generate new balls u feel me
-    function GenerateBalls(gridSegments) {
-        RemovePreviousBalls();
+    // loop through grid
+    for (let rowIndex = 0; rowIndex < segmentQuantities.rows; rowIndex++) {
+        // then for this row, do columns
+        for (let columnIndex = 0; columnIndex < segmentQuantities.columns; columnIndex++) {
+            // Get the bottom-left position of this segment
+            let segmentPos = gridSegments[rowIndex][columnIndex];
 
+            // Generate x amount of balls
+            for (let ballIndex = 0; ballIndex < ballsPerSegment; ballIndex++) {
+                let ballPos = new Point(
+                    // generate a random x value for the new ball pos inside the segment between left and right side
+                    GetRandomRange(segmentPos.x, segmentPos.x + segmentSize.x),
+                    // generate a random y value for the new ball pos inside the segment between bottom and top side
+                    GetRandomRange(segmentPos.y, segmentPos.y + segmentSize.y)
+                )
 
+                // Get unit vector (value from -1 to 1)
+                let ballVelocity = new Point(
+                    GetRandomRange(-1, 1),
+                    GetRandomRange(-1, 1)
+                )
 
-        // mm balls
-
-        // loop through grid
-        for (let rowIndex = 0; rowIndex < segmentQuantities.rows; rowIndex++) {
-            // then for this row, do columns
-            for (let columnIndex = 0; columnIndex < segmentQuantities.columns; columnIndex++) {
-                // Get the bottom-left position of this segment
-                let segmentPos = gridSegments[rowIndex][columnIndex];
-
-                // Generate x amount of balls
-                for (let ballIndex = 0; ballIndex < ballsPerSegment; ballIndex++) {
-                    let ballPos = new Point(
-                        // generate a random x value for the new ball pos inside the segment between left and right side
-                        GetRandomRange(segmentPos.x, segmentPos.x + segmentSize.x),
-                        // generate a random y value for the new ball pos inside the segment between bottom and top side
-                        GetRandomRange(segmentPos.y, segmentPos.y + segmentSize.y)
-                    )
-
-                    // Get unit vector (value from -1 to 1)
-                    let ballVelocity = new Point(
-                        GetRandomRange(-1, 1),
-                        GetRandomRange(-1, 1)
-                    )
-
-                    // if velocity came out to be 0
-                    if (ballVelocity == new Point(0, 0)) {
-                        // either be (-1,0) or (1,0) or (0,-1) or (0,1)
-                        let roll = Math.random();
-                        if (roll >= 0 && roll < 0.25)
-                            ballVelocity = new Point(-1, 0)
-                        else if (roll >= 0.25 && roll < 0.5)
-                            ballVelocity = new Point(1, 0)
-                        else if (roll >= 0.5 && roll > 0.75)
-                            ballVelocity = new Point(0, -1)
-                        else
-                            ballVelocity = new Point(0, 1)
-                    }
-
-                    // Times unit vector by randomly generated magnitude in a certain range
-                    ballVelocity = VecMath.ScalarMultiplyVec(ballVelocity, GetRandomRange(ballMagnitudeRange[0], ballMagnitudeRange[1]));
-
-                    // Now actually create the game object
-                    let ball = new Circle(game, ballPos.x, ballPos.y, GetRandomRange(ballRadiusRange[0], ballRadiusRange[1]))
-
-                    // add collider to ball
-                    ball.collider = new CircleCollider();
-
-                    // turn off gravity and drag
-                    ball.gravityEnabled = false;
-                    ball.dragEnabled = false;
-
-                    // set velocity
-                    ball.velocity = ballVelocity;
-
-                    // Now add to scene and list of balls array
-                    ballsInScene.push(ball);
-                    mainScene.AddChild(ball);
-
+                // if velocity came out to be 0
+                if (ballVelocity == new Point(0, 0)) {
+                    // either be (-1,0) or (1,0) or (0,-1) or (0,1)
+                    let roll = Math.random();
+                    if (roll >= 0 && roll < 0.25)
+                        ballVelocity = new Point(-1, 0)
+                    else if (roll >= 0.25 && roll < 0.5)
+                        ballVelocity = new Point(1, 0)
+                    else if (roll >= 0.5 && roll > 0.75)
+                        ballVelocity = new Point(0, -1)
+                    else
+                        ballVelocity = new Point(0, 1)
                 }
+
+                // Times unit vector by randomly generated magnitude in a certain range
+                ballVelocity = VecMath.ScalarMultiplyVec(ballVelocity, GetRandomRange(ballMagnitudeRange[0], ballMagnitudeRange[1]));
+
+                // Now actually create the game object
+                let ball = new Circle(game, ballPos.x, ballPos.y, GetRandomRange(ballRadiusRange[0], ballRadiusRange[1]))
+
+                // add collider to ball
+                ball.collider = new CircleCollider();
+
+                // turn off gravity and drag
+                ball.gravityEnabled = false;
+                ball.dragEnabled = false;
+
+                // set velocity
+                ball.velocity = ballVelocity;
+
+                // Now add to scene and list of balls array
+                ballsInScene.push(ball);
+                mainScene.AddChild(ball);
+
             }
-
         }
-    }
 
-    // mm balls
-    GenerateBalls(gridSegments);
+    }
+}
+
+// will generate like the non UI stuff
+function GenerateMainVisuals() {
+    GenerateBalls();
+    
+    // draw lines for first time
+    DrawAllLines();
+
+    // redraw grid if suposed to be visible as it may changed
+    if(gridIsVisible) {
+        RemoveGridlines();
+        GenerateGridLines();
+    }
+}
+
+function ConstellationVisualLoad(game) {
+    game.backgroundColor = "#353535"; // set better color for contrast
+    // Just push game objects inwards if out of screen bounds. Easier than dealing with static objects
+
+    GenerateMainVisuals();
 
     // load all UI stuff
-    LoadUI();
-
-    // uiLayout.backgroundFill = "grey"
-
-
-
-
-    // #endregion
-
-    // ----------
-
-    //-----------
-
-
-
-
-
-
+    GenerateUI();
 }
 
 // #region UI event handling --
@@ -723,17 +756,17 @@ function ReloadVisual() {
     // clear main stuff
     ClearMainVisuals();
     // redraw it all
+    GenerateMainVisuals();
 
 
     reloading = false; // set up next reload
     reloadBtn.text = "Reload"
 }
 
-function ShowGrid() {
-    gridVisibilityBtn.text = "Hide grid"
-
+// generates grid and adds them to a gridLines array and scene 
+function GenerateGridLines() {
     // generate grid lines for scene
-    if (!newGridSegments)
+    if (!gridSegments)
         throw new Error("grid segments is null, this shouldn't happen")
 
     // grid segments are 
@@ -776,7 +809,7 @@ function ShowGrid() {
     // generate a line for each column
     for (let columnIndex = 0; columnIndex < segmentQuantities.columns + 1; columnIndex++) {
         // column y pos cos its just a vertical line
-        let colXPos = canvasSize.width / segmentQuantities.rows * columnIndex;
+        let colXPos = canvasSize.width / segmentQuantities.columns * columnIndex;
         // from start to end of line
         let startPos = new Point(colXPos, 0);
         let endPos = new Point(colXPos, canvasSize.height)
@@ -789,18 +822,26 @@ function ShowGrid() {
 
         mainScene.AddChild(newLine)
     }
+}
 
+// removes grid lines from scene and array
+function RemoveGridlines() {
+    // remove grid lines from scene
+    mainScene.RemoveChildren(gridLines, true, true)
+    // by setting grid lines to empty array, each object is no longer referenced and the gc will clean it up
+    gridLines = []
+}
 
+function ShowGrid() {
+    gridVisibilityBtn.text = "Hide grid"
 
-
+    GenerateGridLines();
 }
 
 function HideGrid() {
-    // remove grid lines from scene
-    mainScene.RemoveChildren(gridLines, true, true)
-
     gridVisibilityBtn.text = "Show grid"
 
+    RemoveGridlines();
 }
 
 function ShowRadius() {
@@ -1030,6 +1071,9 @@ function ProcessUserInputs(game) {
 function UpdateText(game) {
     if (lineCountTextLbl)
         lineCountTextLbl.text = lineCountDefaultText + linesInScene.length
+
+    if(ballCountTextLbl)
+        ballCountTextLbl.text = ballCountDefaultText + ballsInScene.length
 }
 
 function ConstellationVisualOnTick(game) {
