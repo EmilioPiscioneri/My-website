@@ -575,7 +575,8 @@ function GenerateUI() {
 
     // let optionsLayout = new GameObjectLayout(game);
     let optionsLayout = layoutExpander.layoutToExpand;
-    // optionsLayout.alpha = 0
+    optionsLayout.margin = new Padding(0.25,0,0,0.25)
+    optionsLayout.alpha = 0
 
     // layoutExpander.isVisible = false
     // layoutExpander.layoutToExpand.isVisible = false;

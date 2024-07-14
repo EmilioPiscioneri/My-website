@@ -3137,7 +3137,7 @@ class LayoutExpander extends Button {
     }
 
     _ExpandLayout() {
-        this.text = "Expanding"
+        // this.text = "Expanding"
         this.layoutToExpand.isVisible = true
         // after you set it to visible, update the layout
         this.layoutToExpand.CalculateObjectPositions();
@@ -3145,7 +3145,7 @@ class LayoutExpander extends Button {
     }
 
     _UnexpandLayout() {
-        this.text = "Unexpanding"
+        // this.text = "Unexpanding"
         this.layoutToExpand.isVisible = false
         // after you set it to invisible, update the layout
         this.layoutToExpand.CalculateObjectPositions();
