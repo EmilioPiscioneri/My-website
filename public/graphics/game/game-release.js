@@ -600,16 +600,15 @@ class Game extends EventSystem {
 
         // remove all old stage objects
         // https://pixijs.download/v8.1.5/docs/scene.Container.html#removeChildren
-        // this.pixiApplication.stage.removeChildren(0)
+        this.pixiApplication.stage.removeChildren(0)
 
         // if new active scene is not null
-        if (!newScene)
-            return;
+        if (newScene)
+            // add new stage objects
+            for (let stageObject of newScene.stageObjects) {
+                this.pixiApplication.stage.addChild(stageObject)
+            }
 
-        // add new stage objects
-        for (let stageObject of newScene.stageObjects) {
-            this.pixiApplication.stage.addChild(stageObject)
-        }
 
     }
 
@@ -1293,6 +1292,10 @@ class GameObject extends GameNode {
                 // set new stage object's parent game obj value
                 newStageObject.parentGameObject = this
 
+                // set current values
+                newStageObject.visible = this.isVisible
+                newStageObject.alpha = this.alpha
+
                 this._currentScene.AddStageObject(newStageObject);
             }
             else
@@ -1318,12 +1321,21 @@ class GameObject extends GameNode {
     game; // the current game object
     isGameObject = true;
     _isVisible = true;
+    childrenShareVisibility = true; // if children will share visiblity of parent
     get isVisible() {
         return this._isVisible;
     }
     set isVisible(newVisibility) {
         this._isVisible = newVisibility // set class variable
-        this.stageObject.visible = newVisibility; // also set graphics visibility
+        this.stageObject.visible = newVisibility; // also set graphics visibility (.visible)
+        // if(this.name == "layoutToExpand")
+        console.log("setting isVisible to ", newVisibility, " for", this.name, " this.childrenShareVisibility", this.childrenShareVisibility)
+
+        // make all children share visibility
+        if (this.childrenShareVisibility)
+            for (let child of this.children) {
+                child.isVisible = newVisibility
+            }
     }
 
     sharePosition = true; // whether or not setting position of game object will affect graphics object
@@ -1662,14 +1674,14 @@ class Circle extends GameObject {
         this.RedrawBackground(true);
     }
 
-    get width(){return super.width}
-    set width(newWidth){
+    get width() { return super.width }
+    set width(newWidth) {
         super.width = newWidth
         this.RedrawBackground();
     }
-    
-    get height(){return super.height}
-    set height(newHeight){
+
+    get height() { return super.height }
+    set height(newHeight) {
         super.height = newHeight
         this.RedrawBackground();
     }
@@ -1691,8 +1703,8 @@ class Circle extends GameObject {
 
         // let circleStageObject = new PIXI.Graphics(circleGraphicsContext)
         let circleStageObject = new PIXI.Graphics()
-        .circle(0,0,64)
-        .fill("white")
+            .circle(0, 0, 64)
+            .fill("white")
 
         circleStageObject.width = radius * 2;
         circleStageObject.height = radius * 2;
@@ -1722,14 +1734,14 @@ class Circle extends GameObject {
 
 
         this.stageObject
-            .circle(0, 0, pixelWidth/2)
-            // .rect(0, -pixelHeight, pixelWidth, pixelHeight) // no need
-        if(this._fill)    
+            .circle(0, 0, pixelWidth / 2)
+        // .rect(0, -pixelHeight, pixelWidth, pixelHeight) // no need
+        if (this._fill)
             this.stageObject.fill(this._fill)
 
         // if (this._backgroundStroke) {
         // this.stageObject
-            this.stageObject.stroke(this._stroke)
+        this.stageObject.stroke(this._stroke)
         // }
 
         this.stageObject.scale = new PIXI.Point(1, 1); // For some reaosn the scale gets changed?? PIXI.JS must have a bug idk had me scratching my head
@@ -1938,7 +1950,7 @@ class TextContainer extends GameObject {
     get text() { return this.textLabelObject.text }
     set text(newText) {
         this.textLabelObject.text = newText
-        this.FitBackgroundToText();
+        this.FitBackground();
         this.FireListener("textChanged")
     }
 
@@ -2004,7 +2016,7 @@ class TextContainer extends GameObject {
     get fontSize() { return this.textObject.fontSize }
     set fontSize(newFontSize) {
         this.textLabelObject.fontSize = newFontSize;
-        this.FitBackgroundToText()
+        this.FitBackground()
         this.FireListener("fontSizeChanged")
 
     }
@@ -2048,11 +2060,11 @@ class TextContainer extends GameObject {
     };
 
     // whether background graphics is visible
-    get isVisible() { if (this.stageObject) { return this.stageObject.visible } else return false }
-    set isVisible(newVisibility) {
-        if (this.stageObject)
-            this.stageObject.visible = newVisibility;
-    }
+    // get isVisible() { if (this.stageObject) { return this.stageObject.visible } else return false }
+    // set isVisible(newVisibility) {
+    //     if (this.stageObject)
+    //         this.stageObject.visible = newVisibility;
+    // }
 
 
 
@@ -2127,8 +2139,8 @@ class TextContainer extends GameObject {
         this.textLabelObject.AddEventListener("textChanged", this.UpdateTextPosition, this);
         this.AddEventListener("textChanged", this.UpdateTextPosition, this);
         // fit to btn
-        this.textLabelObject.AddEventListener("textChanged", this.FitBackgroundToText, this);
-        this.textLabelObject.AddEventListener("fontSizeChanged", this.FitBackgroundToText, this);
+        this.textLabelObject.AddEventListener("textChanged", this.FitBackground, this);
+        this.textLabelObject.AddEventListener("fontSizeChanged", this.FitBackground, this);
     }
 
     /**
@@ -2238,7 +2250,7 @@ class TextContainer extends GameObject {
     }
 
     // fits background size to text size
-    FitBackgroundToText = () => {
+    FitBackground = () => {
         // console.log("fitting to text")
         if (this.fitToText) {
             // console.log("here")
@@ -2967,6 +2979,115 @@ class Slider extends UIElement {
 }
 
 /**
+ * It is essentially a button that will display an object layout when expanded (clicked)
+ * It's width and height are only the height of the button
+ */
+class LayoutExpander extends Button {
+
+    _layoutToExpand;
+    get layoutToExpand() {
+        return this._layoutToExpand;
+    }
+    set layoutToExpand(newLayout) {
+        if (!newLayout || !newLayout.isGameObjectLayout) {
+            console.warn("Tried to set .layoutToExpand to a non game object layout value, skipping")
+            return;
+        }
+        this._layoutToExpand = newLayout;
+        newLayout.isVisible = this.layoutExpanded
+    }
+    layoutExpanded = false
+    spaceBetweenLayout = 0.2; // in game units (currently only y direction). How much space should be between expander button and layout to expand
+
+    // overwrite position constructor
+    get position() { return super.position }
+    set position(newPosition) {
+        super.position = newPosition
+        this.UpdateLayoutPosition();
+    }
+
+    //overwrite is visible
+    get isVisible() { return super.isVisible }
+    set isVisible(newVisibility) {
+        // do the same thing as normal game object unless the child is the layout to expand
+        this._isVisible = newVisibility // set class variable
+        this.stageObject.visible = newVisibility; // also set graphics visibility (.visible)
+        // if(this.name == "layoutToExpand")
+        // console.log("setting isVisible to ", newVisibility, " for", this.name, " this.childrenShareVisibility", this.childrenShareVisibility)
+
+        // make all children share visibility except layout to expand
+        if (this.childrenShareVisibility)
+            for (let child of this.children) {
+                if(child != this.layoutToExpand)
+                    child.isVisible = newVisibility
+                else{
+                    // dealing with layout to expand
+                    child.isVisible = this.layoutExpanded
+                }
+            }
+    }
+
+    /**
+     * Create an expander object
+     * * @param {Game} game 
+     * @param {string} text Optional text for the expander
+     * @param {GameObjectLayout} layoutToExpand Optional layout the expander should show on expansion
+     */
+    constructor(game, text = "Click to expand", layoutToExpand) {
+        super(game, text)
+        this.name = "layoutExpander"
+
+        // listen for click
+        this.AddEventListener("pointerUp", this.HandleButtonUp, this)
+        // this.childrenShareVisibility = false; // will mess up visiblity stuff
+
+
+        // either given layout or if that's null then default
+        this.layoutToExpand = layoutToExpand || new GameObjectLayout(game, LayoutOrientation.VerticalDown)
+        this.layoutToExpand.name = "layoutToExpand"
+        // this.layoutToExpand.backgroundFill = "red"
+        // this.layoutToExpand.position = new Point(5,5)
+        // this.layoutToExpand.alpha = 0.9
+
+        this.AddChild(this.layoutToExpand)
+
+        this.layoutToExpand.isVisible = false; // start as hidden
+
+    }
+
+    // updates layout position to be relative to expander
+    UpdateLayoutPosition() {
+        if (this.layoutToExpand)
+            this.layoutToExpand.position = new Point(this.position.x, this.position.y - this.spaceBetweenLayout)
+    }
+
+    // button pointer up handler
+    HandleButtonUp = (pointerEvent) => {
+        if (this.layoutExpanded) {
+            this.layoutExpanded = false
+            this._UnexpandLayout()
+        } else {
+            this.layoutExpanded = true
+            this._ExpandLayout()
+        }
+    }
+
+    _ExpandLayout() {
+        this.text = "Expanding"
+        this.layoutToExpand.isVisible = true
+
+    }
+
+    _UnexpandLayout() {
+        this.text = "Unexpanding"
+        this.layoutToExpand.isVisible = false
+
+    }
+
+
+}
+
+/**
  * ENUM class, represents the direction of positioned items for object layouts.
  */
 class LayoutOrientation {
@@ -2984,6 +3105,7 @@ class LayoutOrientation {
  * Change objecys under the layout through the add and remove GameObject functions. If you don't the layout won't updaye accordingly
  */
 class GameObjectLayout extends GameObject {
+    isGameObjectLayout = true
 
     // the orientation of layout relative to it's position point
     _layoutOrientation;
@@ -3103,7 +3225,8 @@ class GameObjectLayout extends GameObject {
         for (let objIndex = 0; objIndex < this.children.length; objIndex++) {
             let gameObj = this.children[objIndex]
             // gameObj.stageObject.zIndex = newVal + objIndex + 1; // + 1 to make it 1 based indexing
-            gameObj.stageObject.zIndex = layoutzIndex + 1; // jsut make it 1 higher than layout background
+            if (gameObj.stageObject)
+                gameObj.stageObject.zIndex = layoutzIndex + 1; // jsut make it 1 higher than layout background
         }
 
     }
@@ -3368,7 +3491,7 @@ class GameObjectLayout extends GameObject {
      * add object to layout
      * @param {GameObject} objectToAdd self explanatory
      */
-    AddChild(objectToAdd, addToGame = true) {
+    AddChild(objectToAdd) {
         super.AddChild(objectToAdd)
 
         //on change make sure content fits accordingly
@@ -3378,6 +3501,9 @@ class GameObjectLayout extends GameObject {
         //update 
         this.CalculateObjectPositions()
         this.UpdateObjectsZIndex();
+
+        if (this.childrenShareVisibility)
+            objectToAdd.isVisible = this.isVisible
     }
 
     // remove object from layout
