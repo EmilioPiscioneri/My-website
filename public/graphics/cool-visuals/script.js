@@ -224,7 +224,7 @@ let ballsInScene = []; // array of game objects of balls
 
 // UI
 let lineCountTextLbl;
-let lineCountTextDefault = "Line count: "
+let lineCountDefaultText = "Line count: "
 let gridVisibilityBtn;
 let gridIsVisible = false;
 let radiusVisibilityBtn
@@ -232,6 +232,12 @@ let radiusVisible = false;
 let radiusObj; // gets initialised in load function to save redrawing each time it loads
 let textInput;
 let uiLayout;
+let radiusSlider;
+let ballsPerSegmentDefaultText = "Balls per segment: ";
+let ballsPerSegmentSlider;
+let ballsPerSegment = 4;
+let reloadBtn;
+let reloading = false; // If currently reloading visual
 
 // array of grid line game oebjects
 let gridLines = [];
@@ -305,6 +311,245 @@ function GenerateGridSegments(segmentQuantities) {
     return newGridSegments
 }
 
+// will create and load all UI for script
+function LoadUI() {
+    // Define layout where all UI game objects will be underneath to make them look ordered
+    uiLayout = new GameObjectLayout(game);
+
+    // handle pointer down and up
+
+    // Pointer.button 0 is left mouse, 1 is middle mouse, 2 is right mouse 
+    // Weird behaviour will happen if you touch the screen multiple times but what do you expect.
+    // Also this will fire even if buttons are pressed
+    function HandlePointerDown(pointerEvent) {
+        // console.log(pointerEvent)
+
+        // if didn't click down on ui layout (
+        if (!uiLayout.ContainsPoint(game.pointerPos)) {
+            if (pointerEvent.button == 0) // left
+                leftPointerDown = true;
+            else if (pointerEvent.button == 2) // right
+                rightPointerDown = true;
+        }
+
+    }
+    function HandlePointerUp(pointerEvent) {
+        // console.log(pointerEvent)
+        if (pointerEvent.button == 0) // left
+            leftPointerDown = false;
+        else if (pointerEvent.button == 2) // right
+            rightPointerDown = false;
+    }
+
+    game.pixiApplication.canvas.addEventListener("pointerdown", HandlePointerDown);
+    game.pixiApplication.canvas.addEventListener("pointerup", HandlePointerUp);
+
+    // register pointer to be destroyed later
+    pixiEventsToDestroy.push([game.pixiApplication.canvas, "pointerdown", HandlePointerDown])
+    pixiEventsToDestroy.push([game.pixiApplication.canvas, "pointerup", HandlePointerUp])
+
+    // disable context menu on canvas for ball push with right click
+    game.preventContextMenu = true
+
+    // Do all the UI stuff
+
+    // create new game text game object
+    lineCountTextLbl = new TextLabel(game, lineCountDefaultText, true, {
+        fontFamily: 'Arial',
+        fontSize: 22,
+        fill: "white",
+        stroke: {
+            color: "black",
+            width: 2,
+        },
+        align: 'left',
+    });
+    // lineCountTextLbl.position = new Point(0.25, canvasSize.height - lineCountTextLbl.height - 0.25) // top left
+
+    // // add to scene
+    // game.AddGameObject(lineCountTextLbl);
+
+    gridVisibilityBtn = new Button(game, "Show grid", false);
+
+    gridVisibilityBtn.fontSize = 22;
+    gridVisibilityBtn.backgroundStroke = {
+        color: "black",
+        width: 2
+    }
+    // gridVisibilityBtn.position = new Point(0.25, canvasSize.height - lineCountTextLbl.height - 0.5 - gridVisibilityBtn.height)
+    // document.btn = gridVisibilityBtn
+
+    // game.AddGameObject(gridVisibilityBtn)
+
+    gridVisibilityBtn.AddEventListener("pointerUp", HandleGridVisibilityBtnUp)
+
+    gameObjEventsToDestroy.push([gridVisibilityBtn, "pointerup", HandleGridVisibilityBtnUp])
+
+
+    textInput = new TextInput(game, null, false)
+    textInput.backgroundStroke = {
+        color: "black",
+        width: 2
+    }
+    textInput.fontSize = 22;
+    // textInput.position = new Point(0.25, canvasSize.height - lineCountTextLbl.height - 0.75 - gridVisibilityBtn.height - textInput.height)
+
+    // game.AddGameObject(textInput)
+
+    ballPullStrengthLabel = new TextLabel(game, ballPullStrengthDefaultText, false)
+    ballPullStrengthLabel.fontSize = 22;
+
+    ballPullStrengthSlider = new Slider(game, 0.1, 100, 0.1, ballsPullStrength);
+
+
+    function HandlePullStrengthChanged() {
+        ballPullStrengthLabel.text = ballPullStrengthDefaultText + ballPullStrengthSlider.value.toFixed(2);
+        ballsPullStrength = ballPullStrengthSlider.value;
+    }
+    HandlePullStrengthChanged();
+
+    ballPullStrengthSlider.AddEventListener("valueChanged", HandlePullStrengthChanged, ballPullStrengthLabel)
+
+    // --
+
+    ballPushStrengthLabel = new TextLabel(game, ballPushStrengthDefaultText, false)
+    ballPushStrengthLabel.fontSize = 22;
+
+    ballPushStrengthSlider = new Slider(game, 0.1, 100, 0.1, ballsPushStrength);
+
+
+    function HandlePushStrengthChanged() {
+        ballPushStrengthLabel.text = ballPushStrengthDefaultText + ballPushStrengthSlider.value.toFixed(2);
+        ballsPushStrength = ballPushStrengthSlider.value;
+    }
+    HandlePushStrengthChanged();
+
+    ballPushStrengthSlider.AddEventListener("valueChanged", HandlePushStrengthChanged, ballPushStrengthLabel)
+
+    radiusVisibilityBtn = new Button(game, "Show push/pull radius", false);
+
+    radiusVisibilityBtn.fontSize = 22;
+    radiusVisibilityBtn.backgroundStroke = {
+        color: "black",
+        width: 2
+    }
+    // gridVisibilityBtn.position = new Point(0.25, canvasSize.height - lineCountTextLbl.height - 0.5 - gridVisibilityBtn.height)
+    // document.btn = gridVisibilityBtn
+
+    // game.AddGameObject(gridVisibilityBtn)
+
+    radiusVisibilityBtn.AddEventListener("pointerUp", HandleRadiusBtnUp)
+
+    gameObjEventsToDestroy.push([radiusVisibilityBtn, "pointerup", HandleRadiusBtnUp])
+
+    // intialise
+    radiusObj = new Circle(game, 0, 0, pushPullRadius)
+    radiusObj.fill = null
+    radiusObj.stroke = {
+        color: "white",
+        width: 2
+    }
+    radiusObj.isVisible = false;
+    radiusObj.static = true
+    objectsToDestroy.push(radiusObj)
+    mainScene.AddChild(radiusObj);
+
+    let radiusSliderTextDefault = "Push/pull radius: "
+    let radiusSliderText = new TextLabel(game, radiusSliderTextDefault)
+    radiusSliderText.fontSize = 22
+
+    radiusSlider = new Slider(game, 0.1, 10, 0.05, pushPullRadius);
+
+    function handleRadiusSliderChanged() {
+        pushPullRadius = radiusSlider.value
+        radiusSliderText.text = radiusSliderTextDefault + (pushPullRadius.toFixed(2))
+        resizeRadius()
+    }
+
+    handleRadiusSliderChanged();
+
+    radiusSlider.AddEventListener("valueChanged", handleRadiusSliderChanged)
+
+    gameObjEventsToDestroy.push([radiusSlider, "valueChanged", handleRadiusSliderChanged])
+
+    let ballsPerSegmentText = new TextLabel(game, ballsPerSegmentDefaultText + ballsPerSegment)
+    ballsPerSegmentText.fontSize = 22;
+
+    ballsPerSegmentSlider = new Slider(game, 1, 5, 1, ballsPerSegment)
+    // bps = balls per segment
+    function handleBpsSliderChanged() {
+        ballsPerSegment = ballsPerSegmentSlider.value
+        ballsPerSegmentText.text = ballsPerSegmentDefaultText + ballsPerSegment
+    }
+    handleBpsSliderChanged();
+    ballsPerSegmentSlider.AddEventListener("valueChanged", handleBpsSliderChanged)
+    gameObjEventsToDestroy.push([ballsPerSegmentSlider, "valueChanged", handleBpsSliderChanged])
+
+    reloadBtn = new Button(game, "Reload");
+    reloadBtn.fontSize = 22;
+    reloadBtn.backgroundStroke = {
+        color: "black",
+        width: 2
+    }
+    reloadBtn.AddEventListener("pointerUp", ReloadVisual)
+    gameObjEventsToDestroy.push([reloadBtn, "pointerUp", ReloadVisual])
+
+
+    // mainScene.AddChild(ballPullStrengthSlider)
+    // game.AddGameObject(ballPullStrengthLabel)
+
+
+    // Setup layout (defined earlier)
+
+    uiLayout.position = new Point(0.25, canvasSize.height - 0.25);
+    // uiLayout.position = new Point(canvasSize.width/2, canvasSize.height/2);
+    uiLayout.layoutOrientation = LayoutOrientation.VerticalDown
+    // uiLayout.margin = new Padding(0.2,0.1,0.3,0.4)
+
+    uiLayout.width = 5;
+    uiLayout.height = 5
+    uiLayout.alpha = 0.75;
+
+    uiLayout.name = "uiLayout"
+    uiLayout.stageObject.name = "uiLayout"
+
+    // mainScene.AddChild(layout)
+
+
+    // mainScene.AddChild(ballPullStrengthLabel)
+    // mainScene.AddChild(ballPullStrengthSlider)
+
+    mainScene.AddChild(uiLayout)
+
+    uiLayout.AddChild(lineCountTextLbl)
+
+    // So we have two text container inherited objects and whenever they are under the layout and their text changes it fitsredraw background which messes up its positioning
+    // When under the Game it does not do that. Confusing
+
+
+    // game.AddGameObject(gridVisibilityBtn)
+    // gridVisibilityBtn.position = new Point(4,4)
+    // uiLayout.AddGameObject(textInput, true)
+    uiLayout.AddChild(radiusVisibilityBtn);
+    uiLayout.AddChild(radiusSliderText)
+    uiLayout.AddChild(radiusSlider)
+
+    // game.AddGameObject(textInput)
+
+    // textInput.zIndex = 2; // nothing to do w zIndex
+    uiLayout.AddChild(ballPullStrengthLabel)
+    uiLayout.AddChild(ballPullStrengthSlider)
+    uiLayout.AddChild(ballPushStrengthLabel)
+    uiLayout.AddChild(ballPushStrengthSlider)
+    uiLayout.AddChild(gridVisibilityBtn)
+    uiLayout.AddChild(ballsPerSegmentText);
+    uiLayout.AddChild(ballsPerSegmentSlider);
+    uiLayout.AddChild(reloadBtn)
+
+    // all unaccounted for/leftover objects to be recursively destroyed when unloading scene
+    objectsToDestroy.push(uiLayout);
+}
+
 function ConstellationVisualLoad(game) {
     game.backgroundColor = "#353535"; // set better color for contrast
     // Just push game objects inwards if out of screen bounds. Easier than dealing with static objects
@@ -323,7 +568,6 @@ function ConstellationVisualLoad(game) {
     // just generate for now
     gridSegments = GenerateGridSegments(segmentQuantities);
 
-    let ballsPerSegment = 4; // arbitrary number for now
 
 
     let ballMagnitudeRange = [0.75, 1]; // range of a ball's magnitude. First unit vector is generated and then this magnitude is applied
@@ -422,195 +666,8 @@ function ConstellationVisualLoad(game) {
     // mm balls
     GenerateBalls(gridSegments);
 
-    // Define layout where all UI game objects will be underneath to make them look ordered
-    uiLayout = new GameObjectLayout(game);
-    document.layout = uiLayout;
-
-    // handle pointer down and up
-
-    // Pointer.button 0 is left mouse, 1 is middle mouse, 2 is right mouse 
-    // Weird behaviour will happen if you touch the screen multiple times but what do you expect.
-    // Also this will fire even if buttons are pressed
-    function HandlePointerDown(pointerEvent) {
-        // console.log(pointerEvent)
-
-        // if didn't click down on ui layout (
-        if (!uiLayout.ContainsPoint(game.pointerPos)) {
-            if (pointerEvent.button == 0) // left
-                leftPointerDown = true;
-            else if (pointerEvent.button == 2) // right
-                rightPointerDown = true;
-        }
-
-    }
-    function HandlePointerUp(pointerEvent) {
-        // console.log(pointerEvent)
-        if (pointerEvent.button == 0) // left
-            leftPointerDown = false;
-        else if (pointerEvent.button == 2) // right
-            rightPointerDown = false;
-    }
-
-    game.pixiApplication.canvas.addEventListener("pointerdown", HandlePointerDown);
-    game.pixiApplication.canvas.addEventListener("pointerup", HandlePointerUp);
-
-    // register pointer to be destroyed later
-    pixiEventsToDestroy.push([game.pixiApplication.canvas, "pointerdown", HandlePointerDown])
-    pixiEventsToDestroy.push([game.pixiApplication.canvas, "pointerup", HandlePointerUp])
-
-    // disable context menu on canvas for ball push with right click
-    game.preventContextMenu = true
-
-    // Do all the UI stuff
-
-    // create new game text game object
-    lineCountTextLbl = new TextLabel(game, lineCountTextDefault, true, {
-        fontFamily: 'Arial',
-        fontSize: 22,
-        fill: "white",
-        stroke: {
-            color: "black",
-            width: 2,
-        },
-        align: 'left',
-    });
-    // lineCountTextLbl.position = new Point(0.25, canvasSize.height - lineCountTextLbl.height - 0.25) // top left
-
-    // // add to scene
-    // game.AddGameObject(lineCountTextLbl);
-
-    gridVisibilityBtn = new Button(game, "Show grid", false);
-
-    gridVisibilityBtn.fontSize = 22;
-    gridVisibilityBtn.backgroundStroke = {
-        color: "black",
-        width: 2
-    }
-    // gridVisibilityBtn.position = new Point(0.25, canvasSize.height - lineCountTextLbl.height - 0.5 - gridVisibilityBtn.height)
-    // document.btn = gridVisibilityBtn
-
-    // game.AddGameObject(gridVisibilityBtn)
-
-    gridVisibilityBtn.AddEventListener("pointerUp", HandleGridVisibilityBtnUp)
-
-    gameObjEventsToDestroy.push([gridVisibilityBtn, "pointerup", HandleGridVisibilityBtnUp])
-
-
-    textInput = new TextInput(game, null, false)
-    textInput.backgroundStroke = {
-        color: "black",
-        width: 2
-    }
-    textInput.fontSize = 22;
-    // textInput.position = new Point(0.25, canvasSize.height - lineCountTextLbl.height - 0.75 - gridVisibilityBtn.height - textInput.height)
-
-    // game.AddGameObject(textInput)
-
-    ballPullStrengthLabel = new TextLabel(game, ballPullStrengthDefaultText, false)
-    ballPullStrengthLabel.fontSize = 22;
-
-    ballPullStrengthSlider = new Slider(game, 0.1, 100, 0.1, ballsPullStrength);
-
-
-    function HandlePullStrengthChanged() {
-        ballPullStrengthLabel.text = ballPullStrengthDefaultText + ballPullStrengthSlider.value.toFixed(2);
-        ballsPullStrength = ballPullStrengthSlider.value;
-    }
-    HandlePullStrengthChanged();
-
-    ballPullStrengthSlider.AddEventListener("valueChanged", HandlePullStrengthChanged, ballPullStrengthLabel)
-
-    // --
-
-    ballPushStrengthLabel = new TextLabel(game, ballPushStrengthDefaultText, false)
-    ballPushStrengthLabel.fontSize = 22;
-
-    ballPushStrengthSlider = new Slider(game, 0.1, 100, 0.1, ballsPushStrength);
-
-
-    function HandlePushStrengthChanged() {
-        ballPushStrengthLabel.text = ballPushStrengthDefaultText + ballPushStrengthSlider.value.toFixed(2);
-        ballsPushStrength = ballPushStrengthSlider.value;
-    }
-    HandlePushStrengthChanged();
-
-    ballPushStrengthSlider.AddEventListener("valueChanged", HandlePushStrengthChanged, ballPushStrengthLabel)
-
-    radiusVisibilityBtn = new Button(game, "Show push/pull radius", false);
-
-    radiusVisibilityBtn.fontSize = 22;
-    radiusVisibilityBtn.backgroundStroke = {
-        color: "black",
-        width: 2
-    }
-    // gridVisibilityBtn.position = new Point(0.25, canvasSize.height - lineCountTextLbl.height - 0.5 - gridVisibilityBtn.height)
-    // document.btn = gridVisibilityBtn
-
-    // game.AddGameObject(gridVisibilityBtn)
-
-    radiusVisibilityBtn.AddEventListener("pointerUp", HandleRadiusBtnUp)
-
-    gameObjEventsToDestroy.push([radiusVisibilityBtn, "pointerup", HandleRadiusBtnUp])
-
-    // intialise
-    radiusObj = new Circle(game, 0,0, pushPullRadius)
-    radiusObj.fill = null
-    radiusObj.stroke = {
-        color: "white",
-        width: 2
-    }
-    radiusObj.isVisible = false;
-    radiusObj.static = true
-    objectsToDestroy.push(radiusObj)
-    mainScene.AddChild(radiusObj);
-
-    // mainScene.AddChild(ballPullStrengthSlider)
-    // game.AddGameObject(ballPullStrengthLabel)
-
-
-    // Setup layout (defined earlier)
-
-    uiLayout.position = new Point(0.25, canvasSize.height - 0.25);
-    // uiLayout.position = new Point(canvasSize.width/2, canvasSize.height/2);
-    uiLayout.layoutOrientation = LayoutOrientation.VerticalDown
-    // uiLayout.margin = new Padding(0.2,0.1,0.3,0.4)
-
-    uiLayout.width = 5;
-    uiLayout.height = 5
-    uiLayout.alpha = 0.75;
-
-    uiLayout.name = "uiLayout"
-    uiLayout.stageObject.name = "uiLayout"
-
-    // mainScene.AddChild(layout)
-
-
-    // mainScene.AddChild(ballPullStrengthLabel)
-    // mainScene.AddChild(ballPullStrengthSlider)
-
-    mainScene.AddChild(uiLayout)
-
-    uiLayout.AddChild(lineCountTextLbl)
-
-    // So we have two text container inherited objects and whenever they are under the layout and their text changes it fitsredraw background which messes up its positioning
-    // When under the Game it does not do that. Confusing
-
-
-    // game.AddGameObject(gridVisibilityBtn)
-    // gridVisibilityBtn.position = new Point(4,4)
-    // uiLayout.AddGameObject(textInput, true)
-    uiLayout.AddChild(gridVisibilityBtn)
-    uiLayout.AddChild(radiusVisibilityBtn);
-    // game.AddGameObject(textInput)
-
-    // textInput.zIndex = 2; // nothing to do w zIndex
-    uiLayout.AddChild(ballPullStrengthLabel)
-    uiLayout.AddChild(ballPullStrengthSlider)
-    uiLayout.AddChild(ballPushStrengthLabel)
-    uiLayout.AddChild(ballPushStrengthSlider)
-
-    // all unaccounted for/leftover objects to be recursively destroyed when unloading scene
-    objectsToDestroy.push(uiLayout);
+    // load all UI stuff
+    LoadUI();
 
     // uiLayout.backgroundFill = "grey"
 
@@ -644,7 +701,7 @@ function HandleGridVisibilityBtnUp() {
 
 }
 
-function HandleRadiusBtnUp(){
+function HandleRadiusBtnUp() {
     if (radiusVisible) {
         HideRadius();
         radiusVisible = false
@@ -656,6 +713,21 @@ function HandleRadiusBtnUp(){
 }
 
 // #endregion
+
+function ReloadVisual() {
+    // don't do anything if currently still reloading
+    if (reloading)
+        return
+    reloading = true;
+    reloadBtn.text = "Reloading ..."
+    // clear main stuff
+    ClearMainVisuals();
+    // redraw it all
+
+
+    reloading = false; // set up next reload
+    reloadBtn.text = "Reload"
+}
 
 function ShowGrid() {
     gridVisibilityBtn.text = "Hide grid"
@@ -731,28 +803,28 @@ function HideGrid() {
 
 }
 
-function ShowRadius(){
+function ShowRadius() {
     radiusVisibilityBtn.text = "Hide push/pull radius"
 
     // move and make visible
     moveRadiusToPointer();
     radiusObj.isVisible = true;
-    
+
 }
 
-function HideRadius(){
+function HideRadius() {
     radiusVisibilityBtn.text = "Show push/pull radius"
 
     radiusObj.isVisible = false
 }
 
-function resizeRadius(){
+function resizeRadius() {
     // set width and height to diameter
     radiusObj.width = pushPullRadius * 2;
     radiusObj.height = pushPullRadius * 2;
 }
 
-function moveRadiusToPointer(){
+function moveRadiusToPointer() {
     radiusObj.position = game.pointerPos;
 }
 
@@ -952,12 +1024,12 @@ function ProcessUserInputs(game) {
     } else if (rightPointerDown) {
         PushAllBallsAwayFromMouse(game);
     }
-    
+
 }
 
 function UpdateText(game) {
     if (lineCountTextLbl)
-        lineCountTextLbl.text = lineCountTextDefault + linesInScene.length
+        lineCountTextLbl.text = lineCountDefaultText + linesInScene.length
 }
 
 function ConstellationVisualOnTick(game) {
@@ -967,8 +1039,14 @@ function ConstellationVisualOnTick(game) {
     // draw new lines (removes old)
     DrawAllLines();
     UpdateText(game);
-    if(radiusVisible)
+    if (radiusVisible)
         moveRadiusToPointer();
+}
+
+// clears the main visuals for scene(not stuff like UI)
+function ClearMainVisuals() {
+    RemovePreviousLines();
+    RemoveAllBalls();
 }
 
 function ConstellationVisualUnload(game) {
@@ -984,8 +1062,7 @@ function ConstellationVisualUnload(game) {
     // destroy all objects
 
     // start with ones in arrays by calling their predone remove functions
-    RemovePreviousLines();
-    RemoveAllBalls();
+    ClearMainVisuals();
     HideGrid();
 
     // now remove the rest
@@ -1274,7 +1351,7 @@ function memoryLeakLoad(game) {
                 // game.pixiApplication.stage.renderGroup.runOnRender()
                 game.pixiApplication.stage.removeChild(testGraphics)
                 // game.pixiApplication.stage.renderGroup.addRenderGroupChild(testGraphics)
-                
+
                 testGraphics.destroy()
                 // testGraphics.parentRenderGroup = game.pixiApplication.stage.renderGroup
 
