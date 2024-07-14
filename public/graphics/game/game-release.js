@@ -297,7 +297,7 @@ class GameNode extends EventSystem {
     }
 
     /**
-     * This is a function that is called for every iterated descendant. Passes in descendant as param
+     * This is a function that is called for every iterated descendant. Passes in descendant as param. If returns "stop" it won't continue iterating
      * @callback DescendantFunction
      * @param {GameNode} descendant The currently iterated descendant
      */
@@ -305,7 +305,7 @@ class GameNode extends EventSystem {
     // count = 0
     /**
      * Iterates through a node's descendants 
-     * @param {DescendantFunction} callbackPerDescendant function to call per each descendant. Passes in descendant as first param
+     * @param {DescendantFunction} callbackPerDescendant function to call per each descendant. Passes in descendant as first param. If returns "stop" it won't continue iterating
      * @param {Boolean} includeSelf Whether to also run a function for the node itself
      */
     IterateDescendants(callbackPerDescendant, includeSelf = false) {
@@ -360,7 +360,9 @@ class GameNode extends EventSystem {
             // console.log("iteratedDescendant", iteratedDescendant.name)
 
             // call the callback with iterated one
-            callbackPerDescendant(iteratedDescendant);
+            let callbackResponse = callbackPerDescendant(iteratedDescendant);
+            if(callbackResponse == "stop")
+                break; // stop iteratin
 
             // does it have children?
             if (iteratedDescendant.children.length != 0) {
@@ -1329,13 +1331,17 @@ class GameObject extends GameNode {
         this._isVisible = newVisibility // set class variable
         this.stageObject.visible = newVisibility; // also set graphics visibility (.visible)
         // if(this.name == "layoutToExpand")
-        console.log("setting isVisible to ", newVisibility, " for", this.name, " this.childrenShareVisibility", this.childrenShareVisibility)
+        // console.log("setting isVisible to ", newVisibility, " for", this.name, " this.childrenShareVisibility", this.childrenShareVisibility)
+
+
 
         // make all children share visibility
         if (this.childrenShareVisibility)
             for (let child of this.children) {
                 child.isVisible = newVisibility
             }
+
+        this.FireListener("visibilityChanged")
     }
 
     sharePosition = true; // whether or not setting position of game object will affect graphics object
@@ -1431,6 +1437,15 @@ class GameObject extends GameNode {
     set alpha(newAlpha) {
         if (this.stageObject)
             this.stageObject.alpha = newAlpha
+    }
+
+    // z index for stage object
+    get zIndex() { if (this.stageObject) { return this.stageObject.zIndex } else return null }
+    set zIndex(newVal) {
+        // text should be 1 zindex above background
+        if (!this.stageObject)
+            return;
+        this.stageObject.zIndex = newVal;
     }
 
     /**
@@ -1612,6 +1627,45 @@ class GameObject extends GameNode {
         this._stageObject = null
     }
 
+    // Returns the bounding rect of a game object ONLY (excludes descendants, see .GetTotalBoundingRect) 
+    GetBoundingRect() {
+        return {
+            left: this.x,
+            right: this.x + this.width,
+            bottom: this.y,
+            top: this.y + this.height
+        }
+    }
+
+
+    /**
+     * // Returns the total bounding rect of a game object and its descendants
+     * @param {Boolean} includeInvisible Whether to include invisible descendants in final calculation (excludes the object itself)
+     */
+    GetTotalBoundingRect(includeInvisible = true) {
+        // start with this rect
+        let finalRect = this.GetBoundingRect();
+        // now loop through descendants, see if there's any expansions and add them accordingly
+        this.IterateDescendants((descendant) => {
+            // if shouldn't include inVisible and descendant is invisible, skip
+            if (!includeInvisible && !descendant.isVisible)
+                return;
+            let descendantRect = descendant.GetBoundingRect();
+            // look for smaller or bigger values and change them if so
+            if (descendantRect.left < finalRect.left)
+                finalRect.left = descendantRect.left
+            if (descendantRect.right > finalRect.right)
+                finalRect.right = descendantRect.right
+            if (descendantRect.bottom < finalRect.bottom)
+                finalRect.bottom = descendantRect.bottom
+            if (descendantRect.top > finalRect.top)
+                finalRect.top = descendantRect.top
+        }, false)
+
+        // return any changes
+        return finalRect;
+    }
+
     Destruct(destructDescendants = true) {
         // Called the inherited class's destruct class
         super.Destruct(destructDescendants);
@@ -1749,6 +1803,16 @@ class Circle extends GameObject {
         this.stageObject.interactive = true; // set back to true
 
 
+    }
+
+    // Returns the bounding rect of a game object 
+    GetBoundingRect() {
+        return {
+            left: this.x - this.width / 2,
+            right: this.x + this.width / 2,
+            bottom: this.y - this.height / 2,
+            top: this.y + this.height / 2
+        }
     }
 
 }
@@ -1987,12 +2051,7 @@ class TextContainer extends GameObject {
 
     }
 
-    get zIndex() { return this.backgroundGraphics.zIndex }
-    set zIndex(newVal) {
-        // text should be 1 zindex above background
-        this.backgroundGraphics.zIndex = newVal;
-        this.textLabelObject.stageObject.zIndex = newVal + 1;
-    }
+
 
 
 
@@ -2066,7 +2125,11 @@ class TextContainer extends GameObject {
     //         this.stageObject.visible = newVisibility;
     // }
 
-
+    get zIndex() { return super.zIndex }
+    set zIndex(newVal) {
+        super.zIndex = newVal
+        this.textLabelObject.stageObject.zIndex = newVal + 1;
+    }
 
     eventsToDestroy = []; // Has an array of arrays each with [objectSubscribedTo, eventName, eventListener]
 
@@ -2997,7 +3060,6 @@ class LayoutExpander extends Button {
         newLayout.isVisible = this.layoutExpanded
     }
     layoutExpanded = false
-    spaceBetweenLayout = 0.2; // in game units (currently only y direction). How much space should be between expander button and layout to expand
 
     // overwrite position constructor
     get position() { return super.position }
@@ -3015,12 +3077,14 @@ class LayoutExpander extends Button {
         // if(this.name == "layoutToExpand")
         // console.log("setting isVisible to ", newVisibility, " for", this.name, " this.childrenShareVisibility", this.childrenShareVisibility)
 
+        this.FireListener("visibilityChanged")
+
         // make all children share visibility except layout to expand
         if (this.childrenShareVisibility)
             for (let child of this.children) {
-                if(child != this.layoutToExpand)
+                if (child != this.layoutToExpand)
                     child.isVisible = newVisibility
-                else{
+                else {
                     // dealing with layout to expand
                     child.isVisible = this.layoutExpanded
                 }
@@ -3058,7 +3122,7 @@ class LayoutExpander extends Button {
     // updates layout position to be relative to expander
     UpdateLayoutPosition() {
         if (this.layoutToExpand)
-            this.layoutToExpand.position = new Point(this.position.x, this.position.y - this.spaceBetweenLayout)
+            this.layoutToExpand.position = new Point(this.position.x, this.position.y)
     }
 
     // button pointer up handler
@@ -3075,13 +3139,16 @@ class LayoutExpander extends Button {
     _ExpandLayout() {
         this.text = "Expanding"
         this.layoutToExpand.isVisible = true
+        // after you set it to visible, update the layout
+        this.layoutToExpand.CalculateObjectPositions();
 
     }
 
     _UnexpandLayout() {
         this.text = "Unexpanding"
         this.layoutToExpand.isVisible = false
-
+        // after you set it to invisible, update the layout
+        this.layoutToExpand.CalculateObjectPositions();
     }
 
 
@@ -3185,6 +3252,8 @@ class GameObjectLayout extends GameObject {
         // text should be 1 zindex above background
         this.backgroundGraphics.zIndex = newVal;
 
+        this.UpdateObjectsZIndex()
+
     }
 
 
@@ -3220,22 +3289,23 @@ class GameObjectLayout extends GameObject {
 
     // updates the z index of all objects
     UpdateObjectsZIndex() {
-        let layoutzIndex = this.zIndex;
+        let layoutZIndex = this.zIndex;
 
         for (let objIndex = 0; objIndex < this.children.length; objIndex++) {
             let gameObj = this.children[objIndex]
             // gameObj.stageObject.zIndex = newVal + objIndex + 1; // + 1 to make it 1 based indexing
-            if (gameObj.stageObject)
-                gameObj.stageObject.zIndex = layoutzIndex + 1; // jsut make it 1 higher than layout background
+            // if (gameObj.stageObject)
+            gameObj.zIndex = layoutZIndex + 1; // jsut make it 1 higher than layout background
         }
-
     }
+
+
 
 
     // Call this whenever you need to recalcaulate the positions of the objects underneath the layout
     // calls fit layout after
+    // NOTE: skips invisible children
     CalculateObjectPositions = () => {
-        let totalObjects = this.children.length;
 
         // Vertical down positioning
 
@@ -3258,23 +3328,51 @@ class GameObjectLayout extends GameObject {
 
 
         // loop thru managed objects and change position according to previous ones
-        for (let objIndex = 0; objIndex < totalObjects; objIndex++) {
-            let iteratedObj = this.children[objIndex]
-
-
-
+        for (let iteratedObj of this.children) {
             if (!iteratedObj) {
                 // an iterated obj is invalid, just ignore
                 console.warn("Found invalid object under layout childrens:", this.children)
                 continue;
             }
 
+            // skip invisible
+            if (!iteratedObj.isVisible)
+                continue;
+
+            let objRect = iteratedObj.GetTotalBoundingRect(false);
+            let objWidth = Math.abs(objRect.right - objRect.left)
+            let objHeight = Math.abs(objRect.top - objRect.bottom)
+
+            if (this == globalThis.uiLayout) {
+                console.log("startPos", startPos)
+                console.log("objRect", objRect)
+                console.log("objWidth", objWidth)
+                console.log("objHeight", objHeight)
+                console.log("this", this)
+            }
+
+            // first determine if this object contains an object layout in its descendants
+            let containsObjLayout = false;
+
+            iteratedObj.IterateDescendants((descendant)=>{
+                if(descendant.isGameObjectLayout)
+                {
+                    containsObjLayout = true;
+                    return "stop"; // will stop iterating descendants
+                }
+            },true)
+
+
+
             // set position of current object and change the startPos 
 
             if (this.layoutOrientation == LayoutOrientation.VerticalDown) {
                 // Move down on vertical and set the object to new pos. Do this because the .position of the iterated opbject starts at bottom-left and
                 // the start pos is currently at the top-left of the object
-                startPos.y -= iteratedObj.height
+                if (!containsObjLayout)
+                    startPos.y -= objHeight //minus height of bounds
+                else
+                    startPos.y -= iteratedObj.height // minus height of object itself (some parts may exclude obj layout)
 
                 iteratedObj.position = startPos;
 
@@ -3285,10 +3383,10 @@ class GameObjectLayout extends GameObject {
                 iteratedObj.position = startPos;
 
                 // setup next iteration by moving by vertical space the object takes up (height) added with padding
-                startPos.y += iteratedObj.height + this.spaceBetweenObjects;
+                startPos.y += objHeight + this.spaceBetweenObjects;
             } else if (this.layoutOrientation == LayoutOrientation.HorizontalLeft) {
                 // start pos is at bottom-right, correct
-                startPos.x -= iteratedObj.width
+                startPos.x -= objWidth
 
                 iteratedObj.position = startPos;
 
@@ -3301,7 +3399,7 @@ class GameObjectLayout extends GameObject {
                 iteratedObj.position = startPos;
 
                 // move right by width + spacing
-                startPos.x += iteratedObj.width + this.spaceBetweenObjects;
+                startPos.x += objWidth + this.spaceBetweenObjects;
             }
 
 
@@ -3317,39 +3415,73 @@ class GameObjectLayout extends GameObject {
             return new Point()
 
 
-        let xSize = 0;
-        let ySize = 0;
+        // gets initialised in loop
+        let xSize;
+        let ySize;
+
+        // NOTE: for sizes of each child, we are using the total bounding rect in case there's descendants underneath the child.
+        // ALSO: don't count children who aren't set to visible btw
+
+        let totalVisibleObjects = 0; // how many objects are visible
+
         // for vertical orientations
         if (this.layoutOrientation == LayoutOrientation.VerticalDown || this.layoutOrientation == LayoutOrientation.VerticalUp) {
-            // for x just get largest width
-            xSize = this.children[0].width
-            for (const obj of this.children) {
-                if (obj.width > xSize)
-                    xSize = obj.width
-            }
-
-            // for y it is the sum of all heights + space between objects *objects length-1
             let totalHeight = 0;
+
             for (const obj of this.children) {
-                totalHeight += obj.height
+                if (!obj.isVisible)
+                    continue;
+                totalVisibleObjects++;
+                let objRect = obj.GetTotalBoundingRect(false);
+                // if (this == globalThis.uiLayout) {
+                //     console.log("objRect", objRect)
+                //     console.log("obj", obj)
+                // }
+                let objWidth = objRect.right - objRect.left
+                let objHeight = objRect.top - objRect.bottom
+                // console.log("height vs bounds height == ", (objHeight - obj.height).toFixed(5))
+
+                // for x just get largest width
+
+                // if not initialised or found new biggest
+                if (!xSize || objWidth > xSize)
+                    xSize = objWidth
+
+                // for y it is the sum of all heights + space between objects *objects length-1
+                totalHeight += objHeight
+
             }
 
-            ySize = totalHeight + this.spaceBetweenObjects * (this.children.length - 1)
-
+            ySize = totalHeight
+            if (totalVisibleObjects > 0) {
+                ySize += this.spaceBetweenObjects * (totalVisibleObjects - 1)
+            }
+            // if (this == globalThis.uiLayout) {
+            //     console.log("totalVisibleObjects", totalVisibleObjects)
+            //     console.log("ySize", ySize)
+            // }
         } else { // horizontal orientations
-            // for x it is the sum of all widths + space between objects *objects length-1
             let totalWidth = 0;
             for (const obj of this.children) {
-                totalWidth += obj.width
-            }
-            xSize = totalWidth + this.spaceBetweenObjects * (this.children.length - 1)
+                if (!obj.isVisible)
+                    continue;
+                totalVisibleObjects++;
+                let objRect = obj.GetTotalBoundingRect(false);
+                let objWidth = objRect.right - objRect.left
+                let objHeight = objRect.top - objRect.bottom
+                // for x it is the sum of all widths + space between objects *objects length-1
+                totalWidth += objWidth
 
-            // for y just get largest height
-            ySize = this.children[0].height
-            for (const obj of this.children) {
-                if (obj.height > ySize)
-                    ySize = obj.height
+                // for y just get largest height
+                // if not initialised or found new biggest
+                if (!ySize || objHeight > ySize)
+                    ySize = objHeight
+
             }
+
+            xSize = totalWidth + this.spaceBetweenObjects * (totalVisibleObjects - 1)
+
+
 
 
         }
@@ -3380,22 +3512,8 @@ class GameObjectLayout extends GameObject {
         this.height = this.margin.bottom + innerSize.y + this.margin.top;
     }
 
-
-    /**
-     * Gets whether or not the layout contains the point inclusive of all objects underneath and layout edges
-     * @param {PIXI.Point} pointToCheck The point to check in the bounds of 
-     * @returns {Boolean} Whether or not the layout contains the point
-     */
-    ContainsPoint(pointToCheck) {
-        // console.log("pointToCheck",pointToCheck)
-
-        // let layoutBounds = {
-        //     left: this.x,
-        //     right: this.x + this.width,
-        //     bottom: this.y,
-        //     top: this.y+this.height
-        // }
-
+    // Returns the bounding rect (excludes descendants, see .GetTotalBoundingRect) 
+    GetBoundingRect() {
         let layoutBounds;
 
         if (this.layoutOrientation == LayoutOrientation.VerticalDown) {
@@ -3423,7 +3541,27 @@ class GameObjectLayout extends GameObject {
                 top: this.y + this.height
             }
         }
+        return layoutBounds
+    }
 
+
+    /**
+     * Gets whether or not the layout contains the point inclusive of all objects underneath and layout edges
+     * @param {PIXI.Point} pointToCheck The point to check in the bounds of 
+     * @returns {Boolean} Whether or not the layout contains the point
+     */
+    ContainsPoint(pointToCheck) {
+        // console.log("pointToCheck",pointToCheck)
+
+        // let layoutBounds = {
+        //     left: this.x,
+        //     right: this.x + this.width,
+        //     bottom: this.y,
+        //     top: this.y+this.height
+        // }
+
+
+        let layoutBounds = this.GetBoundingRect();
 
 
 
@@ -3494,9 +3632,15 @@ class GameObjectLayout extends GameObject {
     AddChild(objectToAdd) {
         super.AddChild(objectToAdd)
 
-        //on change make sure content fits accordingly
         objectToAdd.AddEventListener("widthChanged", this.CalculateObjectPositions, this) // make sure content fits
         objectToAdd.AddEventListener("heightChanged", this.CalculateObjectPositions, this) // when height changes, so does the positions of each object
+
+
+        //on visiblity change (including descendants make sure content fits accordingly)
+        objectToAdd.IterateDescendants((descendant) => {
+            descendant.AddEventListener("visibilityChanged", this.CalculateObjectPositions, this)
+        }, true)
+
 
         //update 
         this.CalculateObjectPositions()

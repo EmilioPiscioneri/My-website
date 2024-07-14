@@ -573,15 +573,17 @@ function GenerateUI() {
         width: 2
     }
 
+    // let optionsLayout = new GameObjectLayout(game);
     let optionsLayout = layoutExpander.layoutToExpand;
+    // optionsLayout.alpha = 0
 
     // layoutExpander.isVisible = false
-    layoutExpander.layoutToExpand.isVisible = false;
-    layoutExpander.layoutToExpand.alpha = 0; // make background invisible
+    // layoutExpander.layoutToExpand.isVisible = false;
+    // layoutExpander.layoutToExpand.alpha = 0; // make background invisible
 
     globalThis.layoutExpander = layoutExpander
     globalThis.uiLayout = uiLayout
-
+    globalThis.optionsLayout = optionsLayout
 
 
     // mainScene.AddChild(layout)
@@ -593,24 +595,17 @@ function GenerateUI() {
     // setup layout
 
     uiLayout.AddChild(layoutExpander)
+    // uiLayout.AddChild(optionsLayout)
 
-    optionsLayout.AddChild(ballCountTextLbl)
-    optionsLayout.AddChild(lineCountTextLbl)
+    // optionsLayout.AddChild(ballCountTextLbl)
+    // optionsLayout.AddChild(lineCountTextLbl)
 
     // So we have two text container inherited objects and whenever they are under the layout and their text changes it fitsredraw background which messes up its positioning
     // When under the Game it does not do that. Confusing
 
-
-    // game.AddGameObject(gridVisibilityBtn)
-    // gridVisibilityBtn.position = new Point(4,4)
-    // uiLayout.AddGameObject(textInput, true)
     optionsLayout.AddChild(radiusVisibilityBtn);
     optionsLayout.AddChild(radiusSliderText)
     optionsLayout.AddChild(radiusSlider)
-
-    // game.AddGameObject(textInput)
-
-    // textInput.zIndex = 2; // nothing to do w zIndex
     optionsLayout.AddChild(ballPullStrengthLabel)
     optionsLayout.AddChild(ballPullStrengthSlider)
     optionsLayout.AddChild(ballPushStrengthLabel)
@@ -623,6 +618,22 @@ function GenerateUI() {
     optionsLayout.AddChild(gridColumnsText)
     optionsLayout.AddChild(gridColumnsSlider)
     optionsLayout.AddChild(reloadBtn)
+
+    // uiLayout.AddChild(radiusVisibilityBtn);
+    // uiLayout.AddChild(radiusSliderText)
+    // uiLayout.AddChild(radiusSlider)
+    // uiLayout.AddChild(ballPullStrengthLabel)
+    // uiLayout.AddChild(ballPullStrengthSlider)
+    // uiLayout.AddChild(ballPushStrengthLabel)
+    // uiLayout.AddChild(ballPushStrengthSlider)
+    // uiLayout.AddChild(gridVisibilityBtn)
+    // uiLayout.AddChild(ballsPerSegmentText);
+    // uiLayout.AddChild(ballsPerSegmentSlider);
+    // uiLayout.AddChild(gridRowsText)
+    // uiLayout.AddChild(gridRowsSlider)
+    // uiLayout.AddChild(gridColumnsText)
+    // uiLayout.AddChild(gridColumnsSlider)
+    // uiLayout.AddChild(reloadBtn)
 
     // add layout to scene
     mainScene.AddChild(uiLayout)
