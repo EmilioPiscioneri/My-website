@@ -1,6 +1,6 @@
 var Point = PIXI.Point;
 let near0 = 0.00048828125; // a value that is near 0, it's a power of 2 which computers like
-let PIdiv2 = Math.PI/2
+let PIdiv2 = Math.PI / 2
 
 /*
     GAME.JS
@@ -1264,7 +1264,13 @@ class GameObject extends GameNode {
     get stageObject() {
         return this._stageObject;
     }
-    set stageObject(newStageObject) {
+    /**
+     * Sets stage object 
+     * @param {*} newStageObject
+     * @param {Boolean} destroyOldObject Whether the old stage object should be destroyed when removed 
+     * @param {boolean} [initialiseSize=true] Whether to set the gameObject's size to stageObject's size * pixelsPerUnit
+     */
+    SetStageObject(newStageObject, destroyOldObject = true, initialiseSize = true) {
         let oldStageObject = this._stageObject;
 
 
@@ -1287,7 +1293,8 @@ class GameObject extends GameNode {
                 // remove from scene first because it will cause conflicts when iterating destructed stage objects
                 this._currentScene.RemoveStageObject(oldStageObject)
                 // destruct the old stage object 
-                this.DestructStageObject();
+                if (destroyOldObject)
+                    this.DestructStageObject();
             }
             // else
             //     console.warn("2")
@@ -1312,9 +1319,13 @@ class GameObject extends GameNode {
             // after you add the stage object, update its pos and size if meant to so it renders correctly
             if (this.sharePosition)
                 this.updateStageObjectPosition();
-            if (this.shareSize) {
+            if (initialiseSize && this.shareSize) {
                 this.width = newStageObject.width;
                 this.height = newStageObject.height;
+            }
+            // keep the same zIndex
+            if(this.zIndex){
+                newStageObject.zIndex = this.zIndex
             }
         }
 
@@ -1468,7 +1479,7 @@ class GameObject extends GameNode {
         if (game == null)
             throw new Error("Created a new game object with null game input")
         this.game = game;
-        this.stageObject = stageObject;
+        this.SetStageObject(stageObject);
 
         this.sharePosition = sharePosition;
         this.shareSize = shareSize;
@@ -1903,7 +1914,7 @@ class TextLabel extends UIElement {
     // PIXI text object
     get textObject() { return this.stageObject }
     set textObject(newTextObject) {
-        this.stageObject = newTextObject
+        this.SetStageObject(newTextObject);
     }
 
     get text() {
@@ -2050,7 +2061,7 @@ class TextContainer extends GameObject {
 
     get backgroundGraphics() { return this.stageObject }
     set backgroundGraphics(newVal) {
-        this.stageObject = newVal
+        this.SetStageObject(newVal)
     }
 
     // keep old getter and setter but add new stuff
@@ -2360,18 +2371,18 @@ class TextContainer extends GameObject {
         // console.log("fitting to text")
         if (this.fitToInnerContent) {
             let innerContentBounds = this.innerContent.GetTotalBoundingRect(false);
-            if(!innerContentBounds)
+            if (!innerContentBounds)
                 return; // skip 
 
             // i do absolute cos won't be accurate with negatives
-            let innerWidth = Math.abs(innerContentBounds.right-innerContentBounds.left)
-            let innerHeight = Math.abs(innerContentBounds.top-innerContentBounds.bottom)
+            let innerWidth = Math.abs(innerContentBounds.right - innerContentBounds.left)
+            let innerHeight = Math.abs(innerContentBounds.top - innerContentBounds.bottom)
 
             console.log(innerWidth)
 
             this.width = innerWidth + this.padding.left + this.padding.right;
             this.height = innerHeight + this.padding.bottom + this.padding.top;
-                       
+
         }
     }
 
@@ -2814,7 +2825,7 @@ class Slider extends UIElement {
 
     get backgroundGraphics() { return this.stageObject }
     set backgroundGraphics(newVal) {
-        this.stageObject = newVal
+        this.SetStageObject(newVal)
     }
 
     // keep old getter and setter but add new stuff
@@ -3100,6 +3111,30 @@ class Slider extends UIElement {
  */
 class LayoutExpander extends Button {
     expanderIcon;
+    // rightArrowGraphicsInitialised = false; // Whether size has been multiplied by pixelsPerUnit
+    // downArrowGraphicsInitialised = false; // Whether size has been multiplied by pixelsPerUnit
+    // an arrow that points right
+    rightArrowGraphics = new Graphics()
+        .moveTo(0, 0)
+        .lineTo(0, 1)
+        .lineTo(1, 0.5)
+        .fill("white")
+
+    // an arrow that points down
+    downArrowGraphics = new Graphics()
+        .moveTo(0, 0)
+        .lineTo(1, 0)
+        .lineTo(0.5, 1)
+        .fill("white")
+
+    // downArrowGraphics = new Graphics()
+    //     .poly([
+    //         new Point(0,0),
+    //         new Point(1,0),
+    //         // new Point(0,0)
+    //     ], true)
+    //     .fill("white")
+
     iconSpacing = 0.1; // in game units on x axis, space between text and icon
 
     _layoutToExpand;
@@ -3172,22 +3207,21 @@ class LayoutExpander extends Button {
         // this.layoutToExpand.alpha = 0.9
 
         // create a triangle
-        let expanderIconGraphics = new Graphics()
-            // .moveTo(-0.5, 0.5)
-            // .lineTo(-0.5, -0.5)
-            // .lineTo(0.5, 0)
-            // .fill("white")
-            .moveTo(0, 0)
-            .lineTo(0, 1)
-            .lineTo(1, 0.5)
-            .fill("white")
+        // let expanderIconGraphics = new Graphics()
+        //     // .moveTo(-0.5, 0.5)
+        //     // .lineTo(-0.5, -0.5)
+        //     // .lineTo(0.5, 0)
+        //     // .fill("white")
 
-        
 
-        this.expanderIcon = new GameObject(game, expanderIconGraphics)
+
+
+        this.expanderIcon = new GameObject(game, this.rightArrowGraphics)
         this.expanderIcon.static = true
         this.expanderIcon.height = 0.25
         this.expanderIcon.width = 0.25
+
+        // this.rightArrowGraphicsInitialised = true;
 
         this.AddChild(this.layoutToExpand)
         this.innerContent.AddChild(this.expanderIcon)
@@ -3216,7 +3250,7 @@ class LayoutExpander extends Button {
         // start as container pos (bottom-left)
         // Need to clone point to avoid object reference conflicts
         // expander icon has pos as centre 
-        let iconPos = new Point(this.position.x + this.padding.left , this.position.y + this.padding.bottom);
+        let iconPos = new Point(this.position.x + this.padding.left, this.position.y + this.padding.bottom);
         let textPos = new Point(this.position.x + this.padding.left + this.expanderIcon.width + this.iconSpacing, this.position.y + this.padding.bottom);
 
         // // calc horizontal x
@@ -3278,11 +3312,21 @@ class LayoutExpander extends Button {
         this.layoutToExpand.isVisible = true
         // after you set it to visible, update the layout
         this.layoutToExpand.CalculateObjectPositions();
-
+        
+        // set new objet without destroying old one or updating its size
+        // let intialiseSize = false;
+        // if(!this.downArrowGraphicsInitialised){
+        //     this.downArrowGraphicsInitialised = true
+        //     intialiseSize = true
+        // }
+        this.expanderIcon.SetStageObject(this.downArrowGraphics, false, false)
         // rotate icon to face down
+        this.expanderIcon.zIndex = this.zIndex + 1
+        this.expanderIcon.width = this.expanderIcon.width
+        this.expanderIcon.height = this.expanderIcon.height
 
         // 90 degrees is pi/2
-        this.expanderIcon.stageObject.rotation = PIdiv2
+        // this.expanderIcon.stageObject.rotation = PIdiv2
 
 
     }
@@ -3293,10 +3337,26 @@ class LayoutExpander extends Button {
         // after you set it to invisible, update the layout
         this.layoutToExpand.CalculateObjectPositions();
 
+        // let intialiseSize = false;
+        // if(!this.rightArrowGraphicsInitialised){
+        //     this.rightArrowGraphicsInitialised = true
+        //     intialiseSize = true
+        // }
+        this.expanderIcon.SetStageObject(this.rightArrowGraphics, false, false)
+        this.expanderIcon.zIndex = this.zIndex + 1
+
         // rotate icon to face right
-        this.expanderIcon.stageObject.rotation = 0
+        // this.expanderIcon.stageObject.rotation = 0
         // this.expanderIcon.stageObject.rotateTransform(-PIdiv2)
 
+    }
+
+    Destruct() {
+        // destroy down and right arrow graphics objects
+        this.expanderIcon.SetStageObject(null)
+        this.rightArrowGraphics.destroy()
+        this.downArrowGraphics.destroy()
+        super.Destruct();
     }
 
 
@@ -3578,15 +3638,15 @@ class GameObjectLayout extends GameObject {
             for (const obj of this.children) {
                 if (!obj.isVisible)
                     continue;
-                
+
                 // bounds can be null
                 let objRect = obj.GetTotalBoundingRect(false);
-                if(!objRect)
+                if (!objRect)
                     continue; // skip if null
 
                 totalVisibleObjects++;
 
-               
+
                 let objWidth = objRect.right - objRect.left
                 let objHeight = objRect.top - objRect.bottom
                 // if (this == globalThis.uiLayout) {
