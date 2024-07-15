@@ -2213,7 +2213,7 @@ class TextContainer extends GameObject {
     UpdateTextPosition = () => {
         // console.log(this)
 
-        // get the raw values lmao. By thise I just mean the values without padding (do this advanced technique called subtraction)
+        // get the raw values. By thise I just mean the values without padding (do this advanced technique called subtraction)
         let rawWidth = this.width - this.padding.left - this.padding.right;
         let rawHeight = this.height - this.padding.bottom - this.padding.top;
         // start as btn pos (bottom-left)
@@ -3046,6 +3046,7 @@ class Slider extends UIElement {
  * It's width and height are only the height of the button
  */
 class LayoutExpander extends Button {
+    expanderIcon;
 
     _layoutToExpand;
     get layoutToExpand() {
@@ -3066,6 +3067,7 @@ class LayoutExpander extends Button {
     set position(newPosition) {
         super.position = newPosition
         this.UpdateLayoutPosition();
+        this.UpdateIconPosition();
     }
 
     //overwrite is visible
@@ -3113,7 +3115,17 @@ class LayoutExpander extends Button {
         // this.layoutToExpand.position = new Point(5,5)
         // this.layoutToExpand.alpha = 0.9
 
+        // create a triangle
+        let expanderIconGraphics = new Graphics()
+        .moveTo(0,1)
+        .lineTo(0,0)
+        .lineTo(1,0)
+        .fill("white")
+
+        this.expanderIcon = new GameObject(game, expanderIconGraphics)
+
         this.AddChild(this.layoutToExpand)
+        this.AddChild(this.expanderIcon)
 
         this.layoutToExpand.isVisible = false; // start as hidden
 
@@ -3123,6 +3135,53 @@ class LayoutExpander extends Button {
     UpdateLayoutPosition() {
         if (this.layoutToExpand)
             this.layoutToExpand.position = new Point(this.position.x, this.position.y)
+    }
+
+    UpdateIconPosition(){
+        // console.log(this)
+
+        // get the raw values. By thise I just mean the values without padding (do this advanced technique called subtraction)
+        let rawWidth = this.width - this.padding.left - this.padding.right;
+        let rawHeight = this.height - this.padding.bottom - this.padding.top;
+        // start as btn pos (bottom-left)
+        // Need to clone point to avoid object reference conflicts
+        let iconPos = new Point(this.position.x + this.padding.left, this.position.y + this.padding.bottom);
+        // calc horizontal x
+        switch (this.textHorizontalAlignment) {
+            case HorizontalAlignment.LEFT:
+                // do nothing
+                break;
+            case HorizontalAlignment.MIDDLE:
+                // pos = middle of text container rect (rect.x + rectWidth/2) -  textWidth/2 
+                iconPos.x += rawWidth / 2 - this.textLabelObject.width / 2
+                break;
+
+            case HorizontalAlignment.RIGHT:
+                iconPos.x += rawWidth;
+                break;
+            default:
+                console.warn("Horizontal aligment is an invalid value")
+                break;
+        }
+        // calc vertical y
+        switch (this.textVerticalAlignment) {
+            case VerticalAlignment.BOTTOM:
+                // do nothing
+                break;
+            case VerticalAlignment.MIDDLE:
+                // pos = middle of text container rect (rect.y + rectHeight/2) -  textHeight/2 
+                iconPos.y += rawHeight / 2 - this.textLabelObject.height / 2
+                break;
+
+            case VerticalAlignment.TOP:
+                iconPos.y += rawHeight;
+                break;
+            default:
+                console.warn("Vertical aligment is an invalid value")
+                break;
+        }
+
+        this.textLabelObject.position = iconPos;
     }
 
     // button pointer up handler
