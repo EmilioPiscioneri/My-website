@@ -2042,7 +2042,7 @@ class TextContainer extends GameObject {
         // inject extra code
 
         // Update text pos
-        this.UpdateTextPosition();
+        this.AlignInnerContent();
 
         // if(this.name == "grid visibility"){
         //     console.log("Post-pos (.x,.y)", this.backgroundGraphics.x, this.backgroundGraphics.y)
@@ -2107,14 +2107,14 @@ class TextContainer extends GameObject {
     get height() { return super.height };
     set height(newVal) {
         super.height = newVal;
-        this.RedrawBackground();
+        this.AlignInnerContent();
         this.UpdateTextPosition();
     };
 
     get width() { return super.width };
     set width(newVal) {
         super.width = newVal
-        this.UpdateTextPosition();
+        this.AlignInnerContent();
         this.RedrawBackground();
     };
 
@@ -2196,11 +2196,11 @@ class TextContainer extends GameObject {
 
         // TURN THESE BACK ON
 
-        this.textLabelObject.AddEventListener("widthChanged", this.UpdateTextPosition, this);
-        this.textLabelObject.AddEventListener("heightChanged", this.UpdateTextPosition, this);
+        this.textLabelObject.AddEventListener("widthChanged", this.AlignInnerContent, this);
+        this.textLabelObject.AddEventListener("heightChanged", this.AlignInnerContent, this);
         // when text changes update pos
-        this.textLabelObject.AddEventListener("textChanged", this.UpdateTextPosition, this);
-        this.AddEventListener("textChanged", this.UpdateTextPosition, this);
+        this.textLabelObject.AddEventListener("textChanged", this.AlignInnerContent, this);
+        this.AddEventListener("textChanged", this.AlignInnerContent, this);
         // fit to btn
         this.textLabelObject.AddEventListener("textChanged", this.FitBackground, this);
         this.textLabelObject.AddEventListener("fontSizeChanged", this.FitBackground, this);
@@ -2210,7 +2210,7 @@ class TextContainer extends GameObject {
      * Updates the position of the text object under the text container with respect to the alignment and text container position
      * Need to define function as anonymous ()=>{} this to preserve the "this" variable
      */
-    UpdateTextPosition = () => {
+    AlignInnerContent = () => {
         // console.log(this)
 
         // get the raw values. By thise I just mean the values without padding (do this advanced technique called subtraction)
@@ -3047,6 +3047,7 @@ class Slider extends UIElement {
  */
 class LayoutExpander extends Button {
     expanderIcon;
+    spaceBetweenInnerContent
 
     _layoutToExpand;
     get layoutToExpand() {
@@ -3063,12 +3064,12 @@ class LayoutExpander extends Button {
     layoutExpanded = false
 
     // overwrite position constructor
-    get position() { return super.position }
-    set position(newPosition) {
-        super.position = newPosition
-        this.UpdateLayoutPosition();
-        this.UpdateIconPosition();
-    }
+    //get position() { return super.position }
+    //set position(newPosition) {
+        //super.position = newPosition
+        //this.UpdateLayoutPosition();
+        //this.UpdateIconPosition();
+    //}
 
     //overwrite is visible
     get isVisible() { return super.isVisible }
@@ -3137,15 +3138,19 @@ class LayoutExpander extends Button {
             this.layoutToExpand.position = new Point(this.position.x, this.position.y)
     }
 
-    UpdateIconPosition(){
+    // position text and icon
+    AlignInnerContent(){
         // console.log(this)
 
         // get the raw values. By thise I just mean the values without padding (do this advanced technique called subtraction)
         let rawWidth = this.width - this.padding.left - this.padding.right;
         let rawHeight = this.height - this.padding.bottom - this.padding.top;
-        // start as btn pos (bottom-left)
+        
+        // start as container pos (bottom-left)
         // Need to clone point to avoid object reference conflicts
         let iconPos = new Point(this.position.x + this.padding.left, this.position.y + this.padding.bottom);
+        let textPos = new Point(this.position.x + this.padding.left + this.expanderIcon.width, this.position.y + this.padding.bottom);
+        
         // calc horizontal x
         switch (this.textHorizontalAlignment) {
             case HorizontalAlignment.LEFT:
