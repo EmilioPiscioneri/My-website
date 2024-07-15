@@ -1,5 +1,6 @@
 var Point = PIXI.Point;
 let near0 = 0.00048828125; // a value that is near 0, it's a power of 2 which computers like
+let PIdiv2 = Math.PI/2
 
 /*
     GAME.JS
@@ -361,7 +362,7 @@ class GameNode extends EventSystem {
 
             // call the callback with iterated one
             let callbackResponse = callbackPerDescendant(iteratedDescendant);
-            if(callbackResponse == "stop")
+            if (callbackResponse == "stop")
                 break; // stop iteratin
 
             // does it have children?
@@ -557,6 +558,7 @@ class Game extends EventSystem {
     drag = 0.125; // opposing force on velocity of object in game units/sec 
     _pixelsPerUnit = new PIXI.Point(50, 50); // each game unit is a certain amount of pixels in x and y 
     initialised = false; // whether the pixi application has been initialised
+
 
     preventContextMenu = false; // whether or not to prevent the context menu from showing up on right click of canvas
 
@@ -1322,6 +1324,7 @@ class GameObject extends GameNode {
 
     game; // the current game object
     isGameObject = true;
+    hasNoBounds = false; // if the object has no bounds or they shouldn't be considered in calculations
     _isVisible = true;
     childrenShareVisibility = true; // if children will share visiblity of parent
     get isVisible() {
@@ -1329,7 +1332,8 @@ class GameObject extends GameNode {
     }
     set isVisible(newVisibility) {
         this._isVisible = newVisibility // set class variable
-        this.stageObject.visible = newVisibility; // also set graphics visibility (.visible)
+        if (this.stageObject)
+            this.stageObject.visible = newVisibility; // also set graphics visibility (.visible)
         // if(this.name == "layoutToExpand")
         // console.log("setting isVisible to ", newVisibility, " for", this.name, " this.childrenShareVisibility", this.childrenShareVisibility)
 
@@ -1629,28 +1633,37 @@ class GameObject extends GameNode {
 
     // Returns the bounding rect of a game object ONLY (excludes descendants, see .GetTotalBoundingRect) 
     GetBoundingRect() {
-        return {
-            left: this.x,
-            right: this.x + this.width,
-            bottom: this.y,
-            top: this.y + this.height
-        }
+        if (this.hasNoBounds)
+            return null
+        else
+            return {
+                left: this.x,
+                right: this.x + this.width,
+                bottom: this.y,
+                top: this.y + this.height
+            }
     }
 
 
     /**
-     * // Returns the total bounding rect of a game object and its descendants
+     * // Returns the total bounding rect of a game object and its descendants. MAY RETURN NULL IF INCLUDEVISIBLE SET TO TRUE
      * @param {Boolean} includeInvisible Whether to include invisible descendants in final calculation (excludes the object itself)
      */
     GetTotalBoundingRect(includeInvisible = true) {
+        let finalRect = null
         // start with this rect
-        let finalRect = this.GetBoundingRect();
+        if (this.isVisible)
+            finalRect = this.GetBoundingRect();
+
         // now loop through descendants, see if there's any expansions and add them accordingly
         this.IterateDescendants((descendant) => {
             // if shouldn't include inVisible and descendant is invisible, skip
-            if (!includeInvisible && !descendant.isVisible)
+            if (!includeInvisible && !descendant.isVisible || descendant.hasNoBounds)
                 return;
             let descendantRect = descendant.GetBoundingRect();
+            // if not intialised
+            if (!finalRect)
+                finalRect = descendantRect
             // look for smaller or bigger values and change them if so
             if (descendantRect.left < finalRect.left)
                 finalRect.left = descendantRect.left
@@ -2002,14 +2015,31 @@ class Padding {
  */
 class TextContainer extends GameObject {
     // defaults
-    textHorizontalAlignment = HorizontalAlignment.MIDDLE;
-    textVerticalAlignment = VerticalAlignment.MIDDLE;
+    _textHorizontalAlignment = HorizontalAlignment.MIDDLE;
+    get textHorizontalAlignment() {
+        return this._textHorizontalAlignment;
+    }
+    set textHorizontalAlignment(value) {
+        this._textHorizontalAlignment = value;
+        this.AlignInnerContent();
+    }
+    _textVerticalAlignment = VerticalAlignment.MIDDLE;
+    get textVerticalAlignment() {
+        return this._textVerticalAlignment;
+    }
+    set textVerticalAlignment(value) {
+        this._textVerticalAlignment = value;
+        this.AlignInnerContent()
+    }
 
     // Fits the text container to the text size as it updates
-    fitToText = true;
+    fitToInnerContent = true;
 
     // corresponding Game TEXT LABEL which holds PIXI text object
     textLabelObject;
+
+    // An empty gameobject with different objects that are the inner part of the text continer
+    innerContent;
 
     get text() { return this.textLabelObject.text }
     set text(newText) {
@@ -2107,15 +2137,15 @@ class TextContainer extends GameObject {
     get height() { return super.height };
     set height(newVal) {
         super.height = newVal;
+        this.RedrawBackground();
         this.AlignInnerContent();
-        this.UpdateTextPosition();
     };
 
     get width() { return super.width };
     set width(newVal) {
         super.width = newVal
-        this.AlignInnerContent();
         this.RedrawBackground();
+        this.AlignInnerContent();
     };
 
     // whether background graphics is visible
@@ -2128,7 +2158,11 @@ class TextContainer extends GameObject {
     get zIndex() { return super.zIndex }
     set zIndex(newVal) {
         super.zIndex = newVal
-        this.textLabelObject.stageObject.zIndex = newVal + 1;
+        // set inner content index to be cur index + 1
+        for (let obj of this.innerContent.children) {
+            obj.zIndex = newVal + 1
+        }
+        // this.textLabelObject.stageObject.zIndex = newVal + 1;
     }
 
     eventsToDestroy = []; // Has an array of arrays each with [objectSubscribedTo, eventName, eventListener]
@@ -2169,8 +2203,14 @@ class TextContainer extends GameObject {
 
         // Set object
         this.textLabelObject = textLabelObject;
-        this.AddChild(this.textLabelObject);
+        this.innerContent = new GameObject(game, false, false, false)
+        this.innerContent.label = "inner content"
+        this.innerContent.hasNoBounds = true; // avoids calculating in game object layout 
 
+
+
+        this.innerContent.AddChild(this.textLabelObject);
+        this.AddChild(this.innerContent)
         // Update width to based off text size + padding to start 
 
         this.width = textLabelObject.width + this.padding.left + this.padding.right;
@@ -2204,6 +2244,9 @@ class TextContainer extends GameObject {
         // fit to btn
         this.textLabelObject.AddEventListener("textChanged", this.FitBackground, this);
         this.textLabelObject.AddEventListener("fontSizeChanged", this.FitBackground, this);
+
+        // innner content change updates
+        this.innerContent.AddEventListener("childAdded", () => { this.zIndex = this.zIndex }, this) // update zIndex for inner content 
     }
 
     /**
@@ -2219,23 +2262,23 @@ class TextContainer extends GameObject {
         // start as btn pos (bottom-left)
         // Need to clone point to avoid object reference conflicts
         let textPos = new Point(this.position.x + this.padding.left, this.position.y + this.padding.bottom);
-        // calc horizontal x
-        switch (this.textHorizontalAlignment) {
-            case HorizontalAlignment.LEFT:
-                // do nothing
-                break;
-            case HorizontalAlignment.MIDDLE:
-                // pos = middle of text container rect (rect.x + rectWidth/2) -  textWidth/2 
-                textPos.x += rawWidth / 2 - this.textLabelObject.width / 2
-                break;
+        // calc horizontal x, unnecessary?
+        // switch (this.textHorizontalAlignment) {
+        //     case HorizontalAlignment.LEFT:
+        //         // do nothing
+        //         break;
+        //     case HorizontalAlignment.MIDDLE:
+        //         // pos = middle of text container rect (rect.x + rectWidth/2) -  textWidth/2 
+        //         textPos.x += rawWidth / 2 - this.textLabelObject.width / 2
+        //         break;
 
-            case HorizontalAlignment.RIGHT:
-                textPos.x += rawWidth;
-                break;
-            default:
-                console.warn("Horizontal aligment is an invalid value")
-                break;
-        }
+        //     case HorizontalAlignment.RIGHT:
+        //         textPos.x += rawWidth;
+        //         break;
+        //     default:
+        //         console.warn("Horizontal aligment is an invalid value")
+        //         break;
+        // }
         // calc vertical y
         switch (this.textVerticalAlignment) {
             case VerticalAlignment.BOTTOM:
@@ -2312,13 +2355,23 @@ class TextContainer extends GameObject {
 
     }
 
-    // fits background size to text size
+    // fits background size to inner content (will use current positions so make sure aligned before claling)
     FitBackground = () => {
         // console.log("fitting to text")
-        if (this.fitToText) {
-            // console.log("here")
-            this.width = this.textLabelObject.width + this.padding.left + this.padding.right;
-            this.height = this.textLabelObject.height + this.padding.bottom + this.padding.top;
+        if (this.fitToInnerContent) {
+            let innerContentBounds = this.innerContent.GetTotalBoundingRect(false);
+            if(!innerContentBounds)
+                return; // skip 
+
+            // i do absolute cos won't be accurate with negatives
+            let innerWidth = Math.abs(innerContentBounds.right-innerContentBounds.left)
+            let innerHeight = Math.abs(innerContentBounds.top-innerContentBounds.bottom)
+
+            console.log(innerWidth)
+
+            this.width = innerWidth + this.padding.left + this.padding.right;
+            this.height = innerHeight + this.padding.bottom + this.padding.top;
+                       
         }
     }
 
@@ -3047,7 +3100,7 @@ class Slider extends UIElement {
  */
 class LayoutExpander extends Button {
     expanderIcon;
-    spaceBetweenInnerContent
+    iconSpacing = 0.1; // in game units on x axis, space between text and icon
 
     _layoutToExpand;
     get layoutToExpand() {
@@ -3061,22 +3114,24 @@ class LayoutExpander extends Button {
         this._layoutToExpand = newLayout;
         newLayout.isVisible = this.layoutExpanded
     }
-    layoutExpanded = false
+
+    layoutExpanded = false;
 
     // overwrite position constructor
-    //get position() { return super.position }
-    //set position(newPosition) {
-        //super.position = newPosition
-        //this.UpdateLayoutPosition();
+    get position() { return super.position }
+    set position(newPosition) {
+        super.position = newPosition
+        this.UpdateLayoutPosition();
         //this.UpdateIconPosition();
-    //}
+    }
 
     //overwrite is visible
     get isVisible() { return super.isVisible }
     set isVisible(newVisibility) {
         // do the same thing as normal game object unless the child is the layout to expand
         this._isVisible = newVisibility // set class variable
-        this.stageObject.visible = newVisibility; // also set graphics visibility (.visible)
+        if (this.stageObject)
+            this.stageObject.visible = newVisibility; // also set graphics visibility (.visible)
         // if(this.name == "layoutToExpand")
         // console.log("setting isVisible to ", newVisibility, " for", this.name, " this.childrenShareVisibility", this.childrenShareVisibility)
 
@@ -3118,15 +3173,24 @@ class LayoutExpander extends Button {
 
         // create a triangle
         let expanderIconGraphics = new Graphics()
-        .moveTo(0,1)
-        .lineTo(0,0)
-        .lineTo(1,0)
-        .fill("white")
+            // .moveTo(-0.5, 0.5)
+            // .lineTo(-0.5, -0.5)
+            // .lineTo(0.5, 0)
+            // .fill("white")
+            .moveTo(0, 0)
+            .lineTo(0, 1)
+            .lineTo(1, 0.5)
+            .fill("white")
+
+        
 
         this.expanderIcon = new GameObject(game, expanderIconGraphics)
+        this.expanderIcon.static = true
+        this.expanderIcon.height = 0.25
+        this.expanderIcon.width = 0.25
 
         this.AddChild(this.layoutToExpand)
-        this.AddChild(this.expanderIcon)
+        this.innerContent.AddChild(this.expanderIcon)
 
         this.layoutToExpand.isVisible = false; // start as hidden
 
@@ -3139,35 +3203,41 @@ class LayoutExpander extends Button {
     }
 
     // position text and icon
-    AlignInnerContent(){
+    AlignInnerContent = () => {
         // console.log(this)
 
         // get the raw values. By thise I just mean the values without padding (do this advanced technique called subtraction)
-        let rawWidth = this.width - this.padding.left - this.padding.right;
+        // let rawWidth = this.width - this.padding.left - this.padding.right;
         let rawHeight = this.height - this.padding.bottom - this.padding.top;
-        
+
+        // get the size values of the content 
+        // let contentWidth = this.expanderIcon.width + this.iconSpacing + this.textLabelObject.width;
+
         // start as container pos (bottom-left)
         // Need to clone point to avoid object reference conflicts
-        let iconPos = new Point(this.position.x + this.padding.left, this.position.y + this.padding.bottom);
-        let textPos = new Point(this.position.x + this.padding.left + this.expanderIcon.width, this.position.y + this.padding.bottom);
-        
-        // calc horizontal x
-        switch (this.textHorizontalAlignment) {
-            case HorizontalAlignment.LEFT:
-                // do nothing
-                break;
-            case HorizontalAlignment.MIDDLE:
-                // pos = middle of text container rect (rect.x + rectWidth/2) -  textWidth/2 
-                iconPos.x += rawWidth / 2 - this.textLabelObject.width / 2
-                break;
+        // expander icon has pos as centre 
+        let iconPos = new Point(this.position.x + this.padding.left , this.position.y + this.padding.bottom);
+        let textPos = new Point(this.position.x + this.padding.left + this.expanderIcon.width + this.iconSpacing, this.position.y + this.padding.bottom);
 
-            case HorizontalAlignment.RIGHT:
-                iconPos.x += rawWidth;
-                break;
-            default:
-                console.warn("Horizontal aligment is an invalid value")
-                break;
-        }
+        // // calc horizontal x
+        // switch (this.textHorizontalAlignment) {
+        //     case HorizontalAlignment.LEFT:
+        //         // do nothing
+        //         break;
+        //     case HorizontalAlignment.MIDDLE:
+        //         // pos = middle of text container rect (rect.x + rectWidth/2) -  textWidth/2 
+        //         iconPos.x += this.expanderIcon.width / 2
+        //         // textPos.x += rawWidth / 2 - this.textLabelObject.width / 2
+        //         textPos.x += rawWidth / 2 - this.textLabelObject.width / 2
+        //         break;
+
+        //     case HorizontalAlignment.RIGHT:
+        //         iconPos.x += rawWidth;
+        //         break;
+        //     default:
+        //         console.warn("Horizontal aligment is an invalid value")
+        //         break;
+        // }
         // calc vertical y
         switch (this.textVerticalAlignment) {
             case VerticalAlignment.BOTTOM:
@@ -3175,18 +3245,21 @@ class LayoutExpander extends Button {
                 break;
             case VerticalAlignment.MIDDLE:
                 // pos = middle of text container rect (rect.y + rectHeight/2) -  textHeight/2 
-                iconPos.y += rawHeight / 2 - this.textLabelObject.height / 2
+                iconPos.y += rawHeight / 2 - this.expanderIcon.height / 2
+                textPos.y += rawHeight / 2 - this.textLabelObject.height / 2
                 break;
 
             case VerticalAlignment.TOP:
-                iconPos.y += rawHeight;
+                iconPos.y += rawHeight - this.expanderIcon.height;
+                textPos.y += rawHeight - this.textLabelObject.height;
                 break;
             default:
                 console.warn("Vertical aligment is an invalid value")
                 break;
         }
 
-        this.textLabelObject.position = iconPos;
+        this.textLabelObject.position = textPos;
+        this.expanderIcon.position = iconPos;
     }
 
     // button pointer up handler
@@ -3206,6 +3279,12 @@ class LayoutExpander extends Button {
         // after you set it to visible, update the layout
         this.layoutToExpand.CalculateObjectPositions();
 
+        // rotate icon to face down
+
+        // 90 degrees is pi/2
+        this.expanderIcon.stageObject.rotation = PIdiv2
+
+
     }
 
     _UnexpandLayout() {
@@ -3213,6 +3292,11 @@ class LayoutExpander extends Button {
         this.layoutToExpand.isVisible = false
         // after you set it to invisible, update the layout
         this.layoutToExpand.CalculateObjectPositions();
+
+        // rotate icon to face right
+        this.expanderIcon.stageObject.rotation = 0
+        // this.expanderIcon.stageObject.rotateTransform(-PIdiv2)
+
     }
 
 
@@ -3407,24 +3491,23 @@ class GameObjectLayout extends GameObject {
             let objWidth = Math.abs(objRect.right - objRect.left)
             let objHeight = Math.abs(objRect.top - objRect.bottom)
 
-            if (this == globalThis.uiLayout) {
-                console.log("startPos", startPos)
-                console.log("objRect", objRect)
-                console.log("objWidth", objWidth)
-                console.log("objHeight", objHeight)
-                console.log("this", this)
-            }
+            // if (this == globalThis.uiLayout) {
+            //     console.log("startPos", startPos)
+            //     console.log("objRect", objRect)
+            //     console.log("objWidth", objWidth)
+            //     console.log("objHeight", objHeight)
+            //     console.log("this", this)
+            // }
 
             // first determine if this object contains an object layout in its descendants
             let containsObjLayout = false;
 
-            iteratedObj.IterateDescendants((descendant)=>{
-                if(descendant.isGameObjectLayout)
-                {
+            iteratedObj.IterateDescendants((descendant) => {
+                if (descendant.isGameObjectLayout) {
                     containsObjLayout = true;
                     return "stop"; // will stop iterating descendants
                 }
-            },true)
+            }, true)
 
 
 
@@ -3495,14 +3578,23 @@ class GameObjectLayout extends GameObject {
             for (const obj of this.children) {
                 if (!obj.isVisible)
                     continue;
-                totalVisibleObjects++;
+                
+                // bounds can be null
                 let objRect = obj.GetTotalBoundingRect(false);
+                if(!objRect)
+                    continue; // skip if null
+
+                totalVisibleObjects++;
+
+               
+                let objWidth = objRect.right - objRect.left
+                let objHeight = objRect.top - objRect.bottom
                 // if (this == globalThis.uiLayout) {
                 //     console.log("objRect", objRect)
                 //     console.log("obj", obj)
+                //     console.log("objWidth", objWidth)
+                //     console.log("objHeight", objHeight)
                 // }
-                let objWidth = objRect.right - objRect.left
-                let objHeight = objRect.top - objRect.bottom
                 // console.log("height vs bounds height == ", (objHeight - obj.height).toFixed(5))
 
                 // for x just get largest width
