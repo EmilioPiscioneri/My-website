@@ -2002,9 +2002,14 @@ class TextLabel extends UIElement {
         this.FireListener("textChanged")
     }
 
-    get fontSize() { return this.textObject.style.fontSize }
+    _fontSize;
+    // font size in y axis GAME UNITS
+    get fontSize() { 
+        return this._fontSize
+        //return this.textObject.style.fontSize 
+    }
     set fontSize(newFontSize) {
-        this.textObject.style.fontSize = newFontSize;
+        this.textObject.style.fontSize = newFontSize*this.game.pixelsPerUnit.y;
         // Update width and height
         this.width = this.textObject.width / this.game.pixelsPerUnit.x
         this.height = this.textObject.height / this.game.pixelsPerUnit.y
@@ -2033,6 +2038,7 @@ class TextLabel extends UIElement {
             align: 'left',
         }
 
+
         // just use a default style for now
         let pixiTextObject;
         // use bitmap or not
@@ -2054,6 +2060,9 @@ class TextLabel extends UIElement {
         // the text object automatically jets width and height in pixels when created so adjustr
         this.width = this.stageObject.width / game.pixelsPerUnit.x;
         this.height = this.stageObject.height / game.pixelsPerUnit.y;
+        // initialise font size from style
+        this._fontSize = textStyleOptions.fontSize / game.pixelsPerUnit.y
+
     }
 }
 
@@ -2120,7 +2129,7 @@ class TextContainer extends GameObject {
     // Fits the text container to the text size as it updates
     fitToInnerContent = true;
 
-    // corresponding Game TEXT LABEL which holds PIXI text object
+    // corresponding Game TEXT LABEL which has PIXI text object as stage object
     textLabelObject;
 
     // An empty gameobject with different objects that are the inner part of the text continer
@@ -2187,12 +2196,11 @@ class TextContainer extends GameObject {
         this.height = rawHeight + newPadding.bottom + newPadding.top;
     }
 
-    get fontSize() { return this.textObject.fontSize }
+    get fontSize() { return this.textLabelObject.fontSize }
     set fontSize(newFontSize) {
         this.textLabelObject.fontSize = newFontSize;
         this.FitBackground()
         this.FireListener("fontSizeChanged")
-
     }
 
 
@@ -2572,7 +2580,7 @@ class TextInput extends TextContainer {
         let caretObject = new GameObject(game, caretGraphics, true, true);
         caretObject.physicsEnabled = false;
 
-        caretObject.height = this.textLabelObject.fontSize / game.pixelsPerUnit.y;
+        caretObject.height = this.textLabelObject.fontSize;
         caretObject.position = this.position
 
         this.caretObject = caretObject;
@@ -2732,7 +2740,7 @@ class TextInput extends TextContainer {
         // console.log(this)
         let textLabel = this.textLabelObject
         let textStartPos = this.textLabelObject.position; // bottom left of text
-        this.caretObject.height = this.textLabelObject.fontSize / this.game.pixelsPerUnit.y;
+        this.caretObject.height = this.textLabelObject.fontSize;
         let newCaretPos = new Point(textStartPos.x, textStartPos.y); // avoid reference conflicts by cloning
 
         newCaretPos.y += (textLabel.height - this.caretObject.height) / 2; // centre it
@@ -3266,16 +3274,18 @@ class LayoutExpander extends Button {
      */
     constructor(game, text = "Click to expand", layoutToExpand) {
         super(game, text)
-        this.name = "layoutExpander"
+        // this.label = "layoutExpander"
 
         // listen for click
         this.AddEventListener("pointerUp", this.HandleButtonUp, this)
+        // listen for font size change
+        this.textLabelObject.AddEventListener("fontSizeChanged", this.UpdateIconSize, this)
         // this.childrenShareVisibility = false; // will mess up visiblity stuff
 
 
         // either given layout or if that's null then default
         this.layoutToExpand = layoutToExpand || new GameObjectLayout(game, LayoutOrientation.VerticalDown)
-        this.layoutToExpand.name = "layoutToExpand"
+        // this.layoutToExpand.label = "layoutToExpand"
         // this.layoutToExpand.backgroundFill = "red"
         // this.layoutToExpand.position = new Point(5,5)
         // this.layoutToExpand.alpha = 0.9
@@ -3292,8 +3302,8 @@ class LayoutExpander extends Button {
 
         this.expanderIcon = new GameObject(game, this.rightArrowGraphics)
         this.expanderIcon.static = true
-        this.expanderIcon.height = 0.25
-        this.expanderIcon.width = 0.25
+
+        this.UpdateIconSize();
 
         // this.rightArrowGraphicsInitialised = true;
 
@@ -3308,6 +3318,12 @@ class LayoutExpander extends Button {
     UpdateLayoutPosition() {
         if (this.layoutToExpand)
             this.layoutToExpand.position = new Point(this.position.x, this.position.y)
+    }
+
+    UpdateIconSize = ()=>{
+        let iconSize = this.textLabelObject.fontSize*0.75;
+        this.expanderIcon.height = iconSize;
+        this.expanderIcon.width = iconSize;
     }
 
     // position text and icon

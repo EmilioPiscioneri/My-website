@@ -320,6 +320,9 @@ function GenerateGridSegments(segmentQuantities) {
     return newGridSegments
 }
 
+// font size for different UI text
+let defaultTextFontSize = 0.44
+
 // will create and load all UI for script
 function GenerateUI() {
     let canvasSize = GetCanvasSizeInUnits();
@@ -367,7 +370,7 @@ function GenerateUI() {
     // create new game text game object
     lineCountTextLbl = new TextLabel(game, lineCountDefaultText, true, {
         fontFamily: 'Arial',
-        fontSize: 22,
+        fontSize: defaultTextFontSize,
         fill: "white",
         stroke: {
             color: "black",
@@ -393,7 +396,7 @@ function GenerateUI() {
 
     gridVisibilityBtn = new Button(game, "Show grid", false);
 
-    gridVisibilityBtn.fontSize = 22;
+    gridVisibilityBtn.fontSize = defaultTextFontSize;
     gridVisibilityBtn.backgroundStroke = {
         color: "black",
         width: 2
@@ -419,7 +422,7 @@ function GenerateUI() {
     // game.AddGameObject(textInput)
 
     ballPullStrengthLabel = new TextLabel(game, ballPullStrengthDefaultText, false)
-    ballPullStrengthLabel.fontSize = 22;
+    ballPullStrengthLabel.fontSize = defaultTextFontSize;
 
     ballPullStrengthSlider = new Slider(game, 0.1, 100, 0.1, ballsPullStrength);
 
@@ -435,7 +438,7 @@ function GenerateUI() {
     // --
 
     ballPushStrengthLabel = new TextLabel(game, ballPushStrengthDefaultText, false)
-    ballPushStrengthLabel.fontSize = 22;
+    ballPushStrengthLabel.fontSize = defaultTextFontSize;
 
     ballPushStrengthSlider = new Slider(game, 0.1, 100, 0.1, ballsPushStrength);
 
@@ -450,7 +453,7 @@ function GenerateUI() {
 
     radiusVisibilityBtn = new Button(game, "Show push/pull radius", false);
 
-    radiusVisibilityBtn.fontSize = 22;
+    radiusVisibilityBtn.fontSize = defaultTextFontSize;
     radiusVisibilityBtn.backgroundStroke = {
         color: "black",
         width: 2
@@ -478,7 +481,7 @@ function GenerateUI() {
 
     let radiusSliderTextDefault = "Push/pull radius: "
     let radiusSliderText = new TextLabel(game, radiusSliderTextDefault)
-    radiusSliderText.fontSize = 22
+    radiusSliderText.fontSize = defaultTextFontSize
 
     radiusSlider = new Slider(game, 0.1, 10, 0.05, pushPullRadius);
 
@@ -495,7 +498,7 @@ function GenerateUI() {
     gameObjEventsToDestroy.push([radiusSlider, "valueChanged", handleRadiusSliderChanged])
 
     let ballsPerSegmentText = new TextLabel(game, ballsPerSegmentDefaultText + ballsPerSegment)
-    ballsPerSegmentText.fontSize = 22;
+    ballsPerSegmentText.fontSize = defaultTextFontSize;
 
     ballsPerSegmentSlider = new Slider(game, 1, 5, 1, ballsPerSegment)
     // bps = balls per segment
@@ -508,7 +511,7 @@ function GenerateUI() {
     gameObjEventsToDestroy.push([ballsPerSegmentSlider, "valueChanged", handleBpsSliderChanged])
 
     reloadBtn = new Button(game, "Reload");
-    reloadBtn.fontSize = 22;
+    reloadBtn.fontSize = defaultTextFontSize;
     reloadBtn.backgroundStroke = {
         color: "black",
         width: 2
@@ -518,7 +521,7 @@ function GenerateUI() {
 
 
     let gridColumnsText = new TextLabel(game, gridColumnsDefaultText + gridColumns)
-    gridColumnsText.fontSize = 22;
+    gridColumnsText.fontSize = defaultTextFontSize;
 
     gridColumnsSlider = new Slider(game, 1, 10, 1, gridColumns)
     // bps = balls per segment
@@ -531,7 +534,7 @@ function GenerateUI() {
     gameObjEventsToDestroy.push([gridColumnsSlider, "valueChanged", handleGridColumnsSliderChanged])
 
     let gridRowsText = new TextLabel(game, gridRowsDefaultText + gridRows)
-    gridRowsText.fontSize = 22;
+    gridRowsText.fontSize = defaultTextFontSize;
 
     gridRowsSlider = new Slider(game, 1, 10, 1, gridRows)
     // bps = balls per segment
@@ -567,7 +570,7 @@ function GenerateUI() {
     // make a layout expander that expands the options layout
     let layoutExpander = new LayoutExpander(game)
     
-    layoutExpander.fontSize = 22;
+    layoutExpander.fontSize = defaultTextFontSize;
     layoutExpander.backgroundStroke = {
         color: "black",
         width: 2
