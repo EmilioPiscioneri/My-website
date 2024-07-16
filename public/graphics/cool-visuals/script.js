@@ -85,7 +85,7 @@ game.Initialise(graphicsContainer)
 })*/
 
 
-
+// #region universal functions
 
 // gets the canvas true screen position
 function getCanvasRealPosition() {
@@ -153,24 +153,29 @@ function RemoveLoader(loaderToRemove) {
 
 }
 
+// #endregion
+
 // create a main scene
-let mainScene = new Scene(game)
 
 // -- scripts to load --
 let constellationVisualScript = new ScriptLoader(game, ConstellationVisualLoad, ConstellationVisualOnTick, ConstellationVisualUnload)
 let screenBordersScript = new ScriptLoader(game, ScreenBordersLoad, ScreenBordersOnTick)
 let nodeTestScript = new ScriptLoader(game, nodeTestLoad, null, nodeTestUnload)
 let memoryLeakTestScript = new ScriptLoader(game, memoryLeakLoad, null, memoryLeakUnload)
+let menuScript = new ScriptLoader(game, loadMenu, null, unloadMenu)
 
 function main() {
     game.AddEventListener("tick", mainTickerHandler);
-    game.activeScene = mainScene
 
-    // First load the game borders
-    AddLoader(screenBordersScript)
+
     // then actually load the ball visual
 
-    AddLoader(constellationVisualScript)
+    AddLoader(menuScript);
+
+    // First load the game borders
+    // AddLoader(screenBordersScript)
+    // AddLoader(constellationVisualScript)
+
     // setTimeout(()=>RemoveLoader(constellationVisualScript),3000); // test that it unloads properly
 
     // for testing if nodes work properly
@@ -213,6 +218,7 @@ function GetRandomRange(min, max) {
 }
 
 //#region constellation visual script
+
 
 let objectsToDestroy = []; // other objects to recursively destory that aren't in other arrays (such as UI elements)
 let leftPointerDown = false; // If left mouse or pointer is down on screen
@@ -263,6 +269,7 @@ let ballsPushStrength = 5;
 
 // pull/push
 let pushPullRadius = 3; // distance to ball required to pull/push from the pointer
+let constellationScene;
 
 
 /**
@@ -320,12 +327,47 @@ function GenerateGridSegments(segmentQuantities) {
     return newGridSegments
 }
 
+function ConstellationVisualLoad(game) {
+    if (!constellationScene)
+        constellationScene = new Scene(game)
+    game.activeScene = constellationScene
+    game.backgroundColor = "#353535"; // set better color for contrast
+    // Just push game objects inwards if out of screen bounds. Easier than dealing with static objects
+
+    GenerateMainVisuals();
+
+    // load all UI stuff
+    GenerateUI();
+
+    RestoreSettings();
+}
+
+// if you left the visual and came back it will make sure things are restored properly
+function RestoreSettings() {
+    // grid vis
+    if (gridIsVisible)
+        ShowGrid();
+    else
+        HideGrid();
+    // radius vis
+    if(radiusVisible)
+        ShowRadius();
+    else
+        HideRadius();
+
+}
+
 // font size for different UI text
-let defaultTextFontSize = 0.44
+let defaultTextFontSize = 0.40
 
 // will create and load all UI for script
 function GenerateUI() {
     let canvasSize = GetCanvasSizeInUnits();
+
+    // default font sizes in game units
+    let headingFontSize = canvasSize.height * 0.075
+    let bigFontSize = canvasSize.height * 0.035
+    let mediumFontSize = canvasSize.height * 0.025
 
     // Define layout where all UI game objects will be underneath to make them look ordered
     let uiLayout = new GameObjectLayout(game);
@@ -477,7 +519,7 @@ function GenerateUI() {
     radiusObj.isVisible = false;
     radiusObj.static = true
     objectsToDestroy.push(radiusObj)
-    mainScene.AddChild(radiusObj);
+    constellationScene.AddChild(radiusObj);
 
     let radiusSliderTextDefault = "Push/pull radius: "
     let radiusSliderText = new TextLabel(game, radiusSliderTextDefault)
@@ -547,10 +589,10 @@ function GenerateUI() {
     gameObjEventsToDestroy.push([gridRowsSlider, "valueChanged", handleGridRowsSliderChanged])
 
 
-    // mainScene.AddChild(ballPullStrengthSlider)
+    // constellationScene.AddChild(ballPullStrengthSlider)
     // game.AddGameObject(ballPullStrengthLabel)
 
-    
+
 
 
     // Setup layout (defined earlier)
@@ -569,7 +611,7 @@ function GenerateUI() {
 
     // make a layout expander that expands the options layout
     let layoutExpander = new LayoutExpander(game)
-    
+
     layoutExpander.fontSize = defaultTextFontSize;
     layoutExpander.backgroundStroke = {
         color: "black",
@@ -578,7 +620,7 @@ function GenerateUI() {
 
     // let optionsLayout = new GameObjectLayout(game);
     let optionsLayout = layoutExpander.layoutToExpand;
-    optionsLayout.margin = new Padding(0.25,0,0,0.25)
+    optionsLayout.margin = new Padding(0.25, 0, 0, 0.25)
     optionsLayout.alpha = 0
 
     // layoutExpander.isVisible = false
@@ -590,11 +632,11 @@ function GenerateUI() {
     globalThis.optionsLayout = optionsLayout
 
 
-    // mainScene.AddChild(layout)
+    // constellationScene.AddChild(layout)
 
 
-    // mainScene.AddChild(ballPullStrengthLabel)
-    // mainScene.AddChild(ballPullStrengthSlider)
+    // constellationScene.AddChild(ballPullStrengthLabel)
+    // constellationScene.AddChild(ballPullStrengthSlider)
 
     // setup layout
 
@@ -640,10 +682,34 @@ function GenerateUI() {
     // uiLayout.AddChild(reloadBtn)
 
     // add layout to scene
-    mainScene.AddChild(uiLayout)
+    constellationScene.AddChild(uiLayout)
+
+    
+
+
+    // menu go back btn
+    let menuGoBackBtn = new Button(game, "<-- Go back to menu");
+    menuGoBackBtn.fontSize = mediumFontSize
+    menuGoBackBtn.position = new Point(0.25, 0.25)
+    menuGoBackBtn.AddEventListener("pointerUp", () => {
+        // unload
+        RemoveLoader(screenBordersScript)
+        RemoveLoader(constellationVisualScript)
+        // load 
+        AddLoader(menuScript)
+    }, menuGoBackBtn)
+
+    menuGoBackBtn.backgroundStroke = {
+        color: "rgb(29 30 30)",
+        width: 2
+    }
+
+    constellationScene.AddChild(menuGoBackBtn)
 
     // all unaccounted for/leftover objects to be recursively destroyed when unloading scene
     objectsToDestroy.push(uiLayout);
+    objectsToDestroy.push(menuGoBackBtn);
+
 }
 
 // generates balls and puts them on the canvas, gives them a velocity too
@@ -727,7 +793,7 @@ function GenerateBalls() {
 
                 // Now add to scene and list of balls array
                 ballsInScene.push(ball);
-                mainScene.AddChild(ball);
+                constellationScene.AddChild(ball);
 
             }
         }
@@ -738,26 +804,18 @@ function GenerateBalls() {
 // will generate like the non UI stuff
 function GenerateMainVisuals() {
     GenerateBalls();
-    
+
     // draw lines for first time
     DrawAllLines();
 
     // redraw grid if suposed to be visible as it may changed
-    if(gridIsVisible) {
+    if (gridIsVisible) {
         RemoveGridlines();
         GenerateGridLines();
     }
 }
 
-function ConstellationVisualLoad(game) {
-    game.backgroundColor = "#353535"; // set better color for contrast
-    // Just push game objects inwards if out of screen bounds. Easier than dealing with static objects
 
-    GenerateMainVisuals();
-
-    // load all UI stuff
-    GenerateUI();
-}
 
 // #region UI event handling --
 
@@ -842,7 +900,7 @@ function GenerateGridLines() {
 
         gridLines.push(newLine);
 
-        mainScene.AddChild(newLine)
+        constellationScene.AddChild(newLine)
     }
 
     // generate a line for each column
@@ -859,14 +917,14 @@ function GenerateGridLines() {
         newLine.alpha = lineAlpha
         gridLines.push(newLine);
 
-        mainScene.AddChild(newLine)
+        constellationScene.AddChild(newLine)
     }
 }
 
 // removes grid lines from scene and array
 function RemoveGridlines() {
     // remove grid lines from scene
-    mainScene.RemoveChildren(gridLines, true, true)
+    constellationScene.RemoveChildren(gridLines, true, true)
     // by setting grid lines to empty array, each object is no longer referenced and the gc will clean it up
     gridLines = []
 }
@@ -912,19 +970,19 @@ let linesInScene = [];
 let lineWidth = 1; // in pixels
 function RemovePreviousLines() {
 
-    mainScene.RemoveChildren(linesInScene, true, true)
+    constellationScene.RemoveChildren(linesInScene, true, true)
     linesInScene = []// fine to use cos no references
 
     // while (linesInScene.length > 0) {
     //     let line = linesInScene[0];
     //     // remove from scene and call destructor
-    //     mainScene.RemoveChild(line, true)
+    //     constellationScene.RemoveChild(line, true)
     //     linesInScene.shift() // clear out array
     // }
 }
 
 function RemoveAllBalls() {
-    mainScene.RemoveChildren(ballsInScene, true, true)
+    constellationScene.RemoveChildren(ballsInScene, true, true)
     ballsInScene = [] // fine to use cos no references
 }
 
@@ -1030,7 +1088,7 @@ function DrawAllLines() {
             line.gravityEnabled = false;
 
             // add to scene
-            mainScene.AddChild(line);
+            constellationScene.AddChild(line);
             // add to list of created lines
             linesInScene.push(line);
 
@@ -1111,7 +1169,7 @@ function UpdateText(game) {
     if (lineCountTextLbl)
         lineCountTextLbl.text = lineCountDefaultText + linesInScene.length
 
-    if(ballCountTextLbl)
+    if (ballCountTextLbl)
         ballCountTextLbl.text = ballCountDefaultText + ballsInScene.length
 }
 
@@ -1149,7 +1207,9 @@ function ConstellationVisualUnload(game) {
     HideGrid();
 
     // now remove the rest
-    mainScene.RemoveChildren(objectsToDestroy, true, true)
+    constellationScene.RemoveChildren(objectsToDestroy, true, true)
+
+    game.activeScene = null
 
 
 
@@ -1164,13 +1224,15 @@ function ScreenBordersLoad(game) {
 }
 
 function ScreenBordersOnTick(game) {
+    if (!game.activeScene)
+        return
     // loop through all game objects if they're not static then make sure they're inside the screen bounds 
-    // let gameObjectsInScene = mainScene.children;
+    // let gameObjectsInScene = game.activeScene.children;
 
     let canvasSize = GetCanvasSizeInUnits();
 
     // iterate through all descendant game objects in scene. Function runs per descendant
-    mainScene.IterateDescendants((gameObject) => {
+    game.activeScene.IterateDescendants((gameObject) => {
         // do nothing when static (not moving)
         if (gameObject.static)
             return; // skip
@@ -1232,8 +1294,14 @@ let rect0_0
 let rect0_1
 let rect0_1_1
 
+let nodeScene;
+
 // tests that nodes are ordered and operate properly
 function nodeTestLoad(game) {
+    if (!nodeScene)
+        nodeScene = new Scene(game)
+
+    game.activeScene = nodeScene
     // Game node and scene testing 
 
     // Add objects to scene
@@ -1375,27 +1443,38 @@ function nodeTestLoad(game) {
 
 
     // add to scene
-    mainScene.AddChild(rect0)
+    nodeScene.AddChild(rect0)
 }
 
 function nodeTestUnload(game) {
     let delayInterval = 500;
-    setTimeout(() => rect0.RemoveChild(rect0_0), delayInterval * 2)
-    setTimeout(() => rect0_1.RemoveChild(rect0_1_1), delayInterval * 3)
-    setTimeout(() => mainScene.RemoveChild(rect0), delayInterval * 5)
+    // setTimeout(() => rect0.RemoveChild(rect0_0), delayInterval * 2)
+    // setTimeout(() => rect0_1.RemoveChild(rect0_1_1), delayInterval * 3)
+    // setTimeout(() => nodeScene.RemoveChild(rect0), delayInterval * 5)
+    // setTimeout(() => game.activeScene = null, delayInterval * 7)
+
+    game.activeScene = null
+
+
+
 }
 
 // #endregion
 
 // #region memory leak testing
 
+
 let testBtn;
 let testingText;
 let testAmntSlider;
 let testAmntSliderText;
 let testingLayout;
+let memoryLeakScene
 
 function memoryLeakLoad(game) {
+    if (!memoryLeakScene)
+        memoryLeakScene = new Scene(game)
+    game.activeScene = memoryLeakScene
     testingLayout = new GameObjectLayout(game);
     testBtn = new Button(game, "Begin test")
     testBtn.backgroundStroke = {
@@ -1422,7 +1501,7 @@ function memoryLeakLoad(game) {
     testingLayout.position = new Point(2, 10)
 
 
-    mainScene.AddChild(testingLayout)
+    memoryLeakScene.AddChild(testingLayout)
     testBtn.AddEventListener("pointerUp", () => {
         testingText.text = "testing ..."
         setTimeout(() => {
@@ -1440,8 +1519,8 @@ function memoryLeakLoad(game) {
 
                 // let testObj = new GameObject(game, null, false, false)
                 // // let testObj = new GameObject(game, null, false, false)
-                // mainScene.AddChild(testObj)
-                // mainScene.RemoveChild(testObj, true, true)
+                // memoryLeakScene.AddChild(testObj)
+                // memoryLeakScene.RemoveChild(testObj, true, true)
             }
             testingText.text = "testing done!"
 
@@ -1462,6 +1541,77 @@ function memoryLeakLoad(game) {
 }
 
 function memoryLeakUnload(game) {
+    game.activeScene = null
+}
+
+// #endregion
+
+// #region menu screen script
+
+// I'm just going to keep the menu scene cached because it's not got much stuff
+
+let menuScene;
+
+function generateMenuUI() {
+    let canvasSize = GetCanvasSizeInUnits();
+    // default font sizes in game units
+    let headingFontSize = canvasSize.height * 0.075
+    let bigFontSize = canvasSize.height * 0.035
+    let mediumFontSize = canvasSize.height * 0.025
+
+    let titleText = new TextLabel(game, "Menu")
+    titleText.fontSize = headingFontSize;
+
+
+    let menuButtonLayout = new GameObjectLayout(game);
+
+    // add buttons
+    let constellationBtn = new Button(game, "Load constellation visual");
+    constellationBtn.fontSize = bigFontSize
+    constellationBtn.padding = new Padding(0.15, 0.15, 0.15, 0.15)
+    constellationBtn.backgroundStroke = {
+        color: "rgb(29 30 30)",
+        width: 2
+    }
+
+    menuButtonLayout.AddChild(constellationBtn)
+
+    menuButtonLayout.position = new Point(canvasSize.width / 2 - menuButtonLayout.width / 2, canvasSize.height / 2 + menuButtonLayout.height / 2)
+    menuButtonLayout.margin = new Padding(0, 0, 0, 0)
+    menuButtonLayout.alpha = 0;
+
+    constellationBtn.AddEventListener("pointerUp", () => {
+        RemoveLoader(menuScript)
+        AddLoader(constellationVisualScript)
+        AddLoader(screenBordersScript)
+    }, constellationBtn)
+
+    // set y as a factor between top of layout and screen height
+    titleText.position = new Point(canvasSize.width / 2 - titleText.width / 2, menuButtonLayout.y + (canvasSize.height - menuButtonLayout.y) / 4)
+
+    menuScene.AddChild(titleText);
+    menuScene.AddChild(menuButtonLayout);
+}
+
+// just generates the menu scene and sets it to the local var. 
+function generateMenuScene() {
+    menuScene = new Scene(game)
+    generateMenuUI();
 
 }
 
+function loadMenu() {
+    if (!menuScene)
+        generateMenuScene();
+
+    game.activeScene = menuScene;
+}
+
+function unloadMenu() {
+    // just remove menu as active scene for now
+    game.activeScene = null;
+}
+
+// #endregion
+
+// END OF DOCUMENT

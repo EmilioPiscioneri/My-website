@@ -2188,8 +2188,8 @@ class TextContainer extends GameObject {
         // When padding changes you just update the width and height
 
         // get the raw values lmao. By thise I just mean the values without padding (do this advanced technique called subtraction)
-        let rawWidth = this.width - oldPadding.left - oldPadding - right;
-        let rawHeight = this.height - oldPadding.bottom - oldPadding - top;
+        let rawWidth = this.width - oldPadding.left - oldPadding.right;
+        let rawHeight = this.height - oldPadding.bottom - oldPadding.top;
 
         // Set the new width to the raw width + padding on x and y respectively
         this.width = rawWidth + newPadding.left + newPadding.right;
