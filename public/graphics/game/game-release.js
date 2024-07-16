@@ -160,9 +160,28 @@ class GameNode extends EventSystem {
 
 
     _parent = null;
-    // Readon-only value of node above this one
+    // Read-only value of node above this one
     get parent() {
         return this._parent;
+    }
+    
+    _label;
+    get label(){return this._label}
+    set label(newLabel){
+        let oldLabel = this._label
+        this._label = null; // set to null so parent contains children label will still register the old one
+        // check if parent exists
+        if(!this.parent){
+            this._label = newLabel
+        }
+        // else if no label duplicate under parent
+        else if(!this.parent.ChildrenContainsLabel(newLabel)){
+            this._label = newLabel
+        // else there is a duplicate
+        } else {
+            // sort out
+        }
+
     }
 
     constructor() {
@@ -202,6 +221,11 @@ class GameNode extends EventSystem {
 
         // Output: 2 3 5 7
      */
+
+    // whether any of a node's children contains a certain label
+    ChildrenContainsLabel(){
+        return true;
+    }
 
 
     /**
