@@ -190,6 +190,7 @@ class GameNode extends EventSystem {
 
     constructor() {
         super();
+        // this.label = "Node"
     }
 
     /**
@@ -226,9 +227,18 @@ class GameNode extends EventSystem {
         // Output: 2 3 5 7
      */
 
-    // whether any of a node's children contains a certain label
-    ChildrenContainsLabel(){
-        return true;
+    /**
+     * whether any of a node's children contains a certain label
+     * @param {string} label 
+     * @returns true or false
+     */
+    ChildrenContainsLabel(label){
+        for(let child of this.children){
+            if(child.label == label){
+                return true
+            }
+        }
+        return false;
     }
 
 
@@ -1144,6 +1154,7 @@ class Scene extends GameNode {
     constructor(game) {
         super();
         this.game = game;
+        this.label = "Scene"
     }
 
     /**
@@ -1542,6 +1553,7 @@ class GameObject extends GameNode {
             throw new Error("Created a new game object with null game input")
         this.game = game;
         this.SetStageObject(stageObject);
+        // this.label = "GameObject"
 
         this.sharePosition = sharePosition;
         this.shareSize = shareSize;
