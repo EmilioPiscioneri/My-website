@@ -168,7 +168,6 @@ class GameNode extends EventSystem {
     _label;
     get label(){return this._label}
     set label(newLabel){
-        let oldLabel = this._label
         this._label = null; // set to null so parent contains children label will still register the old one
         // check if parent exists
         if(!this.parent){
@@ -179,9 +178,14 @@ class GameNode extends EventSystem {
             this._label = newLabel
         // else there is a duplicate
         } else {
-            // sort out
+            // sort out by adding suffix until name is valid
+            do{
+                newLabel += ".1"
+            } while (this.parent.ChildrenContainsLabel(newLabel))
+            // set new label name
+            this._label = newLabel
         }
-
+        
     }
 
     constructor() {
@@ -236,6 +240,9 @@ class GameNode extends EventSystem {
             throw new Error("Tried to add a child to node that already has a parent, perhaps its parent has already been added?")
         this.children.push(childToAdd);
         childToAdd._parent = this; // set new parent
+        // call the label property setter which will ensure the child's label does not overlap with another
+        if(childToAdd.label)
+            childToAdd.label = childToAdd.label
         this.FireListener("childAdded", { child: childToAdd })
         childToAdd.FireListener("parentChanged")
 
@@ -319,6 +326,28 @@ class GameNode extends EventSystem {
      */
     ContainsChild(nodeToFind) {
         return (this.children.indexOf(nodeToFind) != -1)
+    }
+    
+    /**
+    * Gets a child from given label, if any exists.
+    * @param {string} label 
+    * @returns Found child or NULL
+    */
+    
+    GetChildByLabel(label){
+        if(!label)
+            return null;
+            
+        let foundChild;
+        
+        for(let child of this.children){
+            if(child.label == label) {
+                foundChild = child
+                break; // found the child now escape the loop
+            }
+        }
+        
+        return foundChild;
     }
 
     /**
@@ -1351,6 +1380,10 @@ class GameObject extends GameNode {
             if(this.zIndex){
                 newStageObject.zIndex = this.zIndex
             }
+            // same label
+            if(this.label){
+                newStageObject.label = this.label
+            }
         }
 
         this.FireListener("stageObjectChanged");
@@ -1401,7 +1434,12 @@ class GameObject extends GameNode {
 
     }
 
-
+    get label(){return super.label}
+    set label(newLabel){
+        super.label = newLabel
+        if(this.stageObject)
+            this.stageObject.label = newLabel
+    }
 
 
     _position = new Point(0, 0);
