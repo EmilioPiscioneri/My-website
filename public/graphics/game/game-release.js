@@ -164,28 +164,28 @@ class GameNode extends EventSystem {
     get parent() {
         return this._parent;
     }
-    
+
     _label;
-    get label(){return this._label}
-    set label(newLabel){
+    get label() { return this._label }
+    set label(newLabel) {
         this._label = null; // set to null so parent contains children label will still register the old one
         // check if parent exists
-        if(!this.parent){
+        if (!this.parent) {
             this._label = newLabel
         }
         // else if no label duplicate under parent
-        else if(!this.parent.ChildrenContainsLabel(newLabel)){
+        else if (!this.parent.ChildrenContainsLabel(newLabel)) {
             this._label = newLabel
-        // else there is a duplicate
+            // else there is a duplicate
         } else {
             // sort out by adding suffix until name is valid
-            do{
+            do {
                 newLabel += ".1"
             } while (this.parent.ChildrenContainsLabel(newLabel))
             // set new label name
             this._label = newLabel
         }
-        
+
     }
 
     constructor() {
@@ -232,9 +232,9 @@ class GameNode extends EventSystem {
      * @param {string} label 
      * @returns true or false
      */
-    ChildrenContainsLabel(label){
-        for(let child of this.children){
-            if(child.label == label){
+    ChildrenContainsLabel(label) {
+        for (let child of this.children) {
+            if (child.label == label) {
                 return true
             }
         }
@@ -251,7 +251,7 @@ class GameNode extends EventSystem {
         this.children.push(childToAdd);
         childToAdd._parent = this; // set new parent
         // call the label property setter which will ensure the child's label does not overlap with another
-        if(childToAdd.label)
+        if (childToAdd.label)
             childToAdd.label = childToAdd.label
         this.FireListener("childAdded", { child: childToAdd })
         childToAdd.FireListener("parentChanged")
@@ -337,26 +337,26 @@ class GameNode extends EventSystem {
     ContainsChild(nodeToFind) {
         return (this.children.indexOf(nodeToFind) != -1)
     }
-    
+
     /**
     * Gets a child from given label, if any exists.
     * @param {string} label 
     * @returns Found child or NULL
     */
-    
-    GetChildByLabel(label){
-        if(!label)
+
+    GetChildByLabel(label) {
+        if (!label)
             return null;
-            
+
         let foundChild;
-        
-        for(let child of this.children){
-            if(child.label == label) {
+
+        for (let child of this.children) {
+            if (child.label == label) {
                 foundChild = child
                 break; // found the child now escape the loop
             }
         }
-        
+
         return foundChild;
     }
 
@@ -1387,16 +1387,16 @@ class GameObject extends GameNode {
             if (this.sharePosition)
                 this.updateStageObjectPosition();
             // if (initialiseSize && this.shareSize) {
-            if(initialiseSize){
+            if (initialiseSize) {
                 this.width = newStageObject.width;
                 this.height = newStageObject.height;
             }
             // keep the same zIndex
-            if(this.zIndex){
+            if (this.zIndex) {
                 newStageObject.zIndex = this.zIndex
             }
             // same label
-            if(this.label){
+            if (this.label) {
                 newStageObject.label = this.label
             }
         }
@@ -1449,10 +1449,10 @@ class GameObject extends GameNode {
 
     }
 
-    get label(){return super.label}
-    set label(newLabel){
+    get label() { return super.label }
+    set label(newLabel) {
         super.label = newLabel
-        if(this.stageObject)
+        if (this.stageObject)
             this.stageObject.label = newLabel
     }
 
@@ -2008,12 +2008,12 @@ class TextLabel extends UIElement {
 
     _fontSize;
     // font size in y axis GAME UNITS
-    get fontSize() { 
+    get fontSize() {
         return this._fontSize
         //return this.textObject.style.fontSize 
     }
     set fontSize(newFontSize) {
-        this.textObject.style.fontSize = newFontSize*this.game.pixelsPerUnit.y;
+        this.textObject.style.fontSize = newFontSize * this.game.pixelsPerUnit.y;
         // Update width and height
         this.width = this.textObject.width / this.game.pixelsPerUnit.x
         this.height = this.textObject.height / this.game.pixelsPerUnit.y
@@ -3324,8 +3324,8 @@ class LayoutExpander extends Button {
             this.layoutToExpand.position = new Point(this.position.x, this.position.y)
     }
 
-    UpdateIconSize = ()=>{
-        let iconSize = this.textLabelObject.fontSize*0.75;
+    UpdateIconSize = () => {
+        let iconSize = this.textLabelObject.fontSize * 0.75;
         this.expanderIcon.height = iconSize;
         this.expanderIcon.width = iconSize;
     }
@@ -3406,7 +3406,7 @@ class LayoutExpander extends Button {
         this.layoutToExpand.isVisible = true
         // after you set it to visible, update the layout
         this.layoutToExpand.CalculateObjectPositions();
-        
+
         // set new objet without destroying old one or updating its size
         // let intialiseSize = false;
         // if(!this.downArrowGraphicsInitialised){
@@ -3475,6 +3475,7 @@ class LayoutOrientation {
  */
 class GameObjectLayout extends GameObject {
     isGameObjectLayout = true
+    dontFitLayout = false; // This boolean is dealt with whenever a game object's position is changed it is set back to false. Used to avoid a recursion loop
 
     // the orientation of layout relative to it's position point
     _layoutOrientation;
@@ -3546,7 +3547,11 @@ class GameObjectLayout extends GameObject {
     get position() { return super.position }
     set position(newPos) {
         super.position = newPos
-        this.CalculateObjectPositions() // update
+
+        this.CalculateObjectPositions(!this.dontFitLayout) // update and include the opposite of dont fit layout bool
+        if (this.dontFitLayout)
+            this.dontFitLayout = false;
+
     }
 
     get zIndex() { return this.backgroundGraphics.zIndex }
@@ -3604,10 +3609,14 @@ class GameObjectLayout extends GameObject {
 
 
 
-    // Call this whenever you need to recalcaulate the positions of the objects underneath the layout
-    // calls fit layout after
+
+    /**
+     * Call this whenever you need to recalcaulate the positions of the objects underneath the layout
     // NOTE: skips invisible children
-    CalculateObjectPositions = () => {
+     * @param {Boolean} callFitLayout calls fit layout method after
+     */
+    CalculateObjectPositions = (callFitLayout = true) => {
+        // console.log("Calc pos for " + this.label)
 
         // Vertical down positioning
 
@@ -3641,9 +3650,16 @@ class GameObjectLayout extends GameObject {
             if (!iteratedObj.isVisible)
                 continue;
 
+            if (iteratedObj.isGameObjectLayout){
+                // this variable is set back to false when position of child is change. Do this to avoid a recursion loop
+                // whether this.CalculateObjectPositions is fired -> sets child.position -> fires child.CalculateObjectPositions which will default call child.fit layout 
+                // -> sets child.width -> this listener for child's "widthChanged" fires -> this.CalculateObjectPositions and the cyucle repeats
+                iteratedObj.dontFitLayout = true;
+            }
+
             let objRect = iteratedObj.GetTotalBoundingRect(false);
-            let objWidth = Math.abs(objRect.right - objRect.left)
-            let objHeight = Math.abs(objRect.top - objRect.bottom)
+            let objBoundsWidth = Math.abs(objRect.right - objRect.left)
+            let objBoundsHeight = Math.abs(objRect.top - objRect.bottom)
 
             // if (this == globalThis.uiLayout) {
             //     console.log("startPos", startPos)
@@ -3654,45 +3670,38 @@ class GameObjectLayout extends GameObject {
             // }
 
             // first determine if this object contains an object layout in its descendants
-            let containsObjLayout = false;
-
-            iteratedObj.IterateDescendants((descendant) => {
-                if (descendant.isGameObjectLayout) {
-                    containsObjLayout = true;
-                    return "stop"; // will stop iterating descendants
-                }
-            }, true)
 
 
 
             // set position of current object and change the startPos 
 
+            // SO BASICALLY, I cant be stuffed redoing comments rn but you position the object using its .height or .width then the next obj is positioned
+            // at the previous ones end of bounds width or height. That way it preserves children size and positions the object itself correctly
+
             if (this.layoutOrientation == LayoutOrientation.VerticalDown) {
                 // Move down on vertical and set the object to new pos. Do this because the .position of the iterated opbject starts at bottom-left and
                 // the start pos is currently at the top-left of the object
-                if (!containsObjLayout)
-                    startPos.y -= objHeight //minus height of bounds
-                else
-                    startPos.y -= iteratedObj.height // minus height of object itself (some parts may exclude obj layout)
 
-                iteratedObj.position = startPos;
+                // startPos.y -= iteratedObj.height // minus height of object itself (some parts may exclude obj layout)
+
+                iteratedObj.position = new Point(startPos.x, startPos.y - iteratedObj.height);
 
                 // setup next iteration
-                startPos.y -= this.spaceBetweenObjects;
+                startPos.y -= (objBoundsHeight + this.spaceBetweenObjects);
             } else if (this.layoutOrientation == LayoutOrientation.VerticalUp) {
                 // start pos is currently at bottom-left of object
                 iteratedObj.position = startPos;
 
                 // setup next iteration by moving by vertical space the object takes up (height) added with padding
-                startPos.y += objHeight + this.spaceBetweenObjects;
+                startPos.y += objBoundsHeight + this.spaceBetweenObjects;
             } else if (this.layoutOrientation == LayoutOrientation.HorizontalLeft) {
                 // start pos is at bottom-right, correct
-                startPos.x -= objWidth
+                // startPos.x -= objBoundsWidth
 
-                iteratedObj.position = startPos;
+                iteratedObj.position = new Point(startPos.x - iteratedObj.width, startPos.y);
 
                 // move left by spacing
-                startPos.x -= this.spaceBetweenObjects;
+                startPos.x -= (objBoundsWidth + this.spaceBetweenObjects);
 
 
             } else if (this.layoutOrientation == LayoutOrientation.HorizontalRight) {
@@ -3700,13 +3709,30 @@ class GameObjectLayout extends GameObject {
                 iteratedObj.position = startPos;
 
                 // move right by width + spacing
-                startPos.x += objWidth + this.spaceBetweenObjects;
+                startPos.x += objBoundsWidth + this.spaceBetweenObjects;
             }
 
+            if(iteratedObj.isGameObjectLayout){
+                iteratedObj.dontFitLayout = true; // changing pos again smh
+
+                // TEMPORARY FIX TO BE SUPERCEEDED BY .bottomLeftOffset in future update
+                // so basically this func will position stuff at bottom-left but the layouts are top-left or whatever depending on orientation
+                if(iteratedObj.layoutOrientation == LayoutOrientation.VerticalDown){ // top-left
+                    iteratedObj.y += iteratedObj.height
+                } 
+                // else if(iteratedObj.layoutOrientation == LayoutOrientation.VerticalUp){ botom-left
+                // }
+                // else if(iteratedObj.layoutOrientation == LayoutOrientation.HorizontalRight){ // bottom-left
+                // }
+                else if(iteratedObj.layoutOrientation == LayoutOrientation.HorizontalLeft){ // bottom-right
+                    iteratedObj.x += iteratedObj.width
+                }
+            }
 
         }
 
-        this.FitLayoutToObjects();
+        if (callFitLayout)
+            this.FitLayoutToObjects();
     }
 
     // gets the size of inner content
@@ -3944,7 +3970,6 @@ class GameObjectLayout extends GameObject {
 
         objectToAdd.AddEventListener("widthChanged", this.CalculateObjectPositions, this) // make sure content fits
         objectToAdd.AddEventListener("heightChanged", this.CalculateObjectPositions, this) // when height changes, so does the positions of each object
-
 
         //on visiblity change (including descendants make sure content fits accordingly)
         objectToAdd.IterateDescendants((descendant) => {

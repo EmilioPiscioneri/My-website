@@ -263,7 +263,7 @@ let reloading = false; // If currently reloading visual
 let gridLines = [];
 // pull
 let ballPullStrengthSlider;
-let ballPullStrengthLabel;
+let layout2Label;
 let ballPullStrengthDefaultText = "Ball pull strength: ";
 let ballsPullStrength = 5;
 // push
@@ -471,19 +471,19 @@ function GenerateUI() {
 
     // game.AddGameObject(textInput)
 
-    ballPullStrengthLabel = new TextLabel(game, ballPullStrengthDefaultText, false)
-    ballPullStrengthLabel.fontSize = defaultTextFontSize;
+    layout2Label = new TextLabel(game, ballPullStrengthDefaultText, false)
+    layout2Label.fontSize = defaultTextFontSize;
 
     ballPullStrengthSlider = new Slider(game, 0.1, 100, 0.1, ballsPullStrength);
 
 
     function HandlePullStrengthChanged() {
-        ballPullStrengthLabel.text = ballPullStrengthDefaultText + ballPullStrengthSlider.value.toFixed(2);
+        layout2Label.text = ballPullStrengthDefaultText + ballPullStrengthSlider.value.toFixed(2);
         ballsPullStrength = ballPullStrengthSlider.value;
     }
     HandlePullStrengthChanged();
 
-    ballPullStrengthSlider.AddEventListener("valueChanged", HandlePullStrengthChanged, ballPullStrengthLabel)
+    ballPullStrengthSlider.AddEventListener("valueChanged", HandlePullStrengthChanged, layout2Label)
 
     // --
 
@@ -660,7 +660,7 @@ function GenerateUI() {
     optionsLayout.AddChild(radiusVisibilityBtn);
     optionsLayout.AddChild(radiusSliderText)
     optionsLayout.AddChild(radiusSlider)
-    optionsLayout.AddChild(ballPullStrengthLabel)
+    optionsLayout.AddChild(layout2Label)
     optionsLayout.AddChild(ballPullStrengthSlider)
     optionsLayout.AddChild(ballPushStrengthLabel)
     optionsLayout.AddChild(ballPushStrengthSlider)
@@ -1283,11 +1283,15 @@ let rect0_1
 let rect0_1_1
 
 let nodeScene;
+let nodeLoadTick = 0;// each time the script is loaded add 1 to tick
 
 // tests that nodes are ordered and operate properly
 function nodeTestLoad(game) {
     if (!nodeScene)
         nodeScene = new Scene(game)
+
+    let currentTick = nodeLoadTick++;
+
 
     game.activeScene = nodeScene
     // Game node and scene testing 
@@ -1378,34 +1382,41 @@ function nodeTestLoad(game) {
 
     // add delays so children are added after scene is created
     if (afterScene) {
-        setTimeout(() => rect0.AddChild(rect0_0), firstDelay + delayInterval * 6)
-        setTimeout(() => rect0.AddChild(rect0_1), firstDelay + delayInterval)
-        setTimeout(() => rect0_0.AddChild(rect0_0_0), firstDelay + delayInterval * 3)
-        setTimeout(() => rect0_0.AddChild(rect0_0_1), firstDelay + delayInterval * 2)
-        setTimeout(() => rect0_1.AddChild(rect0_1_0), firstDelay + delayInterval * 4)
-        setTimeout(() => rect0_1.AddChild(rect0_1_1), firstDelay + delayInterval * 3.7)
+        setTimeout(() => {
+            if (currentTick == nodeLoadTick) { rect0.AddChild(rect0_0) }
+        }, firstDelay + delayInterval * 6)
+        setTimeout(() => { if (currentTick == nodeLoadTick) { rect0.AddChild(rect0_1) } }
+            , firstDelay + delayInterval)
+        setTimeout(() => { if (currentTick == nodeLoadTick) { rect0_0.AddChild(rect0_0_0) } }, firstDelay + delayInterval * 3)
+        setTimeout(() => { if (currentTick == nodeLoadTick) { rect0_0.AddChild(rect0_0_1) } }, firstDelay + delayInterval * 2)
+        setTimeout(() => { if (currentTick == nodeLoadTick) { rect0_1.AddChild(rect0_1_0) } }, firstDelay + delayInterval * 4)
+        setTimeout(() => { if (currentTick == nodeLoadTick) { rect0_1.AddChild(rect0_1_1) } }, firstDelay + delayInterval * 3.7)
         // after x seconds, change a child's stage object. This should update correctly
         setTimeout(() => {
-            // Same as https://www.w3schools.com/graphics/canvas_gradients.asp
-            let gradientFill = new PIXI.FillGradient(0, 0, 0, 1) // only do gradient along y-axis 
-            gradientFill.addColorStop(0, "blue")
-            gradientFill.addColorStop(1, "red")
-            rect0_1_1.SetStageObject(new PIXI.Graphics()
-                //  .rect(0,0,1,1)
-                .roundRect(0, 0, 1, 1, 0.1)
-                //  .fill("red")
-                .fill(gradientFill)
-                ,
-                true, true)
+            if (currentTick == nodeLoadTick) {
+                // Same as https://www.w3schools.com/graphics/canvas_gradients.asp
+                let gradientFill = new PIXI.FillGradient(0, 0, 0, 1) // only do gradient along y-axis 
+                gradientFill.addColorStop(0, "blue")
+                gradientFill.addColorStop(1, "red")
+                rect0_1_1.SetStageObject(new PIXI.Graphics()
+                    //  .rect(0,0,1,1)
+                    .roundRect(0, 0, 1, 1, 0.1)
+                    //  .fill("red")
+                    .fill(gradientFill)
+                    ,
+                    true, true)
+            }
             // console.log(rect0_1_1)
         }, firstDelay + delayInterval * 5.5);
 
         // !! STAGE OBJECT BUG, why does it just freeze?
         setTimeout(() => {
-            rect0_0.SetStageObject(new PIXI.Graphics()
-                .rect(0, 0, 1, 1)
-                .fill("green"),true,true)
-        }, firstDelay+delayInterval*9);
+            if (currentTick == nodeLoadTick) {
+                rect0_0.SetStageObject(new PIXI.Graphics()
+                    .rect(0, 0, 1, 1)
+                    .fill("green"), true, true)
+            }
+        }, firstDelay + delayInterval * 9);
 
     } else {
         rect0.AddChild(rect0_0)
@@ -1434,6 +1445,73 @@ function nodeTestLoad(game) {
 
     // add to scene
     nodeScene.AddChild(rect0)
+
+    // -- LAYOUT TESTING --
+    let canvasSize = GetCanvasSizeInUnits();
+
+    // default font sizes in game units
+    let headingFontSize = canvasSize.height * 0.075
+    let bigFontSize = canvasSize.height * 0.035
+    let mediumFontSize = canvasSize.height * 0.025
+
+    // Define layout where all UI game objects will be underneath to make them look ordered
+    let layout1 = new GameObjectLayout(game);
+    layout1.backgroundFill="#1c1c1c"
+
+    let layout1Btn = new Button(game, "Layout 1 btn", false);
+
+    layout1Btn.fontSize = defaultTextFontSize;
+    layout1Btn.backgroundStroke = {
+        color: "black",
+        width: 2
+    }
+
+    let layout2 = new GameObjectLayout(game);
+    layout2.label = "layout2"
+    layout2.backgroundFill = "#434343"
+
+    layout2Label = new TextLabel(game, "Layout 2 text", false)
+    layout2Label.fontSize = defaultTextFontSize;
+
+    let layout3Slider = new Slider(game, 0.1, 100, 0.1, 5);
+    let layout3Label = new TextLabel(game, "Layout 3 text", false)
+    layout3Label.fontSize = defaultTextFontSize
+
+    let layout3 = new GameObjectLayout(game);
+    layout3.label = "layout3"
+    layout3.backgroundFill = "#7d7d7d"
+
+    layout1.position = new Point(0.25, canvasSize.height - 0.25);
+    // uiLayout.position = new Point(canvasSize.width/2, canvasSize.height/2);
+    layout1.layoutOrientation = LayoutOrientation.VerticalDown
+    // uiLayout.margin = new Padding(0.2,0.1,0.3,0.4)
+
+    layout1.alpha = 0.75;
+
+    layout1.label = "layout1"
+
+    // make a layout expander that expands the options layout
+    let layoutExpander = new LayoutExpander(game, "Options")
+
+    layoutExpander.fontSize = defaultTextFontSize;
+    layoutExpander.backgroundStroke = {
+        color: "black",
+        width: 2
+    }
+
+    layout1.AddChild(layout1Btn)
+
+    layout1.AddChild(layout2)
+    layout2.AddChild(layout3)
+    layout2.AddChild(layout2Label)
+    layout3.AddChild(layout3Label)
+    layout3.AddChild(layout3Slider)
+
+    nodeScene.AddChild(layout1)
+
+    globalThis.layout1 = layout1;
+    globalThis.layout2 = layout2;
+    globalThis.layout3 = layout3;
 }
 
 function nodeTestUnload(game) {
@@ -1615,6 +1693,9 @@ function generateMenuUI() {
     // menu go back btn
     menuGoBackBtn.position = new Point(0.25, 0.25)
     menuGoBackBtn.AddEventListener("pointerUp", () => {
+        if (game.activeScene)
+            game.activeScene.RemoveChild(menuGoBackBtn, false)
+
         // unload
         if (screenBordersScript.isLoaded)
             RemoveLoader(screenBordersScript)
@@ -1622,6 +1703,8 @@ function generateMenuUI() {
             RemoveLoader(constellationVisualScript)
         if (nodeTestScript.isLoaded)
             RemoveLoader(nodeTestScript)
+
+
         // load 
         AddLoader(menuScript)
     }, menuGoBackBtn)
