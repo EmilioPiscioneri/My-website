@@ -350,7 +350,7 @@ function RestoreSettings() {
     else
         HideGrid();
     // radius vis
-    if(radiusVisible)
+    if (radiusVisible)
         ShowRadius();
     else
         HideRadius();
@@ -412,7 +412,16 @@ function GenerateUI() {
     // create new game text game object
     lineCountTextLbl = new TextLabel(game, lineCountDefaultText, true, {
         fontFamily: 'Arial',
-        fontSize: defaultTextFontSize,
+        fill: "#dbdbdb",
+        stroke: {
+            color: "black",
+            width: 2,
+        },
+        align: 'left',
+    });
+
+    ballCountTextLbl = new TextLabel(game, lineCountDefaultText, false, {
+        fontFamily: 'Arial',
         fill: "white",
         stroke: {
             color: "black",
@@ -421,16 +430,10 @@ function GenerateUI() {
         align: 'left',
     });
 
-    ballCountTextLbl = new TextLabel(game, lineCountDefaultText, true, {
-        fontFamily: 'Arial',
-        fontSize: 22,
-        fill: "white",
-        stroke: {
-            color: "black",
-            width: 2,
-        },
-        align: 'left',
-    });
+    lineCountTextLbl.fontSize = defaultTextFontSize;
+    ballCountTextLbl.fontSize = defaultTextFontSize;
+
+    // ballCountTextLbl = new TextLabel(game, lineCountDefaultText, false)
     // lineCountTextLbl.position = new Point(0.25, canvasSize.height - lineCountTextLbl.height - 0.25) // top left
 
     // // add to scene
@@ -610,7 +613,7 @@ function GenerateUI() {
     uiLayout.stageObject.name = "uiLayout"
 
     // make a layout expander that expands the options layout
-    let layoutExpander = new LayoutExpander(game)
+    let layoutExpander = new LayoutExpander(game, "Options")
 
     layoutExpander.fontSize = defaultTextFontSize;
     layoutExpander.backgroundStroke = {
@@ -643,8 +646,8 @@ function GenerateUI() {
     uiLayout.AddChild(layoutExpander)
     // uiLayout.AddChild(optionsLayout)
 
-    // optionsLayout.AddChild(ballCountTextLbl)
-    // optionsLayout.AddChild(lineCountTextLbl)
+    optionsLayout.AddChild(ballCountTextLbl)
+    optionsLayout.AddChild(lineCountTextLbl)
 
     // So we have two text container inherited objects and whenever they are under the layout and their text changes it fitsredraw background which messes up its positioning
     // When under the Game it does not do that. Confusing
@@ -684,7 +687,7 @@ function GenerateUI() {
     // add layout to scene
     constellationScene.AddChild(uiLayout)
 
-    
+
 
 
     // menu go back btn
