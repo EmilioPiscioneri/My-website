@@ -12,7 +12,7 @@ let loaders = []; // an array of loader objects that are active in the current s
  * This class loads different pieces of code. Useful just so I can easily load and unload different code that I want in a scene at certain times
  */
 class ScriptLoader extends EventSystem {
-
+    isLoaded = false;
     _loadFunction; // the custom setup function for the loader
     _onTickFunction; // the custom on tick function for the loader
     _unloadFunction; // the custom cleanup function for the loader
@@ -43,6 +43,7 @@ class ScriptLoader extends EventSystem {
      * Call when you want to load the script. Game is passed in as parameter.
      */
     Load() {
+        this.isLoaded = true;
         if (typeof (this._loadFunction) == "function")
             this._loadFunction(this.game);
         this.FireListener("loaded");
@@ -63,6 +64,8 @@ class ScriptLoader extends EventSystem {
     Unload() {
         // disable OnTick
         this._onTickFunction == null;
+        this.isLoaded = false;
+
         // check if function exists and is valid
         if (typeof (this._unloadFunction) == "function")
             this._unloadFunction(this.game);
@@ -152,6 +155,8 @@ function RemoveLoader(loaderToRemove) {
         console.warn("Tried to remove a loader that hasn't been added to scene")
 
 }
+
+let menuGoBackBtn
 
 // #endregion
 
@@ -689,29 +694,9 @@ function GenerateUI() {
 
 
 
-
-    // menu go back btn
-    let menuGoBackBtn = new Button(game, "<-- Go back to menu");
-    menuGoBackBtn.fontSize = mediumFontSize
-    menuGoBackBtn.position = new Point(0.25, 0.25)
-    menuGoBackBtn.AddEventListener("pointerUp", () => {
-        // unload
-        RemoveLoader(screenBordersScript)
-        RemoveLoader(constellationVisualScript)
-        // load 
-        AddLoader(menuScript)
-    }, menuGoBackBtn)
-
-    menuGoBackBtn.backgroundStroke = {
-        color: "rgb(29 30 30)",
-        width: 2
-    }
-
-    constellationScene.AddChild(menuGoBackBtn)
-
     // all unaccounted for/leftover objects to be recursively destroyed when unloading scene
     objectsToDestroy.push(uiLayout);
-    objectsToDestroy.push(menuGoBackBtn);
+    // objectsToDestroy.push(menuGoBackBtn);
 
 }
 
@@ -1321,8 +1306,7 @@ function nodeTestLoad(game) {
             .rect(0, 0, 1, 1)
             .fill("white"))
 
-    rect0.name = "rect0"
-    rect0.stageObject.name = "rect0"
+    rect0.label = "rect0"
 
     rect0.position = new Point(7, 16)
 
@@ -1333,8 +1317,7 @@ function nodeTestLoad(game) {
             .rect(0, 0, 1, 1)
             .fill("grey"))
 
-    rect0_0.name = "rect0_0"
-    rect0_0.stageObject.name = "rect0_0"
+    rect0_0.label = "rect0_0"
 
     rect0_0.position = new Point(3, 15)
 
@@ -1343,8 +1326,7 @@ function nodeTestLoad(game) {
             .rect(0, 0, 1, 1)
             .fill("grey"))
 
-    rect0_1.name = "rect0_1"
-    rect0_1.stageObject.name = "rect0_1"
+    rect0_1.label = "rect0_1"
 
     rect0_1.position = new Point(11, 15)
 
@@ -1355,8 +1337,7 @@ function nodeTestLoad(game) {
             .rect(0, 0, 1, 1)
             .fill("black"))
 
-    rect0_0_0.name = "rect0_0_0"
-    rect0_0_0.stageObject.name = "rect0_0_0"
+    rect0_0_0.label = "rect0_0_0"
 
     rect0_0_0.position = new Point(1, 14)
 
@@ -1365,8 +1346,7 @@ function nodeTestLoad(game) {
             .rect(0, 0, 1, 1)
             .fill("black"))
 
-    rect0_0_1.name = "rect0_0_1"
-    rect0_0_1.stageObject.name = "rect0_0_1"
+    rect0_0_1.label = "rect0_0_1"
 
     rect0_0_1.position = new Point(5, 14)
 
@@ -1375,8 +1355,7 @@ function nodeTestLoad(game) {
             .rect(0, 0, 1, 1)
             .fill("black"))
 
-    rect0_1_0.name = "rect0_1_0"
-    rect0_1_0.stageObject.name = "rect0_1_0"
+    rect0_1_0.label = "rect0_1_0"
 
     rect0_1_0.position = new Point(9, 14)
 
@@ -1385,8 +1364,7 @@ function nodeTestLoad(game) {
             .rect(0, 0, 1, 1)
             .fill("black"))
 
-    rect0_1_1.name = "rect0_1_1"
-    rect0_1_1.stageObject.name = "rect0_1_1"
+    rect0_1_1.label = "rect0_1_1"
 
     // rect0_1_1.static = true 
 
@@ -1412,14 +1390,23 @@ function nodeTestLoad(game) {
             let gradientFill = new PIXI.FillGradient(0, 0, 0, 1) // only do gradient along y-axis 
             gradientFill.addColorStop(0, "blue")
             gradientFill.addColorStop(1, "red")
-            rect0_1_1.stageObject = new PIXI.Graphics()
+            rect0_1_1.SetStageObject(new PIXI.Graphics()
                 //  .rect(0,0,1,1)
                 .roundRect(0, 0, 1, 1, 0.1)
                 //  .fill("red")
                 .fill(gradientFill)
-
+                ,
+                true, true)
             // console.log(rect0_1_1)
         }, firstDelay + delayInterval * 5.5);
+
+        // !! STAGE OBJECT BUG, why does it just freeze?
+        setTimeout(() => {
+            rect0_0.SetStageObject(new PIXI.Graphics()
+                .rect(0, 0, 1, 1)
+                .fill("green"),true,true)
+        }, firstDelay+delayInterval*9);
+
     } else {
         rect0.AddChild(rect0_0)
         rect0.AddChild(rect0_1)
@@ -1555,6 +1542,12 @@ function memoryLeakUnload(game) {
 
 let menuScene;
 
+// displays the menu btnoon active scene
+function DisplayGoBackBtn() {
+    if (game.activeScene)
+        game.activeScene.AddChild(menuGoBackBtn);
+}
+
 function generateMenuUI() {
     let canvasSize = GetCanvasSizeInUnits();
     // default font sizes in game units
@@ -1577,23 +1570,68 @@ function generateMenuUI() {
         width: 2
     }
 
+    constellationBtn.AddEventListener("pointerUp", () => {
+        RemoveLoader(menuScript)
+        AddLoader(constellationVisualScript)
+        AddLoader(screenBordersScript)
+
+        DisplayGoBackBtn();
+    }, constellationBtn)
+
+    // add buttons
+    let nodeVisualBtn = new Button(game, "Load node testing");
+    nodeVisualBtn.fontSize = bigFontSize
+    nodeVisualBtn.padding = new Padding(0.15, 0.15, 0.15, 0.15)
+    nodeVisualBtn.backgroundStroke = {
+        color: "rgb(29 30 30)",
+        width: 2
+    }
+
+    nodeVisualBtn.AddEventListener("pointerUp", () => {
+        RemoveLoader(menuScript)
+        AddLoader(nodeTestScript)
+        AddLoader(screenBordersScript)
+        DisplayGoBackBtn();
+    }, nodeVisualBtn)
+
     menuButtonLayout.AddChild(constellationBtn)
+    menuButtonLayout.AddChild(nodeVisualBtn)
 
     menuButtonLayout.position = new Point(canvasSize.width / 2 - menuButtonLayout.width / 2, canvasSize.height / 2 + menuButtonLayout.height / 2)
     menuButtonLayout.margin = new Padding(0, 0, 0, 0)
     menuButtonLayout.alpha = 0;
 
-    constellationBtn.AddEventListener("pointerUp", () => {
-        RemoveLoader(menuScript)
-        AddLoader(constellationVisualScript)
-        AddLoader(screenBordersScript)
-    }, constellationBtn)
 
     // set y as a factor between top of layout and screen height
     titleText.position = new Point(canvasSize.width / 2 - titleText.width / 2, menuButtonLayout.y + (canvasSize.height - menuButtonLayout.y) / 4)
 
     menuScene.AddChild(titleText);
     menuScene.AddChild(menuButtonLayout);
+
+    if (!menuGoBackBtn)
+        menuGoBackBtn = new Button(game, "<-- Go back to menu");
+    menuGoBackBtn.fontSize = mediumFontSize
+
+    // menu go back btn
+    menuGoBackBtn.position = new Point(0.25, 0.25)
+    menuGoBackBtn.AddEventListener("pointerUp", () => {
+        // unload
+        if (screenBordersScript.isLoaded)
+            RemoveLoader(screenBordersScript)
+        if (constellationVisualScript.isLoaded)
+            RemoveLoader(constellationVisualScript)
+        if (nodeTestScript.isLoaded)
+            RemoveLoader(nodeTestScript)
+        // load 
+        AddLoader(menuScript)
+    }, menuGoBackBtn)
+
+    menuGoBackBtn.backgroundStroke = {
+        color: "rgb(29 30 30)",
+        width: 2
+    }
+
+    menuGoBackBtn.zIndex = 99
 }
 
 // just generates the menu scene and sets it to the local var. 

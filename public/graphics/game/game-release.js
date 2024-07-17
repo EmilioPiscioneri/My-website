@@ -869,7 +869,7 @@ class Game extends EventSystem {
 
         for (let firstGameObjIndex = 0; firstGameObjIndex < stageObjectsTotal - 1; firstGameObjIndex++) {
             let stageObj1 = activeScene.stageObjects[firstGameObjIndex]
-            let firstGameObj = activeScene.stageObjects[firstGameObjIndex].parentGameObject; // get game obj from stage obj
+            let firstGameObj = stageObj1.parentGameObject; // get game obj from stage obj
             // Don't do anything if this object is static. There is nothing to change on this object
             if (firstGameObj.static)
                 continue;
@@ -894,7 +894,7 @@ class Game extends EventSystem {
                 // then for each game object compare it's collision with another
                 for (let secondGameObjIndex = firstGameObjIndex + 1; secondGameObjIndex < stageObjectsTotal; secondGameObjIndex++) {
                     let stageObj2 = activeScene.stageObjects[secondGameObjIndex]
-                    let secondGameObj = activeScene.stageObjects[secondGameObjIndex].parentGameObject; // get game obj from stage obj
+                    let secondGameObj = stageObj2.parentGameObject; // get game obj from stage obj
                     if (!secondGameObj)
                         throw new Error("second game obj null")
 
@@ -1328,6 +1328,9 @@ class GameObject extends GameNode {
     get stageObject() {
         return this._stageObject;
     }
+    set stageObject(_) {
+        console.warn("Cannot set stageObject, instead call .SetStageObject()")
+    }
     /**
      * Sets stage object 
      * @param {*} newStageObject
@@ -1374,7 +1377,7 @@ class GameObject extends GameNode {
                 this._currentScene.AddStageObject(newStageObject);
             }
             else
-                console.warn("2")
+                console.warn("Set stageObject to null")
         }
 
         // set new stage object
@@ -1383,7 +1386,8 @@ class GameObject extends GameNode {
             // after you add the stage object, update its pos and size if meant to so it renders correctly
             if (this.sharePosition)
                 this.updateStageObjectPosition();
-            if (initialiseSize && this.shareSize) {
+            // if (initialiseSize && this.shareSize) {
+            if(initialiseSize){
                 this.width = newStageObject.width;
                 this.height = newStageObject.height;
             }
@@ -1690,7 +1694,7 @@ class GameObject extends GameNode {
 
     }
 
-    // sets ._stageObject to null, destructs the current .stageObject value if it isn't null 
+    // destructs the current .stageObject value if it isn't null 
     DestructStageObject() {
         // onytl do stuff if stage object isn't null
         if (!this.stageObject)
@@ -1713,7 +1717,7 @@ class GameObject extends GameNode {
         this.stageObject.destroy()
 
         // set this stage object to null (avoids code trying to interface with the object which shouldn't be accessed anymore)
-        this._stageObject = null
+        // this._stageObject = null
     }
 
     // Returns the bounding rect of a game object ONLY (excludes descendants, see .GetTotalBoundingRect) 
