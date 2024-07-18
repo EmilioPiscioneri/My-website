@@ -1481,9 +1481,11 @@ function nodeTestLoad(game) {
     layout3.label = "layout3"
     layout3.backgroundFill = "#7d7d7d"
 
-    layout1.position = new Point(0.25, canvasSize.height - 0.25);
-    // uiLayout.position = new Point(canvasSize.width/2, canvasSize.height/2);
-    layout1.layoutOrientation = LayoutOrientation.VerticalDown
+    layout1.position = new Point(canvasSize.width/2, canvasSize.height/2);
+    // layout1.position = new Point(0.25, canvasSize.height - 0.25);
+    // layout1.layoutOrientation = LayoutOrientation.VerticalUp
+    // layout2.layoutOrientation = LayoutOrientation.HorizontalLeft
+    // layout3.layoutOrientation = LayoutOrientation.HorizontalRight
     // uiLayout.margin = new Padding(0.2,0.1,0.3,0.4)
 
     layout1.alpha = 0.75;
@@ -1529,7 +1531,10 @@ function nodeTestLoad(game) {
     let layout2_3_1 = new GameObjectLayout(game)
     layout2_3_1.backgroundFill = "hsl(0,0%,40%)"
 
-    layout0.position = new Point(0,14)
+    layout0.position = new Point(0.25,14)
+    // layout0.position = new Point(canvasSize.width/2,14)
+    layout0.layoutOrientation = LayoutOrientation.VerticalDown
+    // expander2_1.layoutToExpand.layoutOrientation = LayoutOrientation.VerticalUp
 
     layout0.AddChild(expander2_1)
     expander2_1.layoutToExpand.AddChild(expander2_2)

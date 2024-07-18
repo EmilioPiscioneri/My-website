@@ -3734,7 +3734,7 @@ class GameObjectLayout extends GameObject {
                 startPos.y -= (objBoundsHeight + this.spaceBetweenObjects);
             } else if (this.layoutOrientation == LayoutOrientation.VerticalUp) {
                 // start pos is currently at bottom-left of object
-                iteratedObj.position = startPos;
+                iteratedObj.position = new Point(startPos.x, startPos.y + objBoundsHeight - iteratedObj.height);
 
                 // setup next iteration by moving by vertical space the object takes up (height) added with padding
                 startPos.y += objBoundsHeight + this.spaceBetweenObjects;
@@ -3742,7 +3742,7 @@ class GameObjectLayout extends GameObject {
                 // start pos is at bottom-right, correct
                 // startPos.x -= objBoundsWidth
 
-                iteratedObj.position = new Point(startPos.x - iteratedObj.width, startPos.y);
+                iteratedObj.position = new Point(startPos.x - objBoundsWidth , startPos.y+objBoundsHeight-iteratedObj.height);
 
                 // move left by spacing
                 startPos.x -= (objBoundsWidth + this.spaceBetweenObjects);
@@ -3750,7 +3750,7 @@ class GameObjectLayout extends GameObject {
 
             } else if (this.layoutOrientation == LayoutOrientation.HorizontalRight) {
                 // start pos is at bottom-left
-                iteratedObj.position = startPos;
+                iteratedObj.position = new Point(startPos.x, startPos.y+objBoundsHeight-iteratedObj.height);
 
                 // move right by width + spacing
                 startPos.x += objBoundsWidth + this.spaceBetweenObjects;
@@ -3764,8 +3764,6 @@ class GameObjectLayout extends GameObject {
                 if (iteratedObj.layoutOrientation == LayoutOrientation.VerticalDown) { // top-left
                     iteratedObj.y += iteratedObj.height
                 }
-                // else if(iteratedObj.layoutOrientation == LayoutOrientation.VerticalUp){ botom-left
-                // }
                 // else if(iteratedObj.layoutOrientation == LayoutOrientation.HorizontalRight){ // bottom-left
                 // }
                 else if (iteratedObj.layoutOrientation == LayoutOrientation.HorizontalLeft) { // bottom-right
