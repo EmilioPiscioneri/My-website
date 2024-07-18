@@ -1481,8 +1481,8 @@ function nodeTestLoad(game) {
     layout3.label = "layout3"
     layout3.backgroundFill = "#7d7d7d"
 
-    layout1.position = new Point(canvasSize.width/2, canvasSize.height/2);
-    // layout1.position = new Point(0.25, canvasSize.height - 0.25);
+    // layout1.position = new Point(canvasSize.width/2, canvasSize.height/2);
+    layout1.position = new Point(0.25, canvasSize.height - 0.25);
     // layout1.layoutOrientation = LayoutOrientation.VerticalUp
     // layout2.layoutOrientation = LayoutOrientation.HorizontalLeft
     // layout3.layoutOrientation = LayoutOrientation.HorizontalRight
@@ -1558,6 +1558,8 @@ function nodeTestUnload(game) {
     // setTimeout(() => nodeScene.RemoveChild(rect0), delayInterval * 5)
     // setTimeout(() => game.activeScene = null, delayInterval * 7)
 
+    // cleans out the scene
+    nodeScene.Clear(true)
     game.activeScene = null
 
 

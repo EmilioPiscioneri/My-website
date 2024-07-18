@@ -1288,6 +1288,34 @@ class Scene extends GameNode {
     }
 
 
+    /**
+     * Clears all game objects from scene. Use this if you want to reuse scene afterwards
+     * @param {Boolean} callDestructors Whether to destruct all descendants in scene after they're removed
+     */
+    Clear(callDestructors=true){
+        // for some reason remove children doesn't work first time so I have to do while loop?
+        let whileCount = 0;
+        while(this.children.length != 0){
+            if(whileCount > 99){
+                throw new Error("Trying to clear scene, the remove children loop has run over 100 times")
+            }
+            this.RemoveChildren(this.children, callDestructors, callDestructors)
+
+            whileCount++;
+        }
+    }
+
+    /**
+     * Destructs the scene, prepares for GC
+     */
+    Destruct(){
+        // clear scene
+        this.Clear(true);
+        // call inherited destructor
+        super.Destruct(true)
+    }
+
+
 }
 
 // #endregion
@@ -1700,9 +1728,8 @@ class GameObject extends GameNode {
         if (!this.stageObject)
             return;
 
-        //DEBUGGING
         if (this._currentScene && this._currentScene.StageObjectExists(this.stageObject))
-            throw new Error("DESTRUCTING STAGE OBJECT THAT EXISTS IN SCENE")
+            throw new Error("Destructing stage object that exists in scene")
 
         //  avoids circular references
         this.stageObject.parentGameObject = null;
@@ -2093,7 +2120,7 @@ class Padding {
     top = 0
 
     /**
-     * Create a new padding object. Each value represents a certain amount of game units that the outer content should be from the innner content with respect to size
+     * Create a new padding object. Each value represents a certain amount of game units that the outer content should be from the innner content
      * @param {Number} left 
      * @param {Number} right 
      * @param {Number} bottom 
@@ -2104,6 +2131,20 @@ class Padding {
         this.right = right;
         this.bottom = bottom;
         this.top = top;
+    }
+}
+
+// same as padding but dif name
+class Margin extends Padding{
+    /**
+     * Create a new margin object. Each value represents a certain amount of game units that the outer content should be from the innner content 
+     * @param {Number} left 
+     * @param {Number} right 
+     * @param {Number} bottom 
+     * @param {Number} top 
+     */
+    constructor(left = 0, right = 0, bottom = 0, top = 0) {
+        super(left,right,bottom,top)
     }
 }
 
@@ -3507,7 +3548,7 @@ class LayoutOrientation {
 }
 
 /**
- * Object Layout contains a background rect which will contain different game objects and order them in a horizontal or vertical way 
+ * Object Layout contains a background rect which will contain different game objects and order them in a VerticalDown way only for now
  * It wil keep all content relative to the layout's position and then will fit to the combined size of the object's uinder it 
  * The background rect is changable through the stroke and fill properties
  * Change objecys under the layout through the add and remove GameObject functions. If you don't the layout won't updaye accordingly
