@@ -1290,7 +1290,7 @@ function nodeTestLoad(game) {
     if (!nodeScene)
         nodeScene = new Scene(game)
 
-    let currentTick = nodeLoadTick++;
+    let currentTick = ++nodeLoadTick;
 
 
     game.activeScene = nodeScene
@@ -1512,6 +1512,38 @@ function nodeTestLoad(game) {
     globalThis.layout1 = layout1;
     globalThis.layout2 = layout2;
     globalThis.layout3 = layout3;
+
+    // expanders
+    let layout0 = new GameObjectLayout(game);
+    layout0.AddChild(new TextLabel(game, "Layout 0"))
+    layout0.backgroundFill = "hsl(0,0%,0%)"
+    let expander2_1 = new LayoutExpander(game, "expander 1")
+    expander2_1.backgroundFill = "hsl(0,0%,10%)"
+    expander2_1.layoutToExpand.backgroundFill = "hsl(0,0%,10%)"
+    let expander2_2 = new LayoutExpander(game, "expander 2")
+    expander2_2.backgroundFill = "hsl(0,0%,20%)"
+    expander2_2.layoutToExpand.backgroundFill = "hsl(0,0%,20%)"
+    let expander2_3 = new LayoutExpander(game, "expander 3")
+    expander2_3.backgroundFill = "hsl(0,0%,30%)"
+    expander2_3.layoutToExpand.backgroundFill = "hsl(0,0%,30%)"
+    let layout2_3_1 = new GameObjectLayout(game)
+    layout2_3_1.backgroundFill = "hsl(0,0%,40%)"
+
+    layout0.position = new Point(0,14)
+
+    layout0.AddChild(expander2_1)
+    expander2_1.layoutToExpand.AddChild(expander2_2)
+    expander2_2.layoutToExpand.AddChild(expander2_3)
+    expander2_3.layoutToExpand.AddChild(layout2_3_1)
+    layout2_3_1.AddChild(new TextLabel(game, "layout 3.1 Text"))
+    nodeScene.AddChild(layout0)
+
+    globalThis.layout0 = layout0;
+    globalThis.expander2_1 = expander2_1;
+    globalThis.expander2_2 = expander2_2;
+    globalThis.expander2_3 = expander2_3;
+    globalThis.layout2_3_1 = layout2_3_1;
+
 }
 
 function nodeTestUnload(game) {

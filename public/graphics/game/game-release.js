@@ -2143,6 +2143,7 @@ class TextContainer extends GameObject {
     set text(newText) {
         this.textLabelObject.text = newText
         this.FitBackground();
+        this.AlignInnerContent();
         this.FireListener("textChanged")
     }
 
@@ -2327,6 +2328,9 @@ class TextContainer extends GameObject {
         // this.position = this.position;
         this.zIndex = backgroundGraphics.zIndex
 
+        // this.FitBackground();
+        // this.AlignInnerContent();
+
         // console.log(this)
 
         // update text pos whenever it changes width or height, third value ensures every listener is destroyed properly
@@ -2337,7 +2341,6 @@ class TextContainer extends GameObject {
         this.textLabelObject.AddEventListener("heightChanged", this.AlignInnerContent, this);
         // when text changes update pos
         this.textLabelObject.AddEventListener("textChanged", this.AlignInnerContent, this);
-        this.AddEventListener("textChanged", this.AlignInnerContent, this);
         // fit to btn
         this.textLabelObject.AddEventListener("textChanged", this.FitBackground, this);
         this.textLabelObject.AddEventListener("fontSizeChanged", this.FitBackground, this);
@@ -2464,7 +2467,7 @@ class TextContainer extends GameObject {
             let innerWidth = Math.abs(innerContentBounds.right - innerContentBounds.left)
             let innerHeight = Math.abs(innerContentBounds.top - innerContentBounds.bottom)
 
-            console.log(innerWidth)
+            // console.log(innerWidth)
 
             this.width = innerWidth + this.padding.left + this.padding.right;
             this.height = innerHeight + this.padding.bottom + this.padding.top;
@@ -3196,6 +3199,7 @@ class Slider extends UIElement {
  * It's width and height are only the height of the button
  */
 class LayoutExpander extends Button {
+    isLayoutExpander = true;
     expanderIcon;
     // rightArrowGraphicsInitialised = false; // Whether size has been multiplied by pixelsPerUnit
     // downArrowGraphicsInitialised = false; // Whether size has been multiplied by pixelsPerUnit
@@ -3265,9 +3269,30 @@ class LayoutExpander extends Button {
                     child.isVisible = newVisibility
                 else {
                     // dealing with layout to expand
-                    child.isVisible = this.layoutExpanded
+
+                    // If we're setting "this" to invisible, that has highest permission, set layout to expand as invisible too
+                    if (!newVisibility) {
+                        child.isVisible = false
+                    } else { 
+                        // else it can be visible so use the visibility that it currently has. It is basically choosing once it has the option to
+                        child.isVisible = this.layoutExpanded
+                    }
                 }
             }
+
+        // this.IterateDescendants((descendant)=>{
+        //     if(!descendant.isLayoutExpander){
+        //         descendant.isVisible = newVisibility
+        //     }else{
+        //         if(!this.layoutExpanded){
+        //             descendant.isVisible = false
+        //         }
+        //         else {
+        //             descendant.isVisible = descendant.layoutExpanded
+        //         }
+
+        //     }
+        // })
     }
 
     /**
@@ -3309,6 +3334,7 @@ class LayoutExpander extends Button {
 
         this.UpdateIconSize();
 
+
         // this.rightArrowGraphicsInitialised = true;
 
         this.AddChild(this.layoutToExpand)
@@ -3316,6 +3342,12 @@ class LayoutExpander extends Button {
 
         this.layoutToExpand.isVisible = false; // start as hidden
 
+
+        // make sure everything is positioned correctly initially
+        this.AlignInnerContent();
+        this.FitBackground();
+
+        this.layoutToExpand.AddEventListener("widthChanged", this.FitBackground,this)
     }
 
     // updates layout position to be relative to expander
@@ -3393,15 +3425,14 @@ class LayoutExpander extends Button {
     // button pointer up handler
     HandleButtonUp = (pointerEvent) => {
         if (this.layoutExpanded) {
-            this.layoutExpanded = false
-            this._UnexpandLayout()
+            this.UnexpandLayout()
         } else {
-            this.layoutExpanded = true
-            this._ExpandLayout()
+            this.ExpandLayout()
         }
     }
 
-    _ExpandLayout() {
+    ExpandLayout() {
+        this.layoutExpanded = true
         // this.text = "Expanding"
         this.layoutToExpand.isVisible = true
         // after you set it to visible, update the layout
@@ -3425,11 +3456,19 @@ class LayoutExpander extends Button {
 
     }
 
-    _UnexpandLayout() {
+    UnexpandLayout() {
+        this.layoutExpanded = false
         // this.text = "Unexpanding"
         this.layoutToExpand.isVisible = false
+        // make sure any layouts underneath are closed too
+        // this.layoutToExpand.IterateDescendants((descendant) => {
+        //     if (descendant.isLayoutExpander)
+        //         descendant._UnexpandLayout();
+
+        // })
         // after you set it to invisible, update the layout
         this.layoutToExpand.CalculateObjectPositions();
+        this.FitBackground()
 
         // let intialiseSize = false;
         // if(!this.rightArrowGraphicsInitialised){
@@ -3650,11 +3689,16 @@ class GameObjectLayout extends GameObject {
             if (!iteratedObj.isVisible)
                 continue;
 
-            if (iteratedObj.isGameObjectLayout){
+            if (iteratedObj.isGameObjectLayout) {
                 // this variable is set back to false when position of child is change. Do this to avoid a recursion loop
                 // whether this.CalculateObjectPositions is fired -> sets child.position -> fires child.CalculateObjectPositions which will default call child.fit layout 
                 // -> sets child.width -> this listener for child's "widthChanged" fires -> this.CalculateObjectPositions and the cyucle repeats
                 iteratedObj.dontFitLayout = true;
+            }
+
+            // Fixes a similar recursion issue but for layout expanders
+            if(iteratedObj.isLayoutExpander){
+                iteratedObj.layoutToExpand.dontFitLayout = true
             }
 
             let objRect = iteratedObj.GetTotalBoundingRect(false);
@@ -3712,19 +3756,19 @@ class GameObjectLayout extends GameObject {
                 startPos.x += objBoundsWidth + this.spaceBetweenObjects;
             }
 
-            if(iteratedObj.isGameObjectLayout){
+            if (iteratedObj.isGameObjectLayout) {
                 iteratedObj.dontFitLayout = true; // changing pos again smh
 
                 // TEMPORARY FIX TO BE SUPERCEEDED BY .bottomLeftOffset in future update
                 // so basically this func will position stuff at bottom-left but the layouts are top-left or whatever depending on orientation
-                if(iteratedObj.layoutOrientation == LayoutOrientation.VerticalDown){ // top-left
+                if (iteratedObj.layoutOrientation == LayoutOrientation.VerticalDown) { // top-left
                     iteratedObj.y += iteratedObj.height
-                } 
+                }
                 // else if(iteratedObj.layoutOrientation == LayoutOrientation.VerticalUp){ botom-left
                 // }
                 // else if(iteratedObj.layoutOrientation == LayoutOrientation.HorizontalRight){ // bottom-left
                 // }
-                else if(iteratedObj.layoutOrientation == LayoutOrientation.HorizontalLeft){ // bottom-right
+                else if (iteratedObj.layoutOrientation == LayoutOrientation.HorizontalLeft) { // bottom-right
                     iteratedObj.x += iteratedObj.width
                 }
             }
