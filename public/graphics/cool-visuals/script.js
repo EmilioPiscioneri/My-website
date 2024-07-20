@@ -263,7 +263,7 @@ let reloading = false; // If currently reloading visual
 let gridLines = [];
 // pull
 let ballPullStrengthSlider;
-let layout2Label;
+let ballPullStrengthLabel;
 let ballPullStrengthDefaultText = "Ball pull strength: ";
 let ballsPullStrength = 5;
 // push
@@ -471,19 +471,19 @@ function GenerateUI() {
 
     // game.AddGameObject(textInput)
 
-    layout2Label = new TextLabel(game, ballPullStrengthDefaultText, false)
-    layout2Label.fontSize = defaultTextFontSize;
+    ballPullStrengthLabel = new TextLabel(game, ballPullStrengthDefaultText, false)
+    ballPullStrengthLabel.fontSize = defaultTextFontSize;
 
     ballPullStrengthSlider = new Slider(game, 0.1, 100, 0.1, ballsPullStrength);
 
 
     function HandlePullStrengthChanged() {
-        layout2Label.text = ballPullStrengthDefaultText + ballPullStrengthSlider.value.toFixed(2);
+        ballPullStrengthLabel.text = ballPullStrengthDefaultText + ballPullStrengthSlider.value.toFixed(2);
         ballsPullStrength = ballPullStrengthSlider.value;
     }
     HandlePullStrengthChanged();
 
-    ballPullStrengthSlider.AddEventListener("valueChanged", HandlePullStrengthChanged, layout2Label)
+    ballPullStrengthSlider.AddEventListener("valueChanged", HandlePullStrengthChanged, ballPullStrengthLabel)
 
     // --
 
@@ -534,6 +534,7 @@ function GenerateUI() {
     radiusSliderText.fontSize = defaultTextFontSize
 
     radiusSlider = new Slider(game, 0.1, 10, 0.05, pushPullRadius);
+    radiusSlider.label = "radiusSlider"
 
     function handleRadiusSliderChanged() {
         pushPullRadius = radiusSlider.value
@@ -614,8 +615,7 @@ function GenerateUI() {
     uiLayout.height = 5
     uiLayout.alpha = 0.75;
 
-    uiLayout.name = "uiLayout"
-    uiLayout.stageObject.name = "uiLayout"
+    uiLayout.label = "uiLayout"
 
     // make a layout expander that expands the options layout
     let layoutExpander = new LayoutExpander(game, "Options")
@@ -638,6 +638,7 @@ function GenerateUI() {
     globalThis.layoutExpander = layoutExpander
     globalThis.uiLayout = uiLayout
     globalThis.optionsLayout = optionsLayout
+    globalThis.radiusSliderText = radiusSliderText;
 
 
     // constellationScene.AddChild(layout)
@@ -649,29 +650,27 @@ function GenerateUI() {
     // setup layout
 
     uiLayout.AddChild(layoutExpander)
-    // uiLayout.AddChild(optionsLayout)
 
-    optionsLayout.AddChild(ballCountTextLbl)
-    optionsLayout.AddChild(lineCountTextLbl)
-
-    // So we have two text container inherited objects and whenever they are under the layout and their text changes it fitsredraw background which messes up its positioning
-    // When under the Game it does not do that. Confusing
-
+    // optionsLayout.AddChild(ballCountTextLbl)
+    // optionsLayout.AddChild(lineCountTextLbl)
     optionsLayout.AddChild(radiusVisibilityBtn);
-    optionsLayout.AddChild(radiusSliderText)
-    optionsLayout.AddChild(radiusSlider)
-    optionsLayout.AddChild(layout2Label)
-    optionsLayout.AddChild(ballPullStrengthSlider)
-    optionsLayout.AddChild(ballPushStrengthLabel)
-    optionsLayout.AddChild(ballPushStrengthSlider)
-    optionsLayout.AddChild(gridVisibilityBtn)
-    optionsLayout.AddChild(ballsPerSegmentText);
-    optionsLayout.AddChild(ballsPerSegmentSlider);
-    optionsLayout.AddChild(gridRowsText)
-    optionsLayout.AddChild(gridRowsSlider)
-    optionsLayout.AddChild(gridColumnsText)
-    optionsLayout.AddChild(gridColumnsSlider)
-    optionsLayout.AddChild(reloadBtn)
+    // optionsLayout.AddChild(radiusSliderText)
+    // optionsLayout.AddChild(radiusSlider)
+    optionsLayout.AddChild(ballPullStrengthLabel)
+    // optionsLayout.AddChild(ballPullStrengthSlider)
+    // optionsLayout.AddChild(ballPushStrengthLabel)
+    // optionsLayout.AddChild(ballPushStrengthSlider)
+    // optionsLayout.AddChild(gridVisibilityBtn)
+    // optionsLayout.AddChild(ballsPerSegmentText);
+    // optionsLayout.AddChild(ballsPerSegmentSlider);
+    // optionsLayout.AddChild(gridRowsText)
+    // optionsLayout.AddChild(gridRowsSlider)
+    // optionsLayout.AddChild(gridColumnsText)
+    // optionsLayout.AddChild(gridColumnsSlider)
+    // optionsLayout.AddChild(reloadBtn)
+
+    // optionsLayout.AddChildAt(gridVisibilityBtn, 2)
+    // optionsLayout.AddChildAt(reloadBtn, 0)
 
     // uiLayout.AddChild(radiusVisibilityBtn);
     // uiLayout.AddChild(radiusSliderText)
@@ -775,6 +774,7 @@ function GenerateBalls() {
                 // turn off gravity and drag
                 ball.gravityEnabled = false;
                 ball.dragEnabled = false;
+                ball.positionMethod = PositionMethod.Absolute
 
                 // set velocity
                 ball.velocity = ballVelocity;
@@ -1225,6 +1225,9 @@ function ScreenBordersOnTick(game) {
         if (gameObject.static)
             return; // skip
 
+        if(gameObject.positionMethod != PositionMethod.Absolute)
+            return; // skip
+
         // else check if position is out of bounds and then move accordingly and change velocity
 
         let objectX = gameObject.x;
@@ -1265,7 +1268,7 @@ function ScreenBordersOnTick(game) {
             objectY += gameObject.height / 2;
         }
 
-        gameObject.x = objectX
+        gameObject.x = objectX;
         gameObject.y = objectY
     })
 
@@ -1470,7 +1473,7 @@ function nodeTestLoad(game) {
     layout2.label = "layout2"
     layout2.backgroundFill = "#434343"
 
-    layout2Label = new TextLabel(game, "Layout 2 text", false)
+    let layout2Label = new TextLabel(game, "Layout 2 text", false)
     layout2Label.fontSize = defaultTextFontSize;
 
     let layout3Slider = new Slider(game, 0.1, 100, 0.1, 5);
@@ -1501,13 +1504,13 @@ function nodeTestLoad(game) {
         width: 2
     }
 
-    layout1.AddChild(layout1Btn)
+    // layout1.AddChild(layout1Btn)
 
     layout1.AddChild(layout2)
-    layout2.AddChild(layout3)
-    layout2.AddChild(layout2Label)
-    layout3.AddChild(layout3Label)
-    layout3.AddChild(layout3Slider)
+    // layout2.AddChild(layout3)
+    // layout2.AddChild(layout2Label)
+    // layout3.AddChild(layout3Label)
+    // layout3.AddChild(layout3Slider)
 
     nodeScene.AddChild(layout1)
 
@@ -1754,6 +1757,8 @@ function generateMenuUI() {
     }
 
     menuGoBackBtn.zIndex = 99
+
+    globalThis.titleText = titleText;
 }
 
 // just generates the menu scene and sets it to the local var. 

@@ -158,6 +158,8 @@ class EventSystem {
 class GameNode extends EventSystem {
     children = [];
 
+    isHidden = false; // Hidden attribute just means that an object won't be iterated unless specified. 
+
 
     _parent = null;
     // Read-only value of node above this one
@@ -241,28 +243,34 @@ class GameNode extends EventSystem {
         return false;
     }
 
-
-    /**
-     * @param {GameNode} childToAdd 
-     */
-    AddChild(childToAdd) {
-        if (childToAdd.parent)
-            throw new Error("Tried to add a child to node that already has a parent, perhaps its parent has already been added?")
-        this.children.push(childToAdd);
-        childToAdd._parent = this; // set new parent
+    // deals with all the things that need to happen to a child after it has been added
+    _ProcessAddedChild(addedChild) {
+        addedChild._parent = this; // set new parent
         // call the label property setter which will ensure the child's label does not overlap with another
-        if (childToAdd.label)
-            childToAdd.label = childToAdd.label
-        this.FireListener("childAdded", { child: childToAdd })
-        childToAdd.FireListener("parentChanged")
+        if (addedChild.label)
+            addedChild.label = addedChild.label
+        this.FireListener("childAdded", { child: addedChild })
+        addedChild.FireListener("parentChanged")
 
         // Recursively fire the descendant added to all parents (ancestors) above the current node
         let ancestor = this.parent; // ancestor will change as each one gets iterated to it's own parent
         // keep going until ancestor is null
         while (ancestor) {
-            ancestor.FireListener("descendantAdded", { descendant: childToAdd })
+            ancestor.FireListener("descendantAdded", { descendant: addedChild })
             ancestor = ancestor.parent; // go 1 layer higher
         }
+    }
+
+    /**
+     * @param {GameNode} childToAdd 
+     * @param {boolean} [isHidden=false] Whether the object is hidden. Default is false
+     */
+    AddChild(childToAdd, isHidden = false) {
+        if (childToAdd.parent)
+            throw new Error("Tried to add a child to node that already has a parent, perhaps its parent has already been added?")
+        this.children.push(childToAdd);
+        childToAdd.isHidden = isHidden
+        this._ProcessAddedChild(childToAdd)
 
     }
 
@@ -272,6 +280,26 @@ class GameNode extends EventSystem {
         for (const gameObj of childrenToAdd) {
             this.AddChild(gameObj);
         }
+    }
+
+    /**
+     * Adds a child at a certian index, will push all other objects to the right of arary
+     * @param {GameNode} childToAdd 
+     * @param {Number} index New position of child under children. 
+     * @param {boolean} [isHidden=false] Whether the object is hidden. Default is false
+     */
+    AddChildAt(childToAdd, index, isHidden = false) {
+        if (typeof (index) != "number")
+            throw new Error("Index is not a number")
+
+        // Use splices add child params, ignore its delete params
+        this.children.splice(index, 0, childToAdd)
+        childToAdd.isHidden = isHidden
+
+
+        this._ProcessAddedChild(childToAdd)
+
+
     }
 
     /**
@@ -371,8 +399,9 @@ class GameNode extends EventSystem {
      * Iterates through a node's descendants 
      * @param {DescendantFunction} callbackPerDescendant function to call per each descendant. Passes in descendant as first param. If returns "stop" it won't continue iterating
      * @param {Boolean} includeSelf Whether to also run a function for the node itself
+     * @param {Boolean} includeHidden Whether to include hidden nodes in iteration
      */
-    IterateDescendants(callbackPerDescendant, includeSelf = false) {
+    IterateDescendants(callbackPerDescendant, includeSelf = false, includeHidden = false) {
         // let cCount = this.count++
         // If node doesn't have children (rest of code has to do with descendants)
         if (this.children.length == 0) {
@@ -421,12 +450,16 @@ class GameNode extends EventSystem {
             // console.log("iteratedDescendant", iteratedDescendant)
 
             // console.log("iterationIndexes", iterationIndexes)
-            // console.log("iteratedDescendant", iteratedDescendant.name)
+            // console.log("iteratedDescendant", iteratedDescendant.label)
 
             // call the callback with iterated one
-            let callbackResponse = callbackPerDescendant(iteratedDescendant);
-            if (callbackResponse == "stop")
-                break; // stop iteratin
+
+            // run the callback if conditions are met, else just skip
+            if (!iteratedDescendant.isHidden || includeHidden) {
+                let callbackResponse = callbackPerDescendant(iteratedDescendant);
+                if (callbackResponse == "stop")
+                    break; // stop iteratin
+            }
 
             // does it have children?
             if (iteratedDescendant.children.length != 0) {
@@ -622,6 +655,18 @@ class Game extends EventSystem {
     _pixelsPerUnit = new PIXI.Point(50, 50); // each game unit is a certain amount of pixels in x and y 
     initialised = false; // whether the pixi application has been initialised
 
+    _origin = new Point(0, 0); // Reference for where all objects should be positioned relative to (starting from bottom-left as 0,0 and cartesian)
+    // origin .x and .y are read only. Instead use setter to update
+    get origin() {
+        return this._origin
+    }
+    set origin(newOrigin) {
+        this._origin = newOrigin;
+        if (this.activeScene)
+            this.activeScene.UpdateStageObjectPositions()
+    }
+
+
 
     preventContextMenu = false; // whether or not to prevent the context menu from showing up on right click of canvas
 
@@ -674,6 +719,9 @@ class Game extends EventSystem {
             // add new stage objects
             for (let stageObject of newScene.stageObjects) {
                 this.pixiApplication.stage.addChild(stageObject)
+                // also update their posiitons to make sure they fit into scene correctly
+                if (stageObject.parentGameObject)
+                    stageObject.parentGameObject.position = stageObject.parentGameObject.position
             }
 
 
@@ -763,17 +811,19 @@ class Game extends EventSystem {
 
 
     /**
-     * Converts a point from unit coords to pixel
+     * Converts a point from unit coords to pixel. Taking into account origin
      * @param {PIXI.Point} unitPoint The point in units  
      * @returns  The point converted to pixels
      */
     ConvertUnitsToPixels(unitPoint) {
-        return new PIXI.Point(unitPoint.x * this.pixelsPerUnit.x, unitPoint.y * this.pixelsPerUnit.y);
+        // take into account origin
+        // unitPoint = VecMath.AddVecs(unitPoint,this.origin);
+        return new PIXI.Point((unitPoint.x + this.origin.x) * this.pixelsPerUnit.x, (unitPoint.y + this.origin.y) * this.pixelsPerUnit.y);
     }
 
-
+    // convert pixels to units taking into account origin
     ConvertPixelsToUnits(pixelPoint) {
-        return new PIXI.Point(pixelPoint.x / this.pixelsPerUnit.x, pixelPoint.y / this.pixelsPerUnit.y);
+        return new PIXI.Point(pixelPoint.x / this.pixelsPerUnit.x - this.origin.x, pixelPoint.y / this.pixelsPerUnit.y + this.origin.y);
     }
 
     // Converts screen pixels to units and also cartesian 
@@ -943,9 +993,9 @@ class Game extends EventSystem {
         }
 
         // From now on, there is a collision
-        // if (firstGameObj.name == "circle")
+        // if (firstGameObj.label == "circle")
         //     firstGameObj.tint = "green"
-        // else if (secondGameObj.name == "circle")
+        // else if (secondGameObj.label == "circle")
         //     secondGameObj.tint = "green"
 
 
@@ -1075,9 +1125,9 @@ class Game extends EventSystem {
         if (gameObj.static)
             return;
 
-        if (gameObj.name) {
-            // console.log("looping", gameObj.name)
-        }
+        // if (gameObj.label) {
+        //     // console.log("looping", gameObj.label)
+        // }
 
 
 
@@ -1182,7 +1232,7 @@ class Scene extends GameNode {
 
 
         this.FireListener("stageObjectAdded", { stageObject: stageObject })
-        // console.log("added stage object", stageObject.name)
+        // console.log("added stage object", stageObject.label)
     }
 
     RemoveStageObject(stageObject) {
@@ -1209,7 +1259,7 @@ class Scene extends GameNode {
      * Adds GameObject child to scene and renders the child's and its descendant's stageObjects
      * @param {GameObject} child 
      */
-    AddChild(child) {
+    _ProcessAddedChild(child) {
         // overwriting GameNode func
 
         // don't do anything if not adding a game object to scene, maaybe this'll change idk
@@ -1217,8 +1267,12 @@ class Scene extends GameNode {
             console.warn("Tried to add a non GameObject child to scene")
             return;
         }
+
+        // ensure correct pos
+        child.position = child.position;
+
         // calls GameNode function first, note that this will fire child and descendant added events
-        super.AddChild(child)
+        super._ProcessAddedChild(child)
 
         // If child doesn't have children (rest of code has to do with descendants)
         if (child.children.length == 0) {
@@ -1239,7 +1293,7 @@ class Scene extends GameNode {
             iteratedDescendant._SetCurrentScene(this) // also adds stage obj to scene
         }
 
-        child.IterateDescendants(callbackPerDescendant, true) // include node in loop
+        child.IterateDescendants(callbackPerDescendant, true, true) // include node in loop
 
     }
 
@@ -1277,7 +1331,7 @@ class Scene extends GameNode {
                 iteratedDescendant._SetCurrentScene(null) // also adds stage obj to scene
             }
 
-            child.IterateDescendants(callbackPerDescendant, true) // include node in loop
+            child.IterateDescendants(callbackPerDescendant, true, true) // include node in loop
         }
 
         // deal with removed child's destructor
@@ -1292,11 +1346,11 @@ class Scene extends GameNode {
      * Clears all game objects from scene. Use this if you want to reuse scene afterwards
      * @param {Boolean} callDestructors Whether to destruct all descendants in scene after they're removed
      */
-    Clear(callDestructors=true){
+    Clear(callDestructors = true) {
         // for some reason remove children doesn't work first time so I have to do while loop?
         let whileCount = 0;
-        while(this.children.length != 0){
-            if(whileCount > 99){
+        while (this.children.length != 0) {
+            if (whileCount > 99) {
                 throw new Error("Trying to clear scene, the remove children loop has run over 100 times")
             }
             this.RemoveChildren(this.children, callDestructors, callDestructors)
@@ -1308,11 +1362,19 @@ class Scene extends GameNode {
     /**
      * Destructs the scene, prepares for GC
      */
-    Destruct(){
+    Destruct() {
         // clear scene
         this.Clear(true);
         // call inherited destructor
         super.Destruct(true)
+    }
+
+    // Forces all objects in scene to update their positions. Use this when you change origin for example
+    UpdateStageObjectPositions() {
+        this.IterateDescendants((descendant) => {
+            descendant.position = descendant.position; // calls setter
+        }, false, true)
+
     }
 
 
@@ -1322,11 +1384,47 @@ class Scene extends GameNode {
 
 // #region GameObject Class
 
+// ENUM
+class PositionMethod {
+    static Relative = 1; // relative to paren'ts position
+    static Absolute = 2; // relative game origin
+}
+
+// Relative point is like a PIXI.js point but has relX and relY which are meant to be relative to parent (if any)
+class RelPoint {
+    isRelPoint = true;
+    // Relative x (Decimal representing percentage of parent width)
+    relX = 0;
+    // Relative y (Decimal representing percentage of parent height)
+    relY = 0;
+    x = 0;
+    y = 0;
+    /**
+     * 
+     * @param {Number} x 
+     * @param {Number} relX Relative x (Decimal representing percentage of parent width)
+     * @param {Number} y 
+     * @param {Number} relY Relative y (Decimal representing percentage of parent height)
+     */
+    constructor(x, relX, y, relY) {
+        this.x = x;
+        this.relX = relX;
+        this.y = y;
+        this.relY = relY;
+
+    }
+
+    clone() {
+        return new RelPoint(this.x, this.relX, this.y, this.relY)
+    }
+}
+
 /**
  * Currently, it is something that is renderable
  */
 class GameObject extends GameNode {
     _currentScene;
+    positionMethod = PositionMethod.Relative;
     // READ-ONLY value of the current scene that the GameObject is under (if any)
     get currentScene() {
         return this._currentScene;
@@ -1413,7 +1511,7 @@ class GameObject extends GameNode {
         if (newStageObject) {
             // after you add the stage object, update its pos and size if meant to so it renders correctly
             if (this.sharePosition)
-                this.updateStageObjectPosition();
+                this.UpdateStageObjectPosition();
             // if (initialiseSize && this.shareSize) {
             if (initialiseSize) {
                 this.width = newStageObject.width;
@@ -1445,8 +1543,8 @@ class GameObject extends GameNode {
         this._isVisible = newVisibility // set class variable
         if (this.stageObject)
             this.stageObject.visible = newVisibility; // also set graphics visibility (.visible)
-        // if(this.name == "layoutToExpand")
-        // console.log("setting isVisible to ", newVisibility, " for", this.name, " this.childrenShareVisibility", this.childrenShareVisibility)
+        // if(this.label == "layoutToExpand")
+        // console.log("setting isVisible to ", newVisibility, " for", this.label, " this.childrenShareVisibility", this.childrenShareVisibility)
 
 
 
@@ -1487,24 +1585,58 @@ class GameObject extends GameNode {
 
     _position = new Point(0, 0);
 
-    // POSITION X AND Y ARE READONLY, see GameObject.x and .y
+    // Object's local position. Either a PIXI point or RelPoint. POSITION X AND Y ARE READONLY, see GameObject.x and .y
     get position() {
         return this._position
     }
     // make it act like cartesian coordinates
     set position(newPosition) {
+        if(this.label == "radiusSlider"){
+            console.log("pre set pos for ",this.label)
+        }
         // console.log("Set pos to ",newPosition)
+
         // set to original pos 
-        this._position = new Point(newPosition.x, newPosition.y); // avoid conflicts with referenced pos
+        this._position = newPosition.clone(); // avoid conflicts with referenced pos
         // make changes
         if (this.sharePosition)
-            this.updateStageObjectPosition();
+            this.UpdateStageObjectPosition();
+
+        // update this global pos and then descendants too
+        this._UpdateGlobalPosition(true)
 
         this.FireListener("positionChanged") // fire changed event
 
+        // if (this.label == "layout2")
+        //     console.log("here")
+        if(this.label == "radiusSlider"){
+            console.log("post set pos for ",this.label)
+        }
 
         // newPosition.y = newPosition.y * -1 + game.pixiApplication.canvas.height; // inverse the y and make it bottom left (currently top left)
         // this.stageObject.position = newPosition; // set the new pos
+    }
+
+    /**
+     * sets the current global pos based on parent global pos (Make sure to call parent's func before children if there's a change)
+     * @param {Boolean} updateChildren Whether to recursively update children's global positions too 
+     */
+    _UpdateGlobalPosition(updateChildren = true) {
+        if (!this.parent || this.parent.isScene) {
+            this._globalPosition = this._position.clone(); // default
+        } else { // else parent isn't null and isnt scene
+            if (this.positionMethod == PositionMethod.Relative)
+                // for relative this pos + parent's global pos
+                this._globalPosition = VecMath.AddVecs(this.parent._globalPosition, this._position)
+            else if (this.positionMethod == PositionMethod.Absolute)
+                // absolute is just own pos
+                this._globalPosition = this._position.clone();
+        }
+
+        // recursively update children
+        if (updateChildren && this.children.length != 0)
+            for (let child of this.children)
+                child._UpdateGlobalPosition(updateChildren)
     }
 
     // position values
@@ -1512,13 +1644,43 @@ class GameObject extends GameNode {
         return this._position.x
     }
     set x(newX) {
-        this.position = new Point(newX, this.y)
+        // avoid conflicts by clone
+        let newPos = this._position.clone();
+        newPos.x = newX
+        this.position = newPos
     }
     get y() {
         return this._position.y
     }
     set y(newY) {
-        this.position = new Point(this.x, newY)
+        // avoid conflicts by clone
+        let newPos = this._position.clone();
+        newPos.y = newY
+        this.position = newPos
+    }
+    get relX() {
+        return this._position.relX
+    }
+    set relX(newX) {
+        // avoid conflicts by clone
+        let newPos = this._position.clone();
+        newPos.relX = newX
+        this.position = newPos
+    }
+    get relY() {
+        return this._position.relY
+    }
+    set relY(newY) {
+        // avoid conflicts by clone
+        let newPos = this._position.clone();
+        newPos.relY = newY
+        this.position = newPos
+    }
+
+    _globalPosition = new Point(0, 0)
+    // READONLY. The object's true position relative to the game origin
+    get globalPosition() {
+        return this._globalPosition
     }
 
     _width = 0;
@@ -1543,7 +1705,7 @@ class GameObject extends GameNode {
             this.stageObject.height = newHeight * this.game.pixelsPerUnit.y;// convert units to pixels
         }
         if (this.sharePosition)
-            this.updateStageObjectPosition();
+            this.UpdateStageObjectPosition();
         this.FireListener("heightChanged") // fire changed event
     }
 
@@ -1614,20 +1776,26 @@ class GameObject extends GameNode {
 
     }
 
-    updateStageObjectPosition() {
+    UpdateStageObjectPosition() {
         // only continue if shared pos true and stage object is not null
         if (!this.sharePosition || !this.stageObject)
             return;
 
-        // clone to avoid conflicts
-        let newPosition = new Point(this._position.x, this._position.y);
-        let canvasHeight = game.pixiApplication.canvas.height / this.game.pixelsPerUnit.y; // convert from pixels to units
+        // let newPosition = VecMath.AddVecs(this._position, this.game.origin);
+        // let newPosition = this._position.clone();
+        let newPosition = this._globalPosition.clone();
+        // let canvasHeight = game.pixiApplication.canvas.height / this.game.pixelsPerUnit.y; // convert from pixels to units
 
-        newPosition.y = newPosition.y * -1 // inverse y
-            + canvasHeight - this.height // convert to bottom-left (currently top left)
+        // newPosition.y = newPosition.y * -1 // inverse y
+        //     + canvasHeight - this.height // convert to bottom-left (currently top left)
+
+
+
+        newPosition.y += this.height // convert to top-left (currently botom-left)
 
         // set the new pos, convert to pixel units first
-        this.stageObject.position = this.game.ConvertUnitsToPixels(newPosition);
+        // this.stageObject.position = this.game.ConvertUnitsToPixels(newPosition);
+        this.stageObject.position = this.game.ConvertUnitsToRawPixels(newPosition);
 
     }
 
@@ -1635,7 +1803,7 @@ class GameObject extends GameNode {
      * Adds child to GameObject and if there is a scene, renders the child's and its descendant's stageObjects
      * @param {GameObject} child 
      */
-    AddChild(child) {
+    _ProcessAddedChild(child) {
         // overwriting GameNode func
 
         // don't do anything if not adding a game object to game object, maaybe this'll change idk
@@ -1644,11 +1812,14 @@ class GameObject extends GameNode {
             return;
         }
 
+        // update position to ensure it is correct with like origin and stuff  
+        child.position = child.position
+
 
         // calls GameNode function first, note that this will fire child and descendant added events
 
         // NOTE: calling the baseclass will change the parent which ends up adding the child to the scene, so skip it first
-        super.AddChild(child)
+        super._ProcessAddedChild(child)
 
 
         child._SetCurrentScene(this._currentScene) // set its scene as this one (might be null)
@@ -1661,9 +1832,6 @@ class GameObject extends GameNode {
         }
 
         // from now on child obj has children
-
-        // -------
-
         // Recursively iterate through descendants and add stage objects if it finds one
 
         // define as anonymous to preserve "this"
@@ -1673,7 +1841,7 @@ class GameObject extends GameNode {
             iteratedDescendant._SetCurrentScene(this._currentScene) // also adds stage obj to scene
         }
 
-        child.IterateDescendants(callbackPerDescendant, false) // don't include node in loop
+        child.IterateDescendants(callbackPerDescendant, false, true) // don't include node in loop
 
     }
 
@@ -1711,7 +1879,7 @@ class GameObject extends GameNode {
                 iteratedDescendant._SetCurrentScene(null) // also adds stage obj to scene
             }
 
-            child.IterateDescendants(callbackPerDescendant, true) // include node in loop
+            child.IterateDescendants(callbackPerDescendant, true, true) // include node in loop
         }
 
         // deal with removed child's destructor
@@ -1749,14 +1917,17 @@ class GameObject extends GameNode {
 
     // Returns the bounding rect of a game object ONLY (excludes descendants, see .GetTotalBoundingRect) 
     GetBoundingRect() {
+        // if(this.label == "radiusSlider")
+        //     console.log("Here")
+
         if (this.hasNoBounds)
             return null
         else
             return {
-                left: this.x,
-                right: this.x + this.width,
-                bottom: this.y,
-                top: this.y + this.height
+                left: this._globalPosition.x,
+                right: this._globalPosition.x + this.width,
+                bottom: this._globalPosition.y,
+                top: this._globalPosition.y + this.height
             }
     }
 
@@ -1789,7 +1960,7 @@ class GameObject extends GameNode {
                 finalRect.bottom = descendantRect.bottom
             if (descendantRect.top > finalRect.top)
                 finalRect.top = descendantRect.top
-        }, false)
+        }, false, true)
 
         // return any changes
         return finalRect;
@@ -1816,25 +1987,13 @@ class GameObject extends GameNode {
  * A seperate class is needed because different behaviour of position is needed
  */
 class Circle extends GameObject {
-    // let 
-    // get x() {
-    //     return this._position.x
-    // }
-    // set x(newValue){
-
-    // }
 
     // overwrite
-    updateStageObjectPosition() {
-        // clone to avoid conflicts
-        let newPosition = new Point(this._position.x, this._position.y);
-        let canvasHeight = game.pixiApplication.canvas.height / this.game.pixelsPerUnit.y; // convert from pixels to units
+    UpdateStageObjectPosition() {
+        super.UpdateStageObjectPosition();
 
-        newPosition.y = newPosition.y * -1 // inverse y
-            + canvasHeight // Move to bottom. Because its a circle its x and y is middle of circle
-
-        // set the new pos, convert to pixel units first
-        this.stageObject.position = this.game.ConvertUnitsToPixels(newPosition);
+        // position correctly
+        this.stageObject.y += this.height * this.game.pixelsPerUnit.y
     }
 
     isACircle = true;
@@ -1936,11 +2095,26 @@ class Circle extends GameObject {
 
     // Returns the bounding rect of a game object 
     GetBoundingRect() {
-        return {
-            left: this.x - this.width / 2,
-            right: this.x + this.width / 2,
-            bottom: this.y - this.height / 2,
-            top: this.y + this.height / 2
+        if(null)
+        {
+            // makes it easier to debug with hover over
+            this.position
+            this._globalPosition
+            this.height
+            this.width
+        }
+        // console.log("pre rect height",this.height)
+
+        let newRect = super.GetBoundingRect()
+        if (!newRect)
+            return null
+        else {
+            newRect.left -= this.width / 2
+            newRect.right += this.width / 2
+            newRect.bottom -= this.height / 2
+            newRect.top += this.height / 2
+            // console.log("post rect height",Math.abs(newRect.top-newRect.bottom))
+            return newRect
         }
     }
 
@@ -1951,51 +2125,6 @@ class Circle extends GameObject {
  */
 class UIElement extends GameObject {
     isUIElement = true;
-    _position = new Point(0, 0);
-    get position() {
-        return this._position
-    }
-    set position(newPosition) {
-        // if(this.name == "grid visibility"){
-        //     console.log(";;;---///")
-        //     console.log("name", this.name)
-        //     console.log("Changing to units pos",newPosition.x,newPosition.y)
-        //     console.log("Pre-pos (.x,.y)", this.backgroundGraphics.x, this.backgroundGraphics.y)
-        //     console.log("Pre-pos (.position)", this.backgroundGraphics.position.x, this.backgroundGraphics.position.y)
-        // }
-
-
-
-        // console.log("Position changed on UI to", newPosition)
-        if (!this.stageObject)
-            return;
-        this._position = new Point(newPosition.x, newPosition.y);
-        let pixelPos = this.game.ConvertUnitsToRawPixels(newPosition)
-        pixelPos.y -= this.stageObject.height;
-        this.stageObject.position = pixelPos;
-        this.FireListener("positionChanged") // fire changed event
-
-        // if(this.name == "grid visibility"){
-        //     console.log("Post-pos (.x,.y)", this.backgroundGraphics.x, this.backgroundGraphics.y)
-        //     console.log("Post-pos (.position)", this.backgroundGraphics.position.x, this.backgroundGraphics.position.y)
-        // }
-    }
-    // overwrite pos functions
-    get x() {
-        return this.position.x;
-    }
-    set x(newX) {
-        this.position = new Point(newX, this.position.y)
-    }
-    get y() {
-        return this.position.y;
-    }
-    set y(newY) {
-        this.position = new Point(this.position.x, newY)
-    }
-
-
-
 
     /**
      * 
@@ -2003,7 +2132,7 @@ class UIElement extends GameObject {
      * @param {Game} game 
      */
     constructor(game, stageObject) {
-        super(game, stageObject, false, false); // turn off share pos and size for now
+        super(game, stageObject, true, false); // turn off share size for now
         this.physicsEnabled = false;
         this.interactive = true; // Just make all UI elements interactive
         this.shareSize = true // now turn it back on
@@ -2032,6 +2161,11 @@ class TextLabel extends UIElement {
         this.height = this.textObject.height / this.game.pixelsPerUnit.y
         this.FireListener("textChanged")
     }
+
+    // updateStageObjectPosition(){
+    //     super.updateStageObjectPosition();
+    //     this.stageObject.y = this.stageObject.height
+    // }
 
     _fontSize;
     // font size in y axis GAME UNITS
@@ -2084,7 +2218,7 @@ class TextLabel extends UIElement {
                 style: textStyleOptions
             })
 
-        super(game, pixiTextObject, false, false); // turn off share pos and size
+        super(game, pixiTextObject); // turn off share pos and size
 
         // -- initialise values --
         this.position = this.stageObject.position;
@@ -2135,7 +2269,7 @@ class Padding {
 }
 
 // same as padding but dif name
-class Margin extends Padding{
+class Margin extends Padding {
     /**
      * Create a new margin object. Each value represents a certain amount of game units that the outer content should be from the innner content 
      * @param {Number} left 
@@ -2144,7 +2278,7 @@ class Margin extends Padding{
      * @param {Number} top 
      */
     constructor(left = 0, right = 0, bottom = 0, top = 0) {
-        super(left,right,bottom,top)
+        super(left, right, bottom, top)
     }
 }
 
@@ -2198,23 +2332,23 @@ class TextContainer extends GameObject {
         return super.position;
     }
     set position(newPosition) {
-        // if(this.name == "grid visibility"){
+        // if(this.label == "grid visibility"){
         //     console.log("~!~")
-        //     console.log("name", this.name)
+        //     console.log("name", this.label)
         //     console.log("Changing to units pos",newPosition.x,newPosition.y)
         //     console.log("Pre-pos (.x,.y)", this.backgroundGraphics.x, this.backgroundGraphics.y)
         //     console.log("Pre-pos (.position)", this.backgroundGraphics.position.x, this.backgroundGraphics.position.y)
         // }
 
         super.position = newPosition; // keep the set function for UI element
-        // if(this.name == "grid visibility")
-        //     console.log("Position changed on ",this.name," to", newPosition)
+        // if(this.label == "grid visibility")
+        //     console.log("Position changed on ",this.label," to", newPosition)
         // inject extra code
 
         // Update text pos
         this.AlignInnerContent();
 
-        // if(this.name == "grid visibility"){
+        // if(this.label == "grid visibility"){
         //     console.log("Post-pos (.x,.y)", this.backgroundGraphics.x, this.backgroundGraphics.y)
         //     console.log("Post-pos (.position)", this.backgroundGraphics.position.x, this.backgroundGraphics.position.y)
         // }
@@ -2398,11 +2532,12 @@ class TextContainer extends GameObject {
         // console.log(this)
 
         // get the raw values. By thise I just mean the values without padding (do this advanced technique called subtraction)
-        let rawWidth = this.width - this.padding.left - this.padding.right;
+        // let rawWidth = this.width - this.padding.left - this.padding.right;
         let rawHeight = this.height - this.padding.bottom - this.padding.top;
         // start as btn pos (bottom-left)
         // Need to clone point to avoid object reference conflicts
-        let textPos = new Point(this.position.x + this.padding.left, this.position.y + this.padding.bottom);
+        let textPos = new Point(this.padding.left, this.padding.bottom);
+        // let textPos = new Point(this.position.x + this.padding.left, this.position.y + this.padding.bottom);
         // calc horizontal x, unnecessary?
         // switch (this.textHorizontalAlignment) {
         //     case HorizontalAlignment.LEFT:
@@ -2442,10 +2577,10 @@ class TextContainer extends GameObject {
     }
 
     RedrawBackground() {
-        // let showDebug = (this.name == "grid visibility");
+        // let showDebug = (this.label == "grid visibility");
         // if (showDebug) {
         //     console.log("_---")
-        //     console.log("name", this.name)
+        //     console.log("name", this.label)
         //     console.log("Pre-size", this.backgroundGraphics.width, this.backgroundGraphics.height)
         //     console.log("Pre-pos (.x,.y)", this.backgroundGraphics.x, this.backgroundGraphics.y)
         //     console.log("Pre-pos (.position)", this.backgroundGraphics.position.x, this.backgroundGraphics.position.y)
@@ -2629,7 +2764,7 @@ class TextInput extends TextContainer {
         caretObject.physicsEnabled = false;
 
         caretObject.height = this.textLabelObject.fontSize;
-        caretObject.position = this.position
+        // caretObject.position = this.position
 
         this.caretObject = caretObject;
 
@@ -3052,7 +3187,7 @@ class Slider extends UIElement {
         // create the circle that'll follow slider
         this.slidingBall = new Circle(game, 0, 0, 0.1);
         this.slidingBall.physicsEnabled = false;
-        this.AddChild(this.slidingBall);
+        this.AddChild(this.slidingBall, true);
 
 
 
@@ -3113,8 +3248,8 @@ class Slider extends UIElement {
 
         let sliderWidth = this.width; // used to determine the percentage of the slider that is selected
 
-        let sliderLeft = this.x;
-        let sliderRight = this.x + sliderWidth;
+        let sliderLeft = this._globalPosition.x;
+        let sliderRight = this._globalPosition.x + sliderWidth;
 
         // clamp the pointer x to left and right side (if you are far right of slider you will be max and vice versa for min)
         let pointerX = Clamp(pointerPos.x, sliderLeft, sliderRight);
@@ -3174,7 +3309,8 @@ class Slider extends UIElement {
         this.slidingBall.width = sliderDiameter;
 
         // centre ball
-        this.slidingBall.y = this.y + this.height / 2;
+        this.slidingBall.y = this.height / 2;
+        // this.slidingBall.y = this.y + this.height / 2;
         // Make x set to the value with respect to min, max etc.
 
         // set value to origin (value-min) and then get it as a decimal (divide) out of range (max-min)
@@ -3185,7 +3321,8 @@ class Slider extends UIElement {
         // console.log("this.max",this.max)
 
         // Then you times that deimcal by width to get the distance in pixels and then introduce the x back into it so it's not just relative to origin of x
-        this.slidingBall.x = this.x + factor * this.width
+        this.slidingBall.x = factor * this.width
+        // this.slidingBall.x = this.x + factor * this.width
 
         // console.log(factor)
 
@@ -3199,9 +3336,8 @@ class Slider extends UIElement {
         let pixelWidth = this._width * this.game.pixelsPerUnit.x;
         let pixelHeight = this._height * this.game.pixelsPerUnit.y
 
-
         this.backgroundGraphics
-            .roundRect(0, -pixelHeight, pixelWidth, pixelHeight, this.backgroundRadius * this.game.pixelsPerUnit.x)
+            .roundRect(0, 0, pixelWidth, pixelHeight, this.backgroundRadius * this.game.pixelsPerUnit.x)
             .fill(this._backgroundFill)
 
         // if has stroke, then process it
@@ -3298,8 +3434,8 @@ class LayoutExpander extends Button {
         this._isVisible = newVisibility // set class variable
         if (this.stageObject)
             this.stageObject.visible = newVisibility; // also set graphics visibility (.visible)
-        // if(this.name == "layoutToExpand")
-        // console.log("setting isVisible to ", newVisibility, " for", this.name, " this.childrenShareVisibility", this.childrenShareVisibility)
+        // if(this.label == "layoutToExpand")
+        // console.log("setting isVisible to ", newVisibility, " for", this.label, " this.childrenShareVisibility", this.childrenShareVisibility)
 
         this.FireListener("visibilityChanged")
 
@@ -3314,7 +3450,7 @@ class LayoutExpander extends Button {
                     // If we're setting "this" to invisible, that has highest permission, set layout to expand as invisible too
                     if (!newVisibility) {
                         child.isVisible = false
-                    } else { 
+                    } else {
                         // else it can be visible so use the visibility that it currently has. It is basically choosing once it has the option to
                         child.isVisible = this.layoutExpanded
                     }
@@ -3388,13 +3524,13 @@ class LayoutExpander extends Button {
         this.AlignInnerContent();
         this.FitBackground();
 
-        this.layoutToExpand.AddEventListener("widthChanged", this.FitBackground,this)
+        this.layoutToExpand.AddEventListener("widthChanged", this.FitBackground, this)
     }
 
     // updates layout position to be relative to expander
     UpdateLayoutPosition() {
-        if (this.layoutToExpand)
-            this.layoutToExpand.position = new Point(this.position.x, this.position.y)
+        // if (this.layoutToExpand)
+        // this.layoutToExpand.position = new Point(this.position.x, this.position.y)
     }
 
     UpdateIconSize = () => {
@@ -3417,8 +3553,10 @@ class LayoutExpander extends Button {
         // start as container pos (bottom-left)
         // Need to clone point to avoid object reference conflicts
         // expander icon has pos as centre 
-        let iconPos = new Point(this.position.x + this.padding.left, this.position.y + this.padding.bottom);
-        let textPos = new Point(this.position.x + this.padding.left + this.expanderIcon.width + this.iconSpacing, this.position.y + this.padding.bottom);
+        let iconPos = new Point(this.padding.left, this.padding.bottom);
+        // let iconPos = new Point(this.position.x + this.padding.left, this.position.y + this.padding.bottom);
+        let textPos = new Point(this.padding.left + this.expanderIcon.width + this.iconSpacing, this.padding.bottom);
+        // let textPos = new Point(this.position.x + this.padding.left + this.expanderIcon.width + this.iconSpacing, this.position.y + this.padding.bottom);
 
         // // calc horizontal x
         // switch (this.textHorizontalAlignment) {
@@ -3628,10 +3766,9 @@ class GameObjectLayout extends GameObject {
     set position(newPos) {
         super.position = newPos
 
-        this.CalculateObjectPositions(!this.dontFitLayout) // update and include the opposite of dont fit layout bool
-        if (this.dontFitLayout)
-            this.dontFitLayout = false;
+        this.CalculateObjectPositions() // update and include the opposite of dont fit layout bool
 
+        // this.updateStageObjectPosition()
     }
 
     get zIndex() { return this.backgroundGraphics.zIndex }
@@ -3693,16 +3830,17 @@ class GameObjectLayout extends GameObject {
     /**
      * Call this whenever you need to recalcaulate the positions of the objects underneath the layout
     // NOTE: skips invisible children
-     * @param {Boolean} callFitLayout calls fit layout method after
      */
-    CalculateObjectPositions = (callFitLayout = true) => {
+    CalculateObjectPositions = () => {
+
         // console.log("Calc pos for " + this.label)
 
         // Vertical down positioning
 
         // going to have a start pos. One axis will be static while the other one will change with each iterated object
         // This will change as objects are iterated
-        let startPos = new Point(this.position.x, this.position.y);
+        let startPos = new Point(0, 0);
+        // let startPos = new Point(this.position.x, this.position.y);
 
         // modify start pos depending on orientation
         if (this.layoutOrientation == LayoutOrientation.VerticalDown) {
@@ -3716,6 +3854,8 @@ class GameObjectLayout extends GameObject {
             startPos.y += this.margin.bottom
         }
 
+        // startPos.y += 1
+
 
 
         // loop thru managed objects and change position according to previous ones
@@ -3726,19 +3866,41 @@ class GameObjectLayout extends GameObject {
                 continue;
             }
 
-            // skip invisible
+            // skip invisible 
             if (!iteratedObj.isVisible)
                 continue;
+
+            // changes to make to the object. This will change depending on the object that iterated
+            let posOffset = new Point(0, 0);
 
             if (iteratedObj.isGameObjectLayout) {
                 // this variable is set back to false when position of child is change. Do this to avoid a recursion loop
                 // whether this.CalculateObjectPositions is fired -> sets child.position -> fires child.CalculateObjectPositions which will default call child.fit layout 
                 // -> sets child.width -> this listener for child's "widthChanged" fires -> this.CalculateObjectPositions and the cyucle repeats
                 iteratedObj.dontFitLayout = true;
+
+                // TEMPORARY FIX TO BE SUPERCEEDED BY .bottomLeftOffset in future update
+                // so basically this func will position stuff at bottom-left but the layouts are top-left or whatever depending on orientation
+                // if (iteratedObj.layoutOrientation == LayoutOrientation.VerticalDown) { // top-left
+                //     console.log(iteratedObj.label, "pre wtf")
+                //     posOffset.y += 100; //iteratedObj.height
+                //     // iteratedObj.position = new Point(iteratedObj.position.x, iteratedObj.position.y+ iteratedObj.height)
+                //     // iteratedObj.position = new Point(iteratedObj.position.x, iteratedObj.position.y+ iteratedObj.height)
+                //     console.log("post wtf")
+                // }
+                // // else if(iteratedObj.layoutOrientation == LayoutOrientation.HorizontalRight){ // bottom-left
+                // // }
+                // else if (iteratedObj.layoutOrientation == LayoutOrientation.HorizontalLeft) { // bottom-right
+                //     posOffset.x += iteratedObj.width
+                //     console.log("a")
+                // } else {
+
+                //     console.log("a")
+                // }
             }
 
             // Fixes a similar recursion issue but for layout expanders
-            if(iteratedObj.isLayoutExpander){
+            if (iteratedObj.isLayoutExpander) {
                 iteratedObj.layoutToExpand.dontFitLayout = true
             }
 
@@ -3769,13 +3931,13 @@ class GameObjectLayout extends GameObject {
 
                 // startPos.y -= iteratedObj.height // minus height of object itself (some parts may exclude obj layout)
 
-                iteratedObj.position = new Point(startPos.x, startPos.y - iteratedObj.height);
+                iteratedObj.position = VecMath.AddVecs(new Point(startPos.x, startPos.y - iteratedObj.height),posOffset);
 
                 // setup next iteration
                 startPos.y -= (objBoundsHeight + this.spaceBetweenObjects);
             } else if (this.layoutOrientation == LayoutOrientation.VerticalUp) {
                 // start pos is currently at bottom-left of object
-                iteratedObj.position = new Point(startPos.x, startPos.y + objBoundsHeight - iteratedObj.height);
+                iteratedObj.position = VecMath.AddVecs(new Point(startPos.x, startPos.y + objBoundsHeight - iteratedObj.height),posOffset);
 
                 // setup next iteration by moving by vertical space the object takes up (height) added with padding
                 startPos.y += objBoundsHeight + this.spaceBetweenObjects;
@@ -3783,7 +3945,7 @@ class GameObjectLayout extends GameObject {
                 // start pos is at bottom-right, correct
                 // startPos.x -= objBoundsWidth
 
-                iteratedObj.position = new Point(startPos.x - objBoundsWidth , startPos.y+objBoundsHeight-iteratedObj.height);
+                iteratedObj.position = VecMath.AddVecs(new Point(startPos.x - objBoundsWidth, startPos.y + objBoundsHeight - iteratedObj.height),posOffset);
 
                 // move left by spacing
                 startPos.x -= (objBoundsWidth + this.spaceBetweenObjects);
@@ -3791,31 +3953,49 @@ class GameObjectLayout extends GameObject {
 
             } else if (this.layoutOrientation == LayoutOrientation.HorizontalRight) {
                 // start pos is at bottom-left
-                iteratedObj.position = new Point(startPos.x, startPos.y+objBoundsHeight-iteratedObj.height);
+                iteratedObj.position = VecMath.AddVecs(new Point(startPos.x, startPos.y + objBoundsHeight - iteratedObj.height),posOffset);
 
                 // move right by width + spacing
                 startPos.x += objBoundsWidth + this.spaceBetweenObjects;
             }
 
-            if (iteratedObj.isGameObjectLayout) {
-                iteratedObj.dontFitLayout = true; // changing pos again smh
+            // iteratedObj.UpdateStageObjectPosition()
 
-                // TEMPORARY FIX TO BE SUPERCEEDED BY .bottomLeftOffset in future update
-                // so basically this func will position stuff at bottom-left but the layouts are top-left or whatever depending on orientation
-                if (iteratedObj.layoutOrientation == LayoutOrientation.VerticalDown) { // top-left
-                    iteratedObj.y += iteratedObj.height
-                }
-                // else if(iteratedObj.layoutOrientation == LayoutOrientation.HorizontalRight){ // bottom-left
-                // }
-                else if (iteratedObj.layoutOrientation == LayoutOrientation.HorizontalLeft) { // bottom-right
-                    iteratedObj.x += iteratedObj.width
-                }
-            }
+            // if (iteratedObj.isGameObjectLayout) {
+            //     iteratedObj.dontFitLayout = true; // changing pos again smh
+
+            //     // TEMPORARY FIX TO BE SUPERCEEDED BY .bottomLeftOffset in future update
+            //     // so basically this func will position stuff at bottom-left but the layouts are top-left or whatever depending on orientation
+            //     if (iteratedObj.layoutOrientation == LayoutOrientation.VerticalDown) { // top-left
+            //         console.log(iteratedObj.label, "pre wtf")
+            //         iteratedObj.y += 100; //iteratedObj.height
+            //         // iteratedObj.position = new Point(iteratedObj.position.x, iteratedObj.position.y+ iteratedObj.height)
+            //         // iteratedObj.position = new Point(iteratedObj.position.x, iteratedObj.position.y+ iteratedObj.height)
+            //         console.log("post wtf")
+            //     }
+            //     // else if(iteratedObj.layoutOrientation == LayoutOrientation.HorizontalRight){ // bottom-left
+            //     // }
+            //     else if (iteratedObj.layoutOrientation == LayoutOrientation.HorizontalLeft) { // bottom-right
+            //         iteratedObj.x += iteratedObj.width
+            //         console.log("a")
+            //     } else {
+
+            //         console.log("a")
+            //     }
+            //     // console.log(iteratedObj.label, "is game obj layout")
+
+            // } else {
+            //     // console.log(iteratedObj.label, "isnt game obj layout")
+            // }
 
         }
 
-        if (callFitLayout)
+        if (!this.dontFitLayout)
             this.FitLayoutToObjects();
+        else {
+            // set it up for next time
+            this.dontFitLayout = false;
+        }
     }
 
     // gets the size of inner content
@@ -3899,10 +4079,6 @@ class GameObjectLayout extends GameObject {
             }
 
             xSize = totalWidth + this.spaceBetweenObjects * (totalVisibleObjects - 1)
-
-
-
-
         }
 
 
@@ -3937,27 +4113,27 @@ class GameObjectLayout extends GameObject {
 
         if (this.layoutOrientation == LayoutOrientation.VerticalDown) {
             layoutBounds = {
-                left: this.x,
-                right: this.x + this.width,
+                left: this._globalPosition.x,
+                right: this._globalPosition.x + this.width,
                 // bottom and top is shifted down by height
-                bottom: this.y - this.height,
-                top: this.y
+                bottom: this._globalPosition.y - this.height,
+                top: this._globalPosition.y
             }
         } else if (this.layoutOrientation == LayoutOrientation.VerticalUp || this.layoutOrientation == LayoutOrientation.HorizontalRight) {
             layoutBounds = {
-                left: this.x,
-                right: this.x + this.width,
+                left: this._globalPosition.x,
+                right: this._globalPosition.x + this.width,
                 // bottom and top is shifted down by height
-                bottom: this.y,
-                top: this.y + this.height
+                bottom: this._globalPosition.y,
+                top: this._globalPosition.y + this.height
             }
         } else if (this.layoutOrientation == LayoutOrientation.HorizontalLeft) {
             layoutBounds = {
-                left: this.x - this.width,
-                right: this.x,
+                left: this._globalPosition.x - this.width,
+                right: this._globalPosition.x,
                 // bottom and top is shifted down by height
-                bottom: this.y,
-                top: this.y + this.height
+                bottom: this._globalPosition.y,
+                top: this._globalPosition.y + this.height
             }
         }
         return layoutBounds
@@ -4048,8 +4224,8 @@ class GameObjectLayout extends GameObject {
      * add object to layout
      * @param {GameObject} objectToAdd self explanatory
      */
-    AddChild(objectToAdd) {
-        super.AddChild(objectToAdd)
+    _ProcessAddedChild(objectToAdd) {
+        super._ProcessAddedChild(objectToAdd)
 
         objectToAdd.AddEventListener("widthChanged", this.CalculateObjectPositions, this) // make sure content fits
         objectToAdd.AddEventListener("heightChanged", this.CalculateObjectPositions, this) // when height changes, so does the positions of each object
@@ -4057,7 +4233,7 @@ class GameObjectLayout extends GameObject {
         //on visiblity change (including descendants make sure content fits accordingly)
         objectToAdd.IterateDescendants((descendant) => {
             descendant.AddEventListener("visibilityChanged", this.CalculateObjectPositions, this)
-        }, true)
+        }, true, true)
 
 
         //update 
@@ -4066,6 +4242,9 @@ class GameObjectLayout extends GameObject {
 
         if (this.childrenShareVisibility)
             objectToAdd.isVisible = this.isVisible
+
+        // this ensures visual is correct after changing pos
+        objectToAdd.UpdateStageObjectPosition()
     }
 
     // remove object from layout
@@ -4074,6 +4253,10 @@ class GameObjectLayout extends GameObject {
         // For vertical down
         objectToAdd.RemoveEventListener("widthChanged", this.CalculateObjectPositions)
         objectToAdd.RemoveEventListener("heightChanged", this.CalculateObjectPositions)
+
+        objectToAdd.IterateDescendants((descendant) => {
+            descendant.RemoveEventListener("visibilityChanged", this.CalculateObjectPositions)
+        }, true, true)
     }
 
     Destruct() {

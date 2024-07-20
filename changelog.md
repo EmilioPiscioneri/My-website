@@ -23,4 +23,8 @@ Added game objects and physics loop with basic collisions
 Created text labels, text inputs, slider and buttons. 
 Text input currently doesnt support multi line text
 
-### Game V 0.3 - - Nodes and Scenes
+### Game V 0.3 - 8/7/24 - Nodes and Scenes
+This version involves the addition of a node structure and scenes. I also added more functionality to existing classes, changed how some classes are structured, added optimisations and fixed bugs.
+
+### Game V 0.3.1 - - Additions
+Added game.origin. Added node.AddChildAt(). Added hidden children. Added ..
