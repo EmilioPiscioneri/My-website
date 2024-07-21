@@ -301,7 +301,7 @@ function GenerateGridSegments(segmentQuantities) {
     if (segmentQuantities.rows <= 0)
         throw new Error("Need to have at least 1 grid segments on y axis")
 
-    newGridSegments = [];
+    let newGridSegments = [];
 
     // get size in units
     let canvasSize = GetCanvasSizeInUnits();
@@ -1319,13 +1319,15 @@ function nodeTestLoad(game) {
 
     rect0 = new GameObject(game,
         new PIXI.Graphics()
-            .rect(0, 0, 1, 1)
+            .rect(0, 0, 20, 1)
             .fill("white"))
 
+    rect0.width = 1
+    rect0.height = 1
     rect0.label = "rect0"
 
     rect0.position = new Point(12, 16)
-    // rect0.static = true
+    rect0.static = true
 
     // layer 1
 
@@ -1356,7 +1358,7 @@ function nodeTestLoad(game) {
 
     rect0_0_0.label = "rect0_0_0"
 
-    rect0_0_0.position = new Point(0, -1)
+    rect0_0_0.position = new Point(-2, -1)
 
     let rect0_0_1 = new GameObject(game,
         new PIXI.Graphics()
@@ -1374,7 +1376,7 @@ function nodeTestLoad(game) {
 
     rect0_1_0.label = "rect0_1_0"
 
-    rect0_1_0.position = new Point(0, -1)
+    rect0_1_0.position = new Point(-2, -1)
 
     rect0_1_1 = new GameObject(game,
         new PIXI.Graphics()
@@ -1388,7 +1390,7 @@ function nodeTestLoad(game) {
     rect0_1_1.position = new Point(2, -1)
 
     let firstDelay = 1000; // ms
-    let delayInterval = 500;
+    let delayInterval = 300;
 
     // add children after scene is created
     let afterScene = true
@@ -1486,7 +1488,7 @@ function nodeTestLoad(game) {
     let layout2Label = new TextLabel(game, "Layout 2 text", false)
     layout2Label.fontSize = defaultTextFontSize;
 
-    let layout3Slider = new Slider(game, 0.1, 100, 0.1, 5);
+    // let layout3Slider = new Slider(game, 0.1, 100, 0.1, 5);
     let layout3Label = new TextLabel(game, "Layout 3 text", false)
     layout3Label.fontSize = defaultTextFontSize
 
@@ -1521,7 +1523,7 @@ function nodeTestLoad(game) {
     layout2.AddChild(layout3)
     layout2.AddChild(layout2Label)
     layout3.AddChild(layout3Label)
-    layout3.AddChild(layout3Slider)
+    // layout3.AddChild(layout3Slider)
 
     nodeScene.AddChild(layout1)
 
@@ -1567,6 +1569,35 @@ function nodeTestLoad(game) {
     globalThis.expander2_2 = expander2_2;
     globalThis.expander2_3 = expander2_3;
     globalThis.layout2_3_1 = layout2_3_1;
+
+    let testRect = new GameObject(game, new Graphics().rect(0,0,1,1).fill("purple"))
+    // testRect.position = new Point(1,1)
+    testRect.position = new Point(1,1)
+    // testRect.bottomLeftOffset = new RelPoint(0,-0.5,0,-0.5)
+    // testRect.bottomLeftOffset = new RelPoint(0,-0.5,0,-0.5)
+    // testRect.width = 2
+    testRect.label = "testRect"
+    nodeScene.AddChild(testRect)
+    
+    testRect.zIndex = 99999
+    testRect.physicsEnabled = false
+
+    globalThis.testRect = testRect
+
+    let testCircle = new Circle(game, 1,1,1)
+    // testCircle.position = new Point(1,1)
+    testCircle.alpha = 0.25
+    // testRect.bottomLeftOffset = new RelPoint(0,-0.5,0,-0.5)
+    // testRect.bottomLeftOffset = new RelPoint(0,-0.5,0,-0.5)
+    // testRect.width = 2
+    testCircle.label = "testCircle"
+    // testCircle.bottomLeftOffset = new RelPoint(0,0.5,0,0.5)
+    nodeScene.AddChild(testCircle)
+    
+    testCircle.zIndex = 99999
+    testCircle.physicsEnabled = false
+
+    globalThis.testCircle = testCircle
 
 }
 
@@ -1726,7 +1757,7 @@ function generateMenuUI() {
     nodeVisualBtn.AddEventListener("pointerUp", () => {
         RemoveLoader(menuScript)
         AddLoader(nodeTestScript)
-        AddLoader(screenBordersScript)
+        // AddLoader(screenBordersScript)
         DisplayGoBackBtn();
     }, nodeVisualBtn)
 

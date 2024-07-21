@@ -569,7 +569,12 @@ class VecMath {
         return new Point(vector1.x + vector2.x, vector1.y + vector2.y)
     }
 
-    // v1 -v2
+    /**
+     * vector1 - vector2
+     * @param {*} vector1 
+     * @param {*} vector2 
+     * @returns 
+     */
     static SubtractVecs(vector1, vector2) {
         return new Point(vector1.x - vector2.x, vector1.y - vector2.y)
     }
@@ -617,6 +622,8 @@ class VecMath {
     static NormaliseVec(vector) {
         return this.ScalarDivideVec(vector, this.Magnitude(vector))
     }
+
+    static RelativeToPoint
 }
 
 /**
@@ -1420,6 +1427,21 @@ class RelPoint {
 
     }
 
+
+    /**
+     * Returns a converted rel point as a normal PIXI point with just x and y
+     * @param {RelPoint} relPoint The point to convert (can be a PIXI point)
+     * @param {Number} baseX Number that relX is a decimal of 
+     * @param {Number} baseY Number that relY is a decimal of
+     */
+    static ToNormalPoint(relPoint, baseX, baseY) {
+        if (relPoint.relX == null)
+            relPoint.relX = 0
+        if (relPoint.relY == null)
+            relPoint.relY = 0
+        return new PIXI.Point(relPoint.x + baseX * relPoint.relX, relPoint.y + baseY * relPoint.relY)
+    }
+
     clone() {
         return new RelPoint(this.x, this.relX, this.y, this.relY)
     }
@@ -1588,39 +1610,62 @@ class GameObject extends GameNode {
             this.stageObject.label = newLabel
     }
 
+    _bottomLeftOffset = new RelPoint(0, 0, 0, 0);
+    // A relative point that represents the difference from an object's true position to its bottomLeftPosition
+    get bottomLeftOffset() {
+        return this._bottomLeftOffset;
+    }
+    set bottomLeftOffset(newValue) {
+        this._bottomLeftOffset = newValue;
+        // this._UpdateGlobalPosition(true)
+        // this.UpdateStageObjectPosition()
+        if (this.sharePosition) {
+            // Update cos change
+            this._UpdateGlobalPosition(true)
+            this.UpdateStageObjectPosition();
+        }
+    }
 
-    _position = new Point(0, 0);
+    _position = new RelPoint(0, 0, 0, 0);
 
     // Object's local position. Either a PIXI point or RelPoint. POSITION X AND Y ARE READONLY, see GameObject.x and .y
     get position() {
-        return this._position
+        // return true pos + blOffset
+        // return VecMath.AddVecs(this._position, this.bottomLeftOffset)
+        return VecMath.AddVecs(RelPoint.ToNormalPoint(this._position, 0, 0), RelPoint.ToNormalPoint(this.bottomLeftOffset, this.width, this.height))
     }
-    // make it act like cartesian coordinates
+    // Sets position to input bottom-left cartesian unit position
     set position(newPosition) {
-        // if (this.text == "Layout 0") {
-        //     console.log("pre", this.text, "pos", this._position.clone())
-        //     console.log("pre-global", this.text, "pos", this._globalPosition.clone())
-        //     console.log("pre-stage-opj", this.text, "pos", this.game.ConvertRawPixelsToUnits(this.stageObject.position))
-        // }
-        // super.position = newPos
+        // if (this.label == "testRect" || Number.isNaN(newPosition.x) || Number.isNaN(newPosition.y))
+        if (this.isACircle || this.label == "testRect" ){
+            console.log("---------")
+            console.log("Setting pos for", this.label, "to", newPosition)
+            console.log("pre-pos", this.position)
+            console.log("pre-stage-pos", this.stageObject.position.clone())
+            console.log("this.sharePosition", this.sharePosition)
+        }
+        let normBottomLeftOffset = RelPoint.ToNormalPoint(this.bottomLeftOffset, this.width, this.height); // blOffset as a normal PIXI point 
 
-        // if (this.label == "radiusSlider") {
-        //     console.log("pre set pos for ", this.label)
-        // }
-        // console.log("Set pos to ",newPosition)
+        /// true position (prob not bottom-left if u have offset instead it's position that renderer uses)
+        this._position = VecMath.SubtractVecs(RelPoint.ToNormalPoint(newPosition,0,0), normBottomLeftOffset)
+        // this._position = new Point(newPosition.x,newPosition.y)
 
-        // set to original pos 
-        this._position = newPosition.clone(); // avoid conflicts with referenced pos
-
-        // update this global pos and then descendants too
+        // // update this global pos and then descendants too
         this._UpdateGlobalPosition(true)
+
+        // this._position = newPosition.clone()//VecMath.SubtractVecs(newPosition, this.bottomLeftOffset)// newPosition.clone(); // avoid conflicts with referenced pos
+
+
 
         // make changes
         if (this.sharePosition)
             this.UpdateStageObjectPosition();
 
 
-
+        // if (this.isACircle ||this.label == "testRect" ){
+        //     console.log("post-pos", this.position)
+        //     console.log("post-stage-pos", this.stageObject.position.clone())
+        // }
         this.FireListener("positionChanged") // fire changed event
 
         // if (this.label == "layout2")
@@ -1639,20 +1684,31 @@ class GameObject extends GameNode {
         // this.stageObject.position = newPosition; // set the new pos
     }
 
+    // Updates the ._position using the .bottom left offset value
+    // _UpdateGlobalAndLocalPosition() {
+    //     // Do true pos (new pos in this case) - bottomLeftOffset cos blOffset is added back whenever the position getter is called
+    //     let normBottomLeftOffset = RelPoint.ToNormalPoint(this.bottomLeftOffset, this.width, this.height); // blOffset as a normal PIXI point 
+    //     this._position.x -= normBottomLeftOffset.x
+    //     this._position.y -= normBottomLeftOffset.y
+
+    //     // update this global pos and then descendants too
+    //     this._UpdateGlobalPosition(true)
+    // }
+
     /**
      * sets the current global pos based on parent global pos (Make sure to call parent's func before children if there's a change)
      * @param {Boolean} updateChildren Whether to recursively update children's global positions too 
      */
     _UpdateGlobalPosition(updateChildren = true) {
         if (!this.parent || this.parent.isScene) {
-            this._globalPosition = this._position.clone(); // default
+            this._globalPosition = this.position; // default
         } else { // else parent isn't null and isnt scene
             if (this.positionMethod == PositionMethod.Relative)
                 // for relative this pos + parent's global pos
-                this._globalPosition = VecMath.AddVecs(this.parent._globalPosition, this._position)
+                this._globalPosition = VecMath.AddVecs(this.parent._globalPosition, this.position)
             else if (this.positionMethod == PositionMethod.Absolute)
                 // absolute is just own pos
-                this._globalPosition = this._position.clone();
+                this._globalPosition = this.position;
         }
 
         // recursively update children
@@ -1663,7 +1719,7 @@ class GameObject extends GameNode {
 
     // position values
     get x() {
-        return this._position.x
+        return this.position.x
     }
     set x(newX) {
         // avoid conflicts by clone
@@ -1672,7 +1728,7 @@ class GameObject extends GameNode {
         this.position = newPos
     }
     get y() {
-        return this._position.y
+        return this.position.y
     }
     set y(newY) {
         // avoid conflicts by clone
@@ -1714,6 +1770,11 @@ class GameObject extends GameNode {
         if (this.shareSize && this.stageObject) {
             this.stageObject.width = newWidth * this.game.pixelsPerUnit.x;// convert units to pixels
         }
+        if (this.sharePosition) {
+            // Update cos size affects pos
+            this._UpdateGlobalPosition(true)
+            this.UpdateStageObjectPosition();
+        }
         this.FireListener("widthChanged") // fire changed event
         // this.updateStageObjPosition();
     }
@@ -1726,8 +1787,12 @@ class GameObject extends GameNode {
         if (this.shareSize && this.stageObject) {
             this.stageObject.height = newHeight * this.game.pixelsPerUnit.y;// convert units to pixels
         }
-        if (this.sharePosition)
+        if (this.sharePosition) {
+            // Update cos size affects pos
+            // Call position setter because it needs to update with the bottom left
+            this._UpdateGlobalPosition(true)
             this.UpdateStageObjectPosition();
+        }
         this.FireListener("heightChanged") // fire changed event
     }
 
@@ -2044,7 +2109,7 @@ class Circle extends GameObject {
     UpdateStageObjectPosition() {
         super.UpdateStageObjectPosition();
 
-        // position correctly
+        // position correctly, the minus height for stage objects doesn't apply to circles
         this.stageObject.y += this.height * this.game.pixelsPerUnit.y
     }
 
@@ -2089,7 +2154,7 @@ class Circle extends GameObject {
      * @param {Number} radius 
      * @param {Game} game 
      */
-    constructor(game, x, y, radius) {
+    constructor(game, x=0, y=0, radius=1) {
         // Create the circle graphics object
         // let circleStageObject = new PIXI.Graphics()
         //     .circle(0, 0, radius)
@@ -2107,9 +2172,15 @@ class Circle extends GameObject {
 
         super(game, circleStageObject)
 
+        
+
         // Initialise position
-        this.x = x;
-        this.y = y;
+        // this.x = x;
+        // this.y = y;
+        this.position = new RelPoint(x,0,y,0)
+        // console.log("this.position",this.position)
+        // ensures calculations are done correctly
+        this.bottomLeftOffset = new RelPoint(0, 0.5,0,0.5)
     }
 
     // bypass stroke check will make it so it redraws background regardless of if the object has a stroke
@@ -3251,6 +3322,10 @@ class Slider extends UIElement {
         this.AddChild(this.slidingBall, true);
 
 
+        this.min = min || 0
+        this.max = max || 10;
+        this.step = step || 0.5;
+        this.value = value || min;
 
         // Just do a default
         this.width = 3;
@@ -3274,10 +3349,7 @@ class Slider extends UIElement {
         this.eventsToDestroy.push([this.backgroundGraphics, "pointerdown", this.HandlePointerDown])
         this.eventsToDestroy.push([this.slidingBall.stageObject, "pointerdown", this.HandlePointerDown])
 
-        this.min = min || 0
-        this.max = max || 10;
-        this.step = step || 0.5;
-        this.value = value || min;
+        
     }
 
     HandlePointerMoveOnCanvas = (pointerEvent) => {

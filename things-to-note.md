@@ -19,3 +19,5 @@
 - For game objects, when they are added the "added" events will fire first before the child is positioned correctly under the object
 
 - The gravity calculations are done for absolute objects (or parent is scene or parent has physics not enabled ) so children don't have physics applied to them. Just keep note of that
+
+- For game objects the .position property represents the bottom-left position of object in cartesian game unit coordinates. However, the ._position value represents the position of rendered object. It also contains the relative axes
