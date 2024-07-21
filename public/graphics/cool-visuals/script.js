@@ -619,6 +619,7 @@ function GenerateUI() {
 
     // make a layout expander that expands the options layout
     let layoutExpander = new LayoutExpander(game, "Options")
+    layoutExpander.label = "optionsLayoutExpander"
 
     layoutExpander.fontSize = defaultTextFontSize;
     layoutExpander.backgroundStroke = {
@@ -628,6 +629,7 @@ function GenerateUI() {
 
     // let optionsLayout = new GameObjectLayout(game);
     let optionsLayout = layoutExpander.layoutToExpand;
+    optionsLayout.label = "optionsLayout"
     optionsLayout.margin = new Padding(0.25, 0, 0, 0.25)
     optionsLayout.alpha = 0
 
@@ -651,23 +653,23 @@ function GenerateUI() {
 
     uiLayout.AddChild(layoutExpander)
 
-    // optionsLayout.AddChild(ballCountTextLbl)
-    // optionsLayout.AddChild(lineCountTextLbl)
+    optionsLayout.AddChild(ballCountTextLbl)
+    optionsLayout.AddChild(lineCountTextLbl)
     optionsLayout.AddChild(radiusVisibilityBtn);
-    // optionsLayout.AddChild(radiusSliderText)
-    // optionsLayout.AddChild(radiusSlider)
+    optionsLayout.AddChild(radiusSliderText)
+    optionsLayout.AddChild(radiusSlider)
     optionsLayout.AddChild(ballPullStrengthLabel)
-    // optionsLayout.AddChild(ballPullStrengthSlider)
-    // optionsLayout.AddChild(ballPushStrengthLabel)
-    // optionsLayout.AddChild(ballPushStrengthSlider)
-    // optionsLayout.AddChild(gridVisibilityBtn)
-    // optionsLayout.AddChild(ballsPerSegmentText);
-    // optionsLayout.AddChild(ballsPerSegmentSlider);
-    // optionsLayout.AddChild(gridRowsText)
-    // optionsLayout.AddChild(gridRowsSlider)
-    // optionsLayout.AddChild(gridColumnsText)
-    // optionsLayout.AddChild(gridColumnsSlider)
-    // optionsLayout.AddChild(reloadBtn)
+    optionsLayout.AddChild(ballPullStrengthSlider)
+    optionsLayout.AddChild(ballPushStrengthLabel)
+    optionsLayout.AddChild(ballPushStrengthSlider)
+    optionsLayout.AddChild(gridVisibilityBtn)
+    optionsLayout.AddChild(ballsPerSegmentText);
+    optionsLayout.AddChild(ballsPerSegmentSlider);
+    optionsLayout.AddChild(gridRowsText)
+    optionsLayout.AddChild(gridRowsSlider)
+    optionsLayout.AddChild(gridColumnsText)
+    optionsLayout.AddChild(gridColumnsSlider)
+    optionsLayout.AddChild(reloadBtn)
 
     // optionsLayout.AddChildAt(gridVisibilityBtn, 2)
     // optionsLayout.AddChildAt(reloadBtn, 0)
@@ -1222,16 +1224,17 @@ function ScreenBordersOnTick(game) {
     // iterate through all descendant game objects in scene. Function runs per descendant
     game.activeScene.IterateDescendants((gameObject) => {
         // do nothing when static (not moving)
-        if (gameObject.static)
+        if (gameObject.static || !gameObject.physicsEnabled)
             return; // skip
 
-        if(gameObject.positionMethod != PositionMethod.Absolute)
-            return; // skip
+        // if(gameObject.positionMethod != PositionMethod.Absolute)
+        //     return; // skip
 
         // else check if position is out of bounds and then move accordingly and change velocity
 
-        let objectX = gameObject.x;
-        let objectY = gameObject.y;
+        let objectX = gameObject._globalPosition.x;
+        let objectY = gameObject._globalPosition.y;
+        
 
         // the x and y are the centres so offset them by width and height because this function is made for rects
         if (gameObject.isACircle) {
@@ -1268,8 +1271,14 @@ function ScreenBordersOnTick(game) {
             objectY += gameObject.height / 2;
         }
 
+
+        if (gameObject.positionMethod == PositionMethod.Relative && !gameObject.parent.isScene) {
+            objectX -= gameObject.parent._globalPosition.x
+            objectY -= gameObject.parent._globalPosition.y
+        }
+
         gameObject.x = objectX;
-        gameObject.y = objectY
+        gameObject.y = objectY;
     })
 
 }
@@ -1315,7 +1324,8 @@ function nodeTestLoad(game) {
 
     rect0.label = "rect0"
 
-    rect0.position = new Point(7, 16)
+    rect0.position = new Point(12, 16)
+    // rect0.static = true
 
     // layer 1
 
@@ -1326,7 +1336,7 @@ function nodeTestLoad(game) {
 
     rect0_0.label = "rect0_0"
 
-    rect0_0.position = new Point(3, 15)
+    rect0_0.position = new Point(-4, -1)
 
     rect0_1 = new GameObject(game,
         new PIXI.Graphics()
@@ -1335,7 +1345,7 @@ function nodeTestLoad(game) {
 
     rect0_1.label = "rect0_1"
 
-    rect0_1.position = new Point(11, 15)
+    rect0_1.position = new Point(4, -1)
 
     // layer 2
 
@@ -1346,7 +1356,7 @@ function nodeTestLoad(game) {
 
     rect0_0_0.label = "rect0_0_0"
 
-    rect0_0_0.position = new Point(1, 14)
+    rect0_0_0.position = new Point(0, -1)
 
     let rect0_0_1 = new GameObject(game,
         new PIXI.Graphics()
@@ -1355,7 +1365,7 @@ function nodeTestLoad(game) {
 
     rect0_0_1.label = "rect0_0_1"
 
-    rect0_0_1.position = new Point(5, 14)
+    rect0_0_1.position = new Point(2, -1)
 
     let rect0_1_0 = new GameObject(game,
         new PIXI.Graphics()
@@ -1364,7 +1374,7 @@ function nodeTestLoad(game) {
 
     rect0_1_0.label = "rect0_1_0"
 
-    rect0_1_0.position = new Point(9, 14)
+    rect0_1_0.position = new Point(0, -1)
 
     rect0_1_1 = new GameObject(game,
         new PIXI.Graphics()
@@ -1375,7 +1385,7 @@ function nodeTestLoad(game) {
 
     // rect0_1_1.static = true 
 
-    rect0_1_1.position = new Point(13, 14)
+    rect0_1_1.position = new Point(2, -1)
 
     let firstDelay = 1000; // ms
     let delayInterval = 500;
@@ -1436,13 +1446,13 @@ function nodeTestLoad(game) {
 
 
     // for debugging
-    // globalThis.rect0 = rect0
-    // globalThis.rect0_0 = rect0_0
-    // globalThis.rect0_1 = rect0_1
-    // globalThis.rect0_0_0 = rect0_0_0
-    // globalThis.rect0_0_1 = rect0_0_1
-    // globalThis.rect0_1_0 = rect0_1_0
-    // globalThis.rect0_1_1 = rect0_1_1
+    globalThis.rect0 = rect0
+    globalThis.rect0_0 = rect0_0
+    globalThis.rect0_1 = rect0_1
+    globalThis.rect0_0_0 = rect0_0_0
+    globalThis.rect0_0_1 = rect0_0_1
+    globalThis.rect0_1_0 = rect0_1_0
+    globalThis.rect0_1_1 = rect0_1_1
 
 
 
@@ -1459,7 +1469,7 @@ function nodeTestLoad(game) {
 
     // Define layout where all UI game objects will be underneath to make them look ordered
     let layout1 = new GameObjectLayout(game);
-    layout1.backgroundFill="#1c1c1c"
+    layout1.backgroundFill = "#1c1c1c"
 
     let layout1Btn = new Button(game, "Layout 1 btn", false);
 
@@ -1491,7 +1501,8 @@ function nodeTestLoad(game) {
     // layout3.layoutOrientation = LayoutOrientation.HorizontalRight
     // uiLayout.margin = new Padding(0.2,0.1,0.3,0.4)
 
-    layout1.alpha = 0.75;
+    layout1.alpha = 0.5;
+    layout1.zIndex = -10
 
     layout1.label = "layout1"
 
@@ -1504,13 +1515,13 @@ function nodeTestLoad(game) {
         width: 2
     }
 
-    // layout1.AddChild(layout1Btn)
+    layout1.AddChild(layout1Btn)
 
     layout1.AddChild(layout2)
-    // layout2.AddChild(layout3)
-    // layout2.AddChild(layout2Label)
-    // layout3.AddChild(layout3Label)
-    // layout3.AddChild(layout3Slider)
+    layout2.AddChild(layout3)
+    layout2.AddChild(layout2Label)
+    layout3.AddChild(layout3Label)
+    layout3.AddChild(layout3Slider)
 
     nodeScene.AddChild(layout1)
 
@@ -1520,9 +1531,10 @@ function nodeTestLoad(game) {
 
     // expanders
     let layout0 = new GameObjectLayout(game);
-    layout0.AddChild(new TextLabel(game, "Layout 0"))
+    layout0.label = "layout0"
     layout0.backgroundFill = "hsl(0,0%,0%)"
     let expander2_1 = new LayoutExpander(game, "expander 1")
+    expander2_1.label = "expander 1"
     expander2_1.backgroundFill = "hsl(0,0%,10%)"
     expander2_1.layoutToExpand.backgroundFill = "hsl(0,0%,10%)"
     let expander2_2 = new LayoutExpander(game, "expander 2")
@@ -1534,17 +1546,21 @@ function nodeTestLoad(game) {
     let layout2_3_1 = new GameObjectLayout(game)
     layout2_3_1.backgroundFill = "hsl(0,0%,40%)"
 
-    layout0.position = new Point(0.25,14)
+    layout0.position = new Point(0.25, 9)
     // layout0.position = new Point(canvasSize.width/2,14)
     layout0.layoutOrientation = LayoutOrientation.VerticalDown
     // expander2_1.layoutToExpand.layoutOrientation = LayoutOrientation.VerticalUp
 
     layout0.AddChild(expander2_1)
+    layout0.AddChild(new TextLabel(game, "Layout 0"))
+    layout0.AddChild(new TextLabel(game, "Layout 0"))
+    layout0.AddChild(new TextLabel(game, "End of layout 0"))
     expander2_1.layoutToExpand.AddChild(expander2_2)
     expander2_2.layoutToExpand.AddChild(expander2_3)
     expander2_3.layoutToExpand.AddChild(layout2_3_1)
     layout2_3_1.AddChild(new TextLabel(game, "layout 3.1 Text"))
     nodeScene.AddChild(layout0)
+    layout0.AddChildAt(new TextLabel(game, "Start of layout 0"), 0)
 
     globalThis.layout0 = layout0;
     globalThis.expander2_1 = expander2_1;

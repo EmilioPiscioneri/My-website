@@ -15,3 +15,7 @@
 - visibilityChanged event fires after descendants have also had visibilityChanged
 
 - To change a game objects stage object you do .SetStageObject()
+
+- For game objects, when they are added the "added" events will fire first before the child is positioned correctly under the object
+
+- The gravity calculations are done for absolute objects (or parent is scene or parent has physics not enabled ) so children don't have physics applied to them. Just keep note of that

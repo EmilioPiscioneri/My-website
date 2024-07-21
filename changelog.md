@@ -26,5 +26,5 @@ Text input currently doesnt support multi line text
 ### Game V 0.3 - 8/7/24 - Nodes and Scenes
 This version involves the addition of a node structure and scenes. I also added more functionality to existing classes, changed how some classes are structured, added optimisations and fixed bugs.
 
-### Game V 0.3.1 - - Additions
-Added game.origin. Added node.AddChildAt(). Added hidden children. Added ..
+### Game V 0.3.1 - 21/7/24 - More node and position functionality
+Added game.origin. Added node.AddChildAt(). Added hidden children. Added position methods (relative and absolute positions). 
