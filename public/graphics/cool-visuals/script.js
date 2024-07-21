@@ -1572,8 +1572,8 @@ function nodeTestLoad(game) {
 
     let testRect = new GameObject(game, new Graphics().rect(0,0,1,1).fill("purple"))
     // testRect.position = new Point(1,1)
+    testRect.bottomLeftOffset = new RelPoint(0,0.5,0,0.5)
     testRect.position = new Point(1,1)
-    // testRect.bottomLeftOffset = new RelPoint(0,-0.5,0,-0.5)
     // testRect.bottomLeftOffset = new RelPoint(0,-0.5,0,-0.5)
     // testRect.width = 2
     testRect.label = "testRect"
@@ -1584,8 +1584,8 @@ function nodeTestLoad(game) {
 
     globalThis.testRect = testRect
 
-    let testCircle = new Circle(game, 1,1,1)
-    // testCircle.position = new Point(1,1)
+    let testCircle = new Circle(game, 1,1,0.5)
+    testCircle.position = new Point(1,1)
     testCircle.alpha = 0.25
     // testRect.bottomLeftOffset = new RelPoint(0,-0.5,0,-0.5)
     // testRect.bottomLeftOffset = new RelPoint(0,-0.5,0,-0.5)
@@ -1599,6 +1599,20 @@ function nodeTestLoad(game) {
 
     globalThis.testCircle = testCircle
 
+    let testRect2 = new GameObject(game, new Graphics().rect(0,0,1,1).fill("green"))
+    // testRect.position = new Point(1,1)
+    // testRect2.bottomLeftOffset = new RelPoint(0,0.5,0,0.5)
+    // testRect2.position = new Point(1,1)
+    testRect2.alpha = 0.5
+    // testRect.bottomLeftOffset = new RelPoint(0,-0.5,0,-0.5)
+    // testRect.width = 2
+    testRect2.label = "testRect2"
+    nodeScene.AddChild(testRect2)
+    
+    testRect2.zIndex = 99999
+    testRect2.physicsEnabled = false
+
+    globalThis.testRect2 = testRect2
 }
 
 function nodeTestUnload(game) {

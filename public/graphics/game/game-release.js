@@ -1626,6 +1626,7 @@ class GameObject extends GameNode {
         }
     }
 
+    
     _position = new RelPoint(0, 0, 0, 0);
 
     // Object's local position. Either a PIXI point or RelPoint. POSITION X AND Y ARE READONLY, see GameObject.x and .y
@@ -1637,14 +1638,18 @@ class GameObject extends GameNode {
     // Sets position to input bottom-left cartesian unit position
     set position(newPosition) {
         // if (this.label == "testRect" || Number.isNaN(newPosition.x) || Number.isNaN(newPosition.y))
+        let normBottomLeftOffset = RelPoint.ToNormalPoint(this.bottomLeftOffset, this.width, this.height); // blOffset as a normal PIXI point 
         if (this.isACircle || this.label == "testRect" ){
             console.log("---------")
             console.log("Setting pos for", this.label, "to", newPosition)
             console.log("pre-pos", this.position)
             console.log("pre-stage-pos", this.stageObject.position.clone())
-            console.log("this.sharePosition", this.sharePosition)
+            // console.log("this.sharePosition", this.sharePosition)
+            console.log("this.bottomLeftOffset", this.bottomLeftOffset)
+            console.log("normBottomLeftOffset", normBottomLeftOffset)
+            console.log("norm new",RelPoint.ToNormalPoint(newPosition,0,0))
+            console.log("newPos-normBLO",VecMath.SubtractVecs(RelPoint.ToNormalPoint(newPosition,0,0), normBottomLeftOffset))
         }
-        let normBottomLeftOffset = RelPoint.ToNormalPoint(this.bottomLeftOffset, this.width, this.height); // blOffset as a normal PIXI point 
 
         /// true position (prob not bottom-left if u have offset instead it's position that renderer uses)
         this._position = VecMath.SubtractVecs(RelPoint.ToNormalPoint(newPosition,0,0), normBottomLeftOffset)
@@ -1662,10 +1667,10 @@ class GameObject extends GameNode {
             this.UpdateStageObjectPosition();
 
 
-        // if (this.isACircle ||this.label == "testRect" ){
-        //     console.log("post-pos", this.position)
-        //     console.log("post-stage-pos", this.stageObject.position.clone())
-        // }
+        if (this.isACircle ||this.label == "testRect" ){
+            console.log("post-pos", this.position)
+            console.log("post-stage-pos", this.stageObject.position.clone())
+        }
         this.FireListener("positionChanged") // fire changed event
 
         // if (this.label == "layout2")
@@ -1873,7 +1878,14 @@ class GameObject extends GameNode {
 
         // let newPosition = VecMath.AddVecs(this._position, this.game.origin);
         // let newPosition = this._position.clone();
-        let newPosition = this._globalPosition.clone();
+        
+        /// true position (prob not bottom-left if u have offset instead it's position that renderer uses)
+        // this._position = VecMath.SubtractVecs(RelPoint.ToNormalPoint(newPosition,0,0), normBottomLeftOffset)
+        let normBottomLeftOffset = RelPoint.ToNormalPoint(this.bottomLeftOffset, this.width, this.height); // blOffset as a normal PIXI point 
+        let newPosition = VecMath.SubtractVecs(RelPoint.ToNormalPoint(this._globalPosition,0,0), normBottomLeftOffset) ;
+        // let newPosition = this._globalPosition.clone();
+        
+
         // let canvasHeight = game.pixiApplication.canvas.height / this.game.pixelsPerUnit.y; // convert from pixels to units
 
         // newPosition.y = newPosition.y * -1 // inverse y
@@ -2180,7 +2192,7 @@ class Circle extends GameObject {
         this.position = new RelPoint(x,0,y,0)
         // console.log("this.position",this.position)
         // ensures calculations are done correctly
-        this.bottomLeftOffset = new RelPoint(0, 0.5,0,0.5)
+        this.bottomLeftOffset = new RelPoint(0, -0.5,0,-0.5)
     }
 
     // bypass stroke check will make it so it redraws background regardless of if the object has a stroke
