@@ -4,7 +4,7 @@ let PIdiv2 = Math.PI / 2
 
 /*
     GAME.JS
-    VERSION 0.3 
+    VERSION 0.3
 */
 
 /**
@@ -1765,6 +1765,23 @@ class GameObject extends GameNode {
     get globalPosition() {
         return this._globalPosition
     }
+    
+    _pivot = new RelPoint(0,0,0,0)
+    // Pivot is a game units non Cartesian relative point. Its relative to object size
+    // It represents where the stage object's transformations origin is. This affects rotation, position and scale I think
+    // It's a pixi thing that I'm just interfacing btw
+    get pivot(){return this._pivot}
+    set pivot(newPivot){
+        this._pivot = newPivot
+        this._UpdateStageObjectPivot()(
+    }
+    
+    // Updates stage objects pivot based on current _pivot
+    _UpdateStageObjectPivot(){
+        if(this.stageObject){
+            this.stageObject.pivot = RelPoint.ToNormalPoint(this._pivot,this.width,this.height);
+        }
+    }
 
     _width = 0;
     get width() {
@@ -1779,6 +1796,7 @@ class GameObject extends GameNode {
             // Update cos size affects pos
             this._UpdateGlobalPosition(true)
             this.UpdateStageObjectPosition();
+            this._UpdateStageObjectPivot();
         }
         this.FireListener("widthChanged") // fire changed event
         // this.updateStageObjPosition();
@@ -1797,6 +1815,7 @@ class GameObject extends GameNode {
             // Call position setter because it needs to update with the bottom left
             this._UpdateGlobalPosition(true)
             this.UpdateStageObjectPosition();
+            this._UpdateStageObjectPivot()
         }
         this.FireListener("heightChanged") // fire changed event
     }
