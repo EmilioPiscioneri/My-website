@@ -1194,6 +1194,7 @@ class Game extends EventSystem {
             // times velocity by deltaSec (time) to get change since last frame 
             gameObj.x += deltaSec * velocity.x
             gameObj.y += deltaSec * velocity.y
+            // gameObj.position = new Point(gameObj.x+deltaSec * velocity.x,gameObj.y+ deltaSec * velocity.y)
         }
 
     }
@@ -1611,18 +1612,21 @@ class GameObject extends GameNode {
     }
 
     _bottomLeftOffset = new RelPoint(0, 0, 0, 0);
-    // A relative point that represents the difference from an object's true position to its bottomLeftPosition
+    // A relative point that represents the difference from an object's true position to its bottomLeftPosition.
+    // It essentially just affects the rendering but should be set so calculations know how to get the true bottom-left position of an object
     get bottomLeftOffset() {
         return this._bottomLeftOffset;
     }
     set bottomLeftOffset(newValue) {
+        // keep old bottom-left pos, see explanation later
+        let oldPos = this.position.clone()
         this._bottomLeftOffset = newValue;
-        // this._UpdateGlobalPosition(true)
-        // this.UpdateStageObjectPosition()
         if (this.sharePosition) {
-            // Update cos change
-            this._UpdateGlobalPosition(true)
-            this.UpdateStageObjectPosition();
+            // when bottom-left offset changes, you want to keep the object at its bottom-left position still. 
+            // When the offset changes the position the getter gives you will be wrong. The position setter takes a bottom-left pos as input and then
+            // Changes how the object is rendered based on the offset. Anyway we need to keep the bottom-left the same so just keep it the same as old one
+            // but make the setter use the new offset
+            this.position = oldPos
         }
     }
 
@@ -1639,17 +1643,17 @@ class GameObject extends GameNode {
     set position(newPosition) {
         // if (this.label == "testRect" || Number.isNaN(newPosition.x) || Number.isNaN(newPosition.y))
         let normBottomLeftOffset = RelPoint.ToNormalPoint(this.bottomLeftOffset, this.width, this.height); // blOffset as a normal PIXI point 
-        if (this.isACircle || this.label == "testRect" ){
-            console.log("---------")
-            console.log("Setting pos for", this.label, "to", newPosition)
-            console.log("pre-pos", this.position)
-            console.log("pre-stage-pos", this.stageObject.position.clone())
-            // console.log("this.sharePosition", this.sharePosition)
-            console.log("this.bottomLeftOffset", this.bottomLeftOffset)
-            console.log("normBottomLeftOffset", normBottomLeftOffset)
-            console.log("norm new",RelPoint.ToNormalPoint(newPosition,0,0))
-            console.log("newPos-normBLO",VecMath.SubtractVecs(RelPoint.ToNormalPoint(newPosition,0,0), normBottomLeftOffset))
-        }
+        // if (this.isACircle || this.label == "testRect" ){
+        //     console.log("---------")
+        //     console.log("Setting pos for", this.label, "to", newPosition)
+        //     console.log("pre-pos", this.position)
+        //     console.log("pre-stage-pos", this.stageObject.position.clone())
+        //     // console.log("this.sharePosition", this.sharePosition)
+        //     console.log("this.bottomLeftOffset", this.bottomLeftOffset)
+        //     console.log("normBottomLeftOffset", normBottomLeftOffset)
+        //     console.log("norm new",RelPoint.ToNormalPoint(newPosition,0,0))
+        //     console.log("newPos-normBLO",VecMath.SubtractVecs(RelPoint.ToNormalPoint(newPosition,0,0), normBottomLeftOffset))
+        // }
 
         /// true position (prob not bottom-left if u have offset instead it's position that renderer uses)
         this._position = VecMath.SubtractVecs(RelPoint.ToNormalPoint(newPosition,0,0), normBottomLeftOffset)
@@ -1667,10 +1671,10 @@ class GameObject extends GameNode {
             this.UpdateStageObjectPosition();
 
 
-        if (this.isACircle ||this.label == "testRect" ){
-            console.log("post-pos", this.position)
-            console.log("post-stage-pos", this.stageObject.position.clone())
-        }
+        // if (this.isACircle ||this.label == "testRect" ){
+        //     console.log("post-pos", this.position)
+        //     console.log("post-stage-pos", this.stageObject.position.clone())
+        // }
         this.FireListener("positionChanged") // fire changed event
 
         // if (this.label == "layout2")
@@ -1728,7 +1732,7 @@ class GameObject extends GameNode {
     }
     set x(newX) {
         // avoid conflicts by clone
-        let newPos = this._position.clone();
+        let newPos = this.position;
         newPos.x = newX
         this.position = newPos
     }
@@ -1737,7 +1741,7 @@ class GameObject extends GameNode {
     }
     set y(newY) {
         // avoid conflicts by clone
-        let newPos = this._position.clone();
+        let newPos = this.position;
         newPos.y = newY
         this.position = newPos
     }
@@ -1773,30 +1777,26 @@ class GameObject extends GameNode {
     get pivot(){return this._pivot}
     set pivot(newPivot){
         this._pivot = newPivot
-        this._UpdateStageObjectPivot()(
+        this._UpdateStageObjectPivot()
     }
     
-    // Updates stage objects pivot based on current _pivot
-    _UpdateStageObjectPivot(){
-        if(this.stageObject){
-            this.stageObject.pivot = RelPoint.ToNormalPoint(this._pivot,this.width,this.height);
-        }
-    }
+    
 
     _width = 0;
     get width() {
         return this._width
     }
     set width(newWidth) {
+        let oldPos = this.position.clone()
         this._width = newWidth;
+        // keep old bottom-left pos, see explanation later
         if (this.shareSize && this.stageObject) {
             this.stageObject.width = newWidth * this.game.pixelsPerUnit.x;// convert units to pixels
         }
+        
         if (this.sharePosition) {
-            // Update cos size affects pos
-            this._UpdateGlobalPosition(true)
-            this.UpdateStageObjectPosition();
-            this._UpdateStageObjectPivot();
+            // See bottom-left offset for an explanation. The difference is size changes bottom-left pos just like offset
+            this.position = oldPos
         }
         this.FireListener("widthChanged") // fire changed event
         // this.updateStageObjPosition();
@@ -1806,16 +1806,14 @@ class GameObject extends GameNode {
         return this._height
     }
     set height(newHeight) {
+        let oldPos = this.position.clone()
         this._height = newHeight;
         if (this.shareSize && this.stageObject) {
             this.stageObject.height = newHeight * this.game.pixelsPerUnit.y;// convert units to pixels
         }
         if (this.sharePosition) {
-            // Update cos size affects pos
-            // Call position setter because it needs to update with the bottom left
-            this._UpdateGlobalPosition(true)
-            this.UpdateStageObjectPosition();
-            this._UpdateStageObjectPivot()
+            // See bottom-left offset for an explanation. The difference is size changes bottom-left pos just like offset
+            this.position = oldPos
         }
         this.FireListener("heightChanged") // fire changed event
     }
@@ -1840,6 +1838,14 @@ class GameObject extends GameNode {
             return;
         this.stageObject.zIndex = newVal;
     }
+
+    // returns stage object's angle of rotation in DEGREES
+    get angle(){if(this.stageObject){return this.stageObject.angle}}
+    set angle(newAngle){if(this.stageObject){this.stageObject.angle = newAngle}}
+
+    // returns stage object's angle of rotation in RADIANS
+    get rotation(){if(this.stageObject){return this.stageObject.rotation}}
+    set rotation(newRotation){if(this.stageObject){this.stageObject.rotation = newRotation}}
 
     /**
      * Creates a game object, make sure to add it to the game after creation
@@ -1885,6 +1891,17 @@ class GameObject extends GameNode {
         // intialising position doesn't work?
         // this.position = this.stageObject.position; // run through the set function
 
+    }
+
+    // Updates stage objects pivot based on current _pivot
+    _UpdateStageObjectPivot(){
+        if(this.stageObject){
+            // use stage object size but needs to be scaled down because it needs to be in coords of pixi drawing coords
+            let normalPivot = RelPoint.ToNormalPoint(this._pivot,this.width,this.height); // convert from relative to normal unit coords
+            let pixelPivot = this.game.ConvertUnitsToPixels(normalPivot)
+            // then finally diviide by scale so it is accurate to the coords that the object started with when it was drawn
+            this.stageObject.pivot = new Point(pixelPivot.x/this.stageObject.scale.x,pixelPivot.y/this.stageObject.scale.y);
+        }
     }
 
     UpdateStageObjectPosition() {
@@ -3473,7 +3490,7 @@ class Slider extends UIElement {
         this.slidingBall.width = sliderDiameter;
 
         // centre ball
-        this.slidingBall.y = this.height / 2;
+        this.slidingBall.y = -(this.slidingBall.height-this.height) / 2;
         // this.slidingBall.y = this.y + this.height / 2;
         // Make x set to the value with respect to min, max etc.
 
@@ -3934,6 +3951,10 @@ class GameObjectLayout extends GameObject {
     set position(newPos) {
         super.position = newPos
 
+        // If intialised the inherited class
+        if(!this.isGameObjectLayout)
+            return;
+        this.dontFitLayout = true // no need to fit layout when it's all relative
         this.CalculateObjectPositions() // update and include the opposite of dont fit layout bool
 
         // this.updateStageObjectPosition()

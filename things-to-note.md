@@ -20,4 +20,4 @@
 
 - The gravity calculations are done for absolute objects (or parent is scene or parent has physics not enabled ) so children don't have physics applied to them. Just keep note of that
 
-- For game objects the .position property represents the bottom-left position of object in cartesian game unit coordinates with all relative axes translated and added to .x and .y values. However, the ._position value represents the position to render the object at, and it also contains the relative axes that haven't been translated
+- For game objects the .position property represents the bottom-left position of object in cartesian game unit coordinates with all relative axes translated and added to .x and .y values. However, the ._position value represents the position to render the object at, and it also contains the relative axes that haven't been translated. This also means that the .x and .y values represent bottom-left positions with their getters and setters.

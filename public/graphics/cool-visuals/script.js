@@ -737,16 +737,17 @@ function GenerateBalls() {
 
             // Generate x amount of balls
             for (let ballIndex = 0; ballIndex < ballsPerSegment; ballIndex++) {
+                let ballRadius = GetRandomRange(ballRadiusRange[0], ballRadiusRange[1])
                 let ballPos = new Point(
                     // generate a random x value for the new ball pos inside the segment between left and right side
-                    GetRandomRange(segmentPos.x, segmentPos.x + segmentSize.x),
+                    GetRandomRange(segmentPos.x, segmentPos.x + segmentSize.x) -ballRadius,
                     // generate a random y value for the new ball pos inside the segment between bottom and top side
-                    GetRandomRange(segmentPos.y, segmentPos.y + segmentSize.y)
+                    GetRandomRange(segmentPos.y, segmentPos.y + segmentSize.y) -ballRadius
                 )
 
                 // Get unit vector (value from -1 to 1)
                 let ballVelocity = new Point(
-                    GetRandomRange(-1, 1),
+                    GetRandomRange(-1, 1) ,
                     GetRandomRange(-1, 1)
                 )
 
@@ -768,11 +769,12 @@ function GenerateBalls() {
                 ballVelocity = VecMath.ScalarMultiplyVec(ballVelocity, GetRandomRange(ballMagnitudeRange[0], ballMagnitudeRange[1]));
 
                 // Now actually create the game object
-                let ball = new Circle(game, ballPos.x, ballPos.y, GetRandomRange(ballRadiusRange[0], ballRadiusRange[1]))
+                let ball = new Circle(game, ballPos.x, ballPos.y, ballRadius)
 
                 // add collider to ball
                 ball.collider = new CircleCollider();
 
+                // ball.physicsEnabled = false
                 // turn off gravity and drag
                 ball.gravityEnabled = false;
                 ball.dragEnabled = false;
@@ -784,6 +786,7 @@ function GenerateBalls() {
                 // Now add to scene and list of balls array
                 ballsInScene.push(ball);
                 constellationScene.AddChild(ball);
+                // ball.bottomLeftOffset = new Point(0,0)
 
             }
         }
@@ -953,7 +956,7 @@ function resizeRadius() {
 }
 
 function moveRadiusToPointer() {
-    radiusObj.position = game.pointerPos;
+    radiusObj.position = new Point(game.pointerPos.x - radiusObj.width/2, game.pointerPos.y - radiusObj.height/2);
 }
 
 let linesInScene = [];
@@ -1048,7 +1051,10 @@ function DrawAllLines() {
 
             // ok so get distance, if this ball is in range for distances with other balls, draw
 
-            let distanceSquared = VecMath.SqrDistance(ball1.position, ball2.position)
+            let ball1Centre = new Point(ball1.x + ball1.width/2, ball1.y + ball1.height/2)
+            let ball2Centre = new Point(ball2.x + ball2.width/2, ball2.y + ball2.height/2)
+
+            let distanceSquared = VecMath.SqrDistance(ball1Centre, ball2Centre)
 
             // if the distance is higher than or equal to max range, don't render it's too far away
             if (distanceSquared >= ballSqrDistanceRange[1])
@@ -1066,7 +1072,7 @@ function DrawAllLines() {
 
 
             // Create the line
-            let lineGraphics = CreateLineGraphics(ball1.position, ball2.position, lineWidth)
+            let lineGraphics = CreateLineGraphics(ball1Centre, ball2Centre, lineWidth)
 
             lineGraphics.alpha = alpha;
 
@@ -1237,10 +1243,10 @@ function ScreenBordersOnTick(game) {
         
 
         // the x and y are the centres so offset them by width and height because this function is made for rects
-        if (gameObject.isACircle) {
-            objectX -= gameObject.width / 2;
-            objectY -= gameObject.height / 2;
-        }
+        // if (gameObject.isACircle) {
+        //     objectX -= gameObject.width / 2;
+        //     objectY -= gameObject.height / 2;
+        // }
 
         // check x-axis is out of left
         if (objectX < 0) {
@@ -1266,10 +1272,10 @@ function ScreenBordersOnTick(game) {
         // set new x and y
 
         // remove offset
-        if (gameObject.isACircle) {
-            objectX += gameObject.width / 2;
-            objectY += gameObject.height / 2;
-        }
+        // if (gameObject.isACircle) {
+        //     objectX += gameObject.width / 2;
+        //     objectY += gameObject.height / 2;
+        // }
 
 
         if (gameObject.positionMethod == PositionMethod.Relative && !gameObject.parent.isScene) {
@@ -1570,15 +1576,20 @@ function nodeTestLoad(game) {
     globalThis.expander2_3 = expander2_3;
     globalThis.layout2_3_1 = layout2_3_1;
 
-    let testRect = new GameObject(game, new Graphics().rect(0,0,1,1).fill("purple"))
+    let testRect = new GameObject(game, new Graphics().rect(0,0,1,1).fill("yellow"))
     // testRect.position = new Point(1,1)
-    testRect.bottomLeftOffset = new RelPoint(0,0.5,0,0.5)
+    // testRect.bottomLeftOffset = new RelPoint(0,0.5,0,0.5)
     testRect.position = new Point(1,1)
     // testRect.bottomLeftOffset = new RelPoint(0,-0.5,0,-0.5)
     // testRect.width = 2
     testRect.label = "testRect"
     nodeScene.AddChild(testRect)
+
+    // makes it rotate at centre
+    testRect.bottomLeftOffset = new RelPoint(0,-0.5,0,0.5)
+    testRect.pivot = new RelPoint(0,0.5,0,0.5)
     
+    testRect.alpha = 0.4
     testRect.zIndex = 99999
     testRect.physicsEnabled = false
 
@@ -1607,7 +1618,7 @@ function nodeTestLoad(game) {
     // testRect.bottomLeftOffset = new RelPoint(0,-0.5,0,-0.5)
     // testRect.width = 2
     testRect2.label = "testRect2"
-    nodeScene.AddChild(testRect2)
+    // nodeScene.AddChild(testRect2)
     
     testRect2.zIndex = 99999
     testRect2.physicsEnabled = false
@@ -1771,7 +1782,7 @@ function generateMenuUI() {
     nodeVisualBtn.AddEventListener("pointerUp", () => {
         RemoveLoader(menuScript)
         AddLoader(nodeTestScript)
-        // AddLoader(screenBordersScript)
+        AddLoader(screenBordersScript)
         DisplayGoBackBtn();
     }, nodeVisualBtn)
 
