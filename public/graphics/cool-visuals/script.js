@@ -1795,7 +1795,8 @@ function generateMenuUI() {
 
 
     // set y as a factor between top of layout and screen height
-    titleText.position = new Point(canvasSize.width / 2 - titleText.width / 2, menuButtonLayout.y + (canvasSize.height - menuButtonLayout.y) / 4)
+    // titleText.position = new Point(canvasSize.width / 2 - titleText.width / 2, menuButtonLayout.y + (canvasSize.height - menuButtonLayout.y) / 4)
+    titleText.position = new RelPoint(-titleText.width/2,0.5,0,0.7)
 
     menuScene.AddChild(titleText);
     menuScene.AddChild(menuButtonLayout);

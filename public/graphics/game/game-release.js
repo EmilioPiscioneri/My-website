@@ -884,6 +884,28 @@ class Game extends EventSystem {
         return new Point(oldPos.x, -oldPos.y + canvasHeight)
     }
 
+    /**
+     * Gets canvas size in PIXELS
+     */
+    GetCanvasSize() {
+        return {
+            width: game.pixiApplication.canvas.width,
+            x: game.pixiApplication.canvas.width,
+            height: game.pixiApplication.canvas.height,
+            y: game.pixiApplication.canvas.height,
+        }
+    }
+
+    GetCanvasSizeInUnits() {
+        // convert to pixels per unit
+        return {
+            width: game.pixiApplication.canvas.width / game.pixelsPerUnit.x,
+            x: game.pixiApplication.canvas.width / game.pixelsPerUnit.x,
+            height: game.pixiApplication.canvas.height / game.pixelsPerUnit.y,
+            y: game.pixiApplication.canvas.height / game.pixelsPerUnit.y,
+        }
+    }
+
 
 
     // need to be defined like this to keep "this" to the Game object under ticker listener
@@ -1283,7 +1305,7 @@ class Scene extends GameNode {
         }
 
         // ensure correct pos
-        child.position = child.position;
+        child.position = child.GetRelativePosition();
 
         // calls GameNode function first, note that this will fire child and descendant added events
         super._ProcessAddedChild(child)
@@ -1386,7 +1408,7 @@ class Scene extends GameNode {
     // Forces all objects in scene to update their positions. Use this when you change origin for example
     UpdateStageObjectPositions() {
         this.IterateDescendants((descendant) => {
-            descendant.position = descendant.position; // calls setter
+            descendant.position = descendant.GetRelativePosition(); // calls setter
         }, false, true)
 
     }
@@ -1436,11 +1458,16 @@ class RelPoint {
      * @param {Number} baseY Number that relY is a decimal of
      */
     static ToNormalPoint(relPoint, baseX, baseY) {
-        if (relPoint.relX == null)
-            relPoint.relX = 0
-        if (relPoint.relY == null)
-            relPoint.relY = 0
-        return new PIXI.Point(relPoint.x + baseX * relPoint.relX, relPoint.y + baseY * relPoint.relY)
+        if (relPoint.isRelPoint) {
+            if (relPoint.relX == null)
+                relPoint.relX = 0
+            if (relPoint.relY == null)
+                relPoint.relY = 0
+            return new PIXI.Point(relPoint.x + baseX * relPoint.relX, relPoint.y + baseY * relPoint.relY)
+        } else {
+            return relPoint.clone(); // do clone cos it'll expect a non-shared obj
+        }
+
     }
 
     clone() {
@@ -1619,7 +1646,7 @@ class GameObject extends GameNode {
     }
     set bottomLeftOffset(newValue) {
         // keep old bottom-left pos, see explanation later
-        let oldPos = this.position.clone()
+        let oldPos = this.GetRelativePosition()
         this._bottomLeftOffset = newValue;
         if (this.sharePosition) {
             // when bottom-left offset changes, you want to keep the object at its bottom-left position still. 
@@ -1630,20 +1657,47 @@ class GameObject extends GameNode {
         }
     }
 
-    
+
     _position = new RelPoint(0, 0, 0, 0);
 
-    // Object's local position. Either a PIXI point or RelPoint. POSITION X AND Y ARE READONLY, see GameObject.x and .y
+    // returns ._position as a normal point taking into account parent's size
+    _GetNormalPosition() {
+        // let normBottomLeftOffset = RelPoint.ToNormalPoint(this.bottomLeftOffset, this.width, this.height); // blOffset as a normal PIXI point 
+        let parentWidth
+        let parentHeight
+        if (!this.parent) {
+            parentWidth = 0;
+            parentHeight = 0;
+        }
+        else if (this.parent.isScene) {
+            let canvasSize = this.game.GetCanvasSizeInUnits()
+            parentWidth = canvasSize.width;
+            parentHeight = canvasSize.height
+        } else {
+            parentWidth = this.parent.width
+            parentHeight = this.parent.height
+        }
+        return RelPoint.ToNormalPoint(this._position, parentWidth, parentHeight)
+    }
+
+    GetRelativePosition() {
+        let normBottomLeftOffset = RelPoint.ToNormalPoint(this.bottomLeftOffset, this.width, this.height); // blOffset as a normal PIXI point 
+        let relPos = this._position.clone();
+        relPos.x += normBottomLeftOffset.x;
+        relPos.y += normBottomLeftOffset.y;
+        return relPos;
+    }
+
+    // Object's local position as a normal PIXI point. Either a PIXI point or RelPoint. POSITION X AND Y ARE READONLY, see GameObject.x and .y
     get position() {
         // return true pos + blOffset
-        // return VecMath.AddVecs(this._position, this.bottomLeftOffset)
-        return VecMath.AddVecs(RelPoint.ToNormalPoint(this._position, 0, 0), RelPoint.ToNormalPoint(this.bottomLeftOffset, this.width, this.height))
+        return VecMath.AddVecs(this._GetNormalPosition(), RelPoint.ToNormalPoint(this.bottomLeftOffset, this.width, this.height))
     }
     // Sets position to input bottom-left cartesian unit position
     set position(newPosition) {
-        // if (this.label == "testRect" || Number.isNaN(newPosition.x) || Number.isNaN(newPosition.y))
         let normBottomLeftOffset = RelPoint.ToNormalPoint(this.bottomLeftOffset, this.width, this.height); // blOffset as a normal PIXI point 
-        // if (this.isACircle || this.label == "testRect" ){
+        // if (this.label == "testRect" || Number.isNaN(newPosition.x) || Number.isNaN(newPosition.y)) {
+        //     // if (this.isACircle || this.label == "testRect" ){
         //     console.log("---------")
         //     console.log("Setting pos for", this.label, "to", newPosition)
         //     console.log("pre-pos", this.position)
@@ -1656,7 +1710,16 @@ class GameObject extends GameNode {
         // }
 
         /// true position (prob not bottom-left if u have offset instead it's position that renderer uses)
-        this._position = VecMath.SubtractVecs(RelPoint.ToNormalPoint(newPosition,0,0), normBottomLeftOffset)
+        // this._position = VecMath.SubtractVecs(this._GetNormalPosition(), normBottomLeftOffset)
+        newPosition = newPosition.clone(); // clone to avoid shared object bugs
+        this._position.x = newPosition.x - normBottomLeftOffset.x
+        this._position.y = newPosition.y - normBottomLeftOffset.y
+        // equals new value or 0 
+        this._position.relX = newPosition.relX || 0
+        this._position.relY = newPosition.relY || 0
+
+        // this._position = new Point(this._position.x, this._position.y), normBottomLeftOffset)
+        // this._position = VecMath.SubtractVecs(new Point(this._position.x, this._position.y), normBottomLeftOffset)
         // this._position = new Point(newPosition.x,newPosition.y)
 
         // // update this global pos and then descendants too
@@ -1704,27 +1767,7 @@ class GameObject extends GameNode {
     //     this._UpdateGlobalPosition(true)
     // }
 
-    /**
-     * sets the current global pos based on parent global pos (Make sure to call parent's func before children if there's a change)
-     * @param {Boolean} updateChildren Whether to recursively update children's global positions too 
-     */
-    _UpdateGlobalPosition(updateChildren = true) {
-        if (!this.parent || this.parent.isScene) {
-            this._globalPosition = this.position; // default
-        } else { // else parent isn't null and isnt scene
-            if (this.positionMethod == PositionMethod.Relative)
-                // for relative this pos + parent's global pos
-                this._globalPosition = VecMath.AddVecs(this.parent._globalPosition, this.position)
-            else if (this.positionMethod == PositionMethod.Absolute)
-                // absolute is just own pos
-                this._globalPosition = this.position;
-        }
 
-        // recursively update children
-        if (updateChildren && this.children.length != 0)
-            for (let child of this.children)
-                child._UpdateGlobalPosition(updateChildren)
-    }
 
     // position values
     get x() {
@@ -1732,7 +1775,7 @@ class GameObject extends GameNode {
     }
     set x(newX) {
         // avoid conflicts by clone
-        let newPos = this.position;
+        let newPos = this.GetRelativePosition();
         newPos.x = newX
         this.position = newPos
     }
@@ -1741,7 +1784,7 @@ class GameObject extends GameNode {
     }
     set y(newY) {
         // avoid conflicts by clone
-        let newPos = this.position;
+        let newPos = this.GetRelativePosition();
         newPos.y = newY
         this.position = newPos
     }
@@ -1769,31 +1812,31 @@ class GameObject extends GameNode {
     get globalPosition() {
         return this._globalPosition
     }
-    
-    _pivot = new RelPoint(0,0,0,0)
+
+    _pivot = new RelPoint(0, 0, 0, 0)
     // Pivot is a game units non Cartesian relative point. Its relative to object size
     // It represents where the stage object's transformations origin is. This affects rotation, position and scale I think
     // It's a pixi thing that I'm just interfacing btw
-    get pivot(){return this._pivot}
-    set pivot(newPivot){
+    get pivot() { return this._pivot }
+    set pivot(newPivot) {
         this._pivot = newPivot
         this._UpdateStageObjectPivot()
     }
-    
-    
+
+
 
     _width = 0;
     get width() {
         return this._width
     }
     set width(newWidth) {
-        let oldPos = this.position.clone()
+        let oldPos = this.GetRelativePosition()
         this._width = newWidth;
         // keep old bottom-left pos, see explanation later
         if (this.shareSize && this.stageObject) {
             this.stageObject.width = newWidth * this.game.pixelsPerUnit.x;// convert units to pixels
         }
-        
+
         if (this.sharePosition) {
             // See bottom-left offset for an explanation. The difference is size changes bottom-left pos just like offset
             this.position = oldPos
@@ -1806,7 +1849,7 @@ class GameObject extends GameNode {
         return this._height
     }
     set height(newHeight) {
-        let oldPos = this.position.clone()
+        let oldPos = this.GetRelativePosition()
         this._height = newHeight;
         if (this.shareSize && this.stageObject) {
             this.stageObject.height = newHeight * this.game.pixelsPerUnit.y;// convert units to pixels
@@ -1840,12 +1883,12 @@ class GameObject extends GameNode {
     }
 
     // returns stage object's angle of rotation in DEGREES
-    get angle(){if(this.stageObject){return this.stageObject.angle}}
-    set angle(newAngle){if(this.stageObject){this.stageObject.angle = newAngle}}
+    get angle() { if (this.stageObject) { return this.stageObject.angle } }
+    set angle(newAngle) { if (this.stageObject) { this.stageObject.angle = newAngle } }
 
     // returns stage object's angle of rotation in RADIANS
-    get rotation(){if(this.stageObject){return this.stageObject.rotation}}
-    set rotation(newRotation){if(this.stageObject){this.stageObject.rotation = newRotation}}
+    get rotation() { if (this.stageObject) { return this.stageObject.rotation } }
+    set rotation(newRotation) { if (this.stageObject) { this.stageObject.rotation = newRotation } }
 
     /**
      * Creates a game object, make sure to add it to the game after creation
@@ -1882,7 +1925,7 @@ class GameObject extends GameNode {
             // Fire all the setters of variables to just update them so they adhere to the new change visually
             this.width = this.width;
             this.height = this.height;
-            this.position = this.position;
+            this.position = this.GetRelativePosition();
 
         }, this)
 
@@ -1894,13 +1937,13 @@ class GameObject extends GameNode {
     }
 
     // Updates stage objects pivot based on current _pivot
-    _UpdateStageObjectPivot(){
-        if(this.stageObject){
+    _UpdateStageObjectPivot() {
+        if (this.stageObject) {
             // use stage object size but needs to be scaled down because it needs to be in coords of pixi drawing coords
-            let normalPivot = RelPoint.ToNormalPoint(this._pivot,this.width,this.height); // convert from relative to normal unit coords
+            let normalPivot = RelPoint.ToNormalPoint(this._pivot, this.width, this.height); // convert from relative to normal unit coords
             let pixelPivot = this.game.ConvertUnitsToPixels(normalPivot)
             // then finally diviide by scale so it is accurate to the coords that the object started with when it was drawn
-            this.stageObject.pivot = new Point(pixelPivot.x/this.stageObject.scale.x,pixelPivot.y/this.stageObject.scale.y);
+            this.stageObject.pivot = new Point(pixelPivot.x / this.stageObject.scale.x, pixelPivot.y / this.stageObject.scale.y);
         }
     }
 
@@ -1914,13 +1957,13 @@ class GameObject extends GameNode {
 
         // let newPosition = VecMath.AddVecs(this._position, this.game.origin);
         // let newPosition = this._position.clone();
-        
+
         /// true position (prob not bottom-left if u have offset instead it's position that renderer uses)
         // this._position = VecMath.SubtractVecs(RelPoint.ToNormalPoint(newPosition,0,0), normBottomLeftOffset)
         let normBottomLeftOffset = RelPoint.ToNormalPoint(this.bottomLeftOffset, this.width, this.height); // blOffset as a normal PIXI point 
-        let newPosition = VecMath.SubtractVecs(RelPoint.ToNormalPoint(this._globalPosition,0,0), normBottomLeftOffset) ;
+        let newPosition = VecMath.SubtractVecs(this._globalPosition, normBottomLeftOffset);
         // let newPosition = this._globalPosition.clone();
-        
+
 
         // let canvasHeight = game.pixiApplication.canvas.height / this.game.pixelsPerUnit.y; // convert from pixels to units
 
@@ -1935,6 +1978,28 @@ class GameObject extends GameNode {
         // this.stageObject.position = this.game.ConvertUnitsToPixels(newPosition);
         this.stageObject.position = this.game.ConvertUnitsToRawPixels(newPosition);
 
+    }
+
+    /**
+     * sets the current global pos based on parent global pos (Make sure to call parent's func before children if there's a change)
+     * @param {Boolean} updateChildren Whether to recursively update children's global positions too 
+     */
+    _UpdateGlobalPosition(updateChildren = true) {
+        if (!this.parent || this.parent.isScene) {
+            this._globalPosition = this.position; // default
+        } else { // else parent isn't null and isnt scene
+            if (this.positionMethod == PositionMethod.Relative)
+                // for relative this pos + parent's global pos
+                this._globalPosition = VecMath.AddVecs(this.parent._globalPosition, this.position)
+            else if (this.positionMethod == PositionMethod.Absolute)
+                // absolute is just own pos
+                this._globalPosition = this.position;
+        }
+
+        // recursively update children
+        if (updateChildren && this.children.length != 0)
+            for (let child of this.children)
+                child._UpdateGlobalPosition(updateChildren)
     }
 
     /**
@@ -1961,7 +2026,7 @@ class GameObject extends GameNode {
         child._SetCurrentScene(this._currentScene) // set its scene as this one (might be null)
 
         // update position to ensure it is correct with like origin and relative pos  
-        child.position = child.position
+        child.position = child.GetRelativePosition()
 
 
         // from now on there is a scene, this means we can add to its stage
@@ -1979,7 +2044,7 @@ class GameObject extends GameNode {
             // set to this scene 
             // console.log(iteratedDescendant)
             // also need to update the positions of descendants
-            iteratedDescendant.position = iteratedDescendant.position
+            iteratedDescendant.position = iteratedDescendant.GetRelativePosition()
 
             iteratedDescendant._SetCurrentScene(this._currentScene) // also adds stage obj to scene
         }
@@ -2202,7 +2267,7 @@ class Circle extends GameObject {
      * @param {Number} radius 
      * @param {Game} game 
      */
-    constructor(game, x=0, y=0, radius=1) {
+    constructor(game, x = 0, y = 0, radius = 1) {
         // Create the circle graphics object
         // let circleStageObject = new PIXI.Graphics()
         //     .circle(0, 0, radius)
@@ -2220,15 +2285,15 @@ class Circle extends GameObject {
 
         super(game, circleStageObject)
 
-        
+
 
         // Initialise position
         // this.x = x;
         // this.y = y;
-        this.position = new RelPoint(x,0,y,0)
+        this.position = new RelPoint(x, 0, y, 0)
         // console.log("this.position",this.position)
         // ensures calculations are done correctly
-        this.bottomLeftOffset = new RelPoint(0, -0.5,0,-0.5)
+        this.bottomLeftOffset = new RelPoint(0, -0.5, 0, -0.5)
     }
 
     // bypass stroke check will make it so it redraws background regardless of if the object has a stroke
@@ -3397,7 +3462,7 @@ class Slider extends UIElement {
         this.eventsToDestroy.push([this.backgroundGraphics, "pointerdown", this.HandlePointerDown])
         this.eventsToDestroy.push([this.slidingBall.stageObject, "pointerdown", this.HandlePointerDown])
 
-        
+
     }
 
     HandlePointerMoveOnCanvas = (pointerEvent) => {
@@ -3490,7 +3555,7 @@ class Slider extends UIElement {
         this.slidingBall.width = sliderDiameter;
 
         // centre ball
-        this.slidingBall.y = -(this.slidingBall.height-this.height) / 2;
+        this.slidingBall.y = -(this.slidingBall.height - this.height) / 2;
         // this.slidingBall.y = this.y + this.height / 2;
         // Make x set to the value with respect to min, max etc.
 
@@ -3952,7 +4017,7 @@ class GameObjectLayout extends GameObject {
         super.position = newPos
 
         // If intialised the inherited class
-        if(!this.isGameObjectLayout)
+        if (!this.isGameObjectLayout)
             return;
         this.dontFitLayout = true // no need to fit layout when it's all relative
         this.CalculateObjectPositions() // update and include the opposite of dont fit layout bool

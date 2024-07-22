@@ -21,3 +21,9 @@
 - The gravity calculations are done for absolute objects (or parent is scene or parent has physics not enabled ) so children don't have physics applied to them. Just keep note of that
 
 - For game objects the .position property represents the bottom-left position of object in cartesian game unit coordinates with all relative axes translated and added to .x and .y values. However, the ._position value represents the position to render the object at, and it also contains the relative axes that haven't been translated. This also means that the .x and .y values represent bottom-left positions with their getters and setters.
+
+- _position has relX and relY values, the only way to change it is to either set position as a RelPoint or use .relX and .relY values
+  
+- A gameObject's relative x and y values are relative to its parent size
+
+- When it comes to relative positions. The getter will include them into calculation because it'll return the bottom-left pos. However in the setter if you don't specify any relative x or y values it will simply overwrite them to 0. This means obj.position = obj.position will not change an object's position but it will remove any relative x and y values so use obj.position = obj.GetRelativePosition() to include the relative values
