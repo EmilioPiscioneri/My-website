@@ -2190,6 +2190,29 @@ class GameObject extends GameNode {
         // Destroy the stage object
         this.DestructStageObject()
     }
+
+    /**
+     * Gets whether or not the game object contains the point, optionally inclusive of all objects underneath
+     * @param {PIXI.Point} pointToCheck The point to check in the bounds of
+     * @param {Boolean} includeDescendants Whether to include descendants in bounds calculation
+     * @returns {Boolean} Whether or not the layout contains the point
+     */
+    ContainsPoint(pointToCheck, includeDescendants = true) {
+        let bounds;
+        if(includeDescendants)
+            bounds = this.GetTotalBoundingRect(false);
+        else
+            bounds = this.GetBoundingRect()
+
+        return (
+            // in between x bounds
+            // this.left <= point.x <= this.right
+            bounds.left <= pointToCheck.x && pointToCheck.x <= bounds.right
+            // and in between y bounds
+            // this.bottom <= point.y <= this.top
+            && bounds.bottom <= pointToCheck.y && pointToCheck.y <= bounds.top)
+
+    }
 }
 
 // #endregion
@@ -2914,6 +2937,7 @@ class TextContainer extends GameObject {
  * A button game object with graphics already done for you.
  */
 class Button extends TextContainer {
+    isPointerDown = false; // whether pointer is down on button
     /**
          * Create a new button, the graphics are created for you (not added to game), you just need to set the different appearance options manually.
          * @param {Game} game 
@@ -2927,19 +2951,28 @@ class Button extends TextContainer {
         super(game, text, useBitmapText, textStyleOptions);
 
         // Just add interactivity
-        this.backgroundGraphics.addEventListener("pointerdown", this.HandlePointerDown);
-        this.backgroundGraphics.addEventListener("pointerup", this.HandlePointerUp);
+        this.backgroundGraphics.addEventListener("pointerdown", this._HandlePointerDown);
+        this.game.AddEventListener("pointerUp", this._HandlePointerUp);
         // the others are automatically destroyed through the third poarameter
-        this.eventsToDestroy.push([this.backgroundGraphics, "pointerdown", this.HandlePointerDown])
-        this.eventsToDestroy.push([this.backgroundGraphics, "pointerup", this.HandlePointerUp])
+        this.eventsToDestroy.push([this.backgroundGraphics, "pointerdown", this._HandlePointerDown])
+        // this.eventsToDestroy.push([this.backgroundGraphics, "pointerup", this.HandlePointerUp])
     }
 
-    HandlePointerDown = (pointerEvent) => {
+    _HandlePointerDown = (pointerEvent) => {
+        this.isPointerDown = true
         this.FireListener("pointerDown", pointerEvent);
     }
 
-    HandlePointerUp = (pointerEvent) => {
-        this.FireListener("pointerUp", pointerEvent);
+    // handles pointer up on canvas
+    _HandlePointerUp = (pointerEvent) => {
+        // if pointer is down on button, then now it is released on button (don't do anything if mouse up was not on button) 
+        if(this.isPointerDown && this.ContainsPoint(this.game.pointerPos)){
+            this.isPointerDown = false
+            this.FireListener("pointerUp", pointerEvent);
+        }else{
+            // pointer up was released elsewhere on screen
+            this.isPointerDown = false
+        }
     }
 
 
@@ -3567,7 +3600,7 @@ class Slider extends UIElement {
         // console.log("this.max",this.max)
 
         // Then you times that deimcal by width to get the distance in pixels and then introduce the x back into it so it's not just relative to origin of x
-        this.slidingBall.x = factor * this.width
+        this.slidingBall.x = factor * this.width - this.slidingBall.width/2
         // this.slidingBall.x = this.x + factor * this.width
 
         // console.log(factor)
@@ -3916,7 +3949,7 @@ class LayoutExpander extends Button {
         // destroy down and right arrow graphics objects
         this.expanderIcon.SetStageObject(null)
         this.rightArrowGraphics.destroy()
-        this.downArrowGraphics.destroy()
+        // this.downArrowGraphics.destroy()
         super.Destruct();
     }
 
@@ -4379,35 +4412,7 @@ class GameObjectLayout extends GameObject {
     }
 
 
-    /**
-     * Gets whether or not the layout contains the point inclusive of all objects underneath and layout edges
-     * @param {PIXI.Point} pointToCheck The point to check in the bounds of 
-     * @returns {Boolean} Whether or not the layout contains the point
-     */
-    ContainsPoint(pointToCheck) {
-        // console.log("pointToCheck",pointToCheck)
-
-        // let layoutBounds = {
-        //     left: this.x,
-        //     right: this.x + this.width,
-        //     bottom: this.y,
-        //     top: this.y+this.height
-        // }
-
-
-        let layoutBounds = this.GetBoundingRect();
-
-
-
-        return (
-            // in between x bounds
-            // this.left <= point.x <= this.right
-            layoutBounds.left <= pointToCheck.x && pointToCheck.x <= layoutBounds.right
-            // and in between y bounds
-            // this.bottom <= point.y <= this.top
-            && layoutBounds.bottom <= pointToCheck.y && pointToCheck.y <= layoutBounds.top)
-
-    }
+    
 
     // Redraw the background graphic
     RedrawBackground() {
