@@ -3633,13 +3633,6 @@ class LayoutExpander extends Button {
         .lineTo(1, 0.5)
         .fill("white")
 
-    // an arrow that points down
-    downArrowGraphics = new Graphics()
-        .moveTo(0, 0)
-        .lineTo(1, 0)
-        .lineTo(0.5, 1)
-        .fill("white")
-
     // downArrowGraphics = new Graphics()
     //     .poly([
     //         new Point(0,0),
@@ -3754,6 +3747,10 @@ class LayoutExpander extends Button {
 
         this.expanderIcon = new GameObject(game, this.rightArrowGraphics)
         this.expanderIcon.static = true
+        this.expanderIcon.zIndex = this.zIndex + 1
+        // make the pivot at the center of the object so it rotates around center
+        this.expanderIcon.bottomLeftOffset = new RelPoint(0,0-.5,0,0.5)
+        this.expanderIcon.pivot = new RelPoint(0,0.5,0,0.5)
 
         this.UpdateIconSize();
 
@@ -3868,11 +3865,12 @@ class LayoutExpander extends Button {
         //     this.downArrowGraphicsInitialised = true
         //     intialiseSize = true
         // }
-        this.expanderIcon.SetStageObject(this.downArrowGraphics, false, false)
+        // this.expanderIcon.SetStageObject(this.downArrowGraphics, false, false)
         // rotate icon to face down
-        this.expanderIcon.zIndex = this.zIndex + 1
-        this.expanderIcon.width = this.expanderIcon.width
-        this.expanderIcon.height = this.expanderIcon.height
+        // this.expanderIcon.zIndex = this.zIndex + 1
+        // this.expanderIcon.width = this.expanderIcon.width
+        // this.expanderIcon.height = this.expanderIcon.height
+        this.expanderIcon.angle = 90; // face down
 
         // 90 degrees is pi/2
         // this.expanderIcon.stageObject.rotation = PIdiv2
@@ -3904,8 +3902,9 @@ class LayoutExpander extends Button {
         //     this.rightArrowGraphicsInitialised = true
         //     intialiseSize = true
         // }
-        this.expanderIcon.SetStageObject(this.rightArrowGraphics, false, false)
-        this.expanderIcon.zIndex = this.zIndex + 1
+        // this.expanderIcon.SetStageObject(this.rightArrowGraphics, false, false)
+        // this.expanderIcon.zIndex = this.zIndex + 1
+        this.expanderIcon.angle = 0; // face right
 
         // rotate icon to face right
         // this.expanderIcon.stageObject.rotation = 0
