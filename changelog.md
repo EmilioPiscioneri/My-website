@@ -28,3 +28,6 @@ This version involves the addition of a node structure and scenes. I also added 
 
 ### Game V 0.3.1 - 21/7/24 - More node and position functionality
 Added game.origin. Added node.AddChildAt(). Added hidden children. Added position methods (relative and absolute positions). 
+
+### Game V 0.3.2 - 23/7/24 - Added support for pivots and relative positions
+Pivots are a PIXI function that I interface with. I added bottom-left offsets which specify from the true position or rendered position how to get to the bottom-left position which makes calculations accurate as they will always be using the bottom-left. Added relative positions which positions things relative to parent sizing. Basically all of this was for easier positioning and anchoring objects and also to make my library be able to work with PIXI rotations in a way that makes them actually useful and as much of a pain to deal with.

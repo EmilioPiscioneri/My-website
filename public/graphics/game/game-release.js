@@ -4,7 +4,7 @@ let PIdiv2 = Math.PI / 2
 
 /*
     GAME.JS
-    VERSION 0.3
+    VERSION 0.3.2
 */
 
 /**
