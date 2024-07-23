@@ -662,6 +662,8 @@ class Game extends EventSystem {
     _pixelsPerUnit = new PIXI.Point(50, 50); // each game unit is a certain amount of pixels in x and y 
     initialised = false; // whether the pixi application has been initialised
 
+    pointerCursorRequests = 0; // this is the total number of things that want the cursor over canvas to be a "pointer"
+
     _origin = new Point(0, 0); // Reference for where all objects should be positioned relative to (starting from bottom-left as 0,0 and cartesian)
     // origin .x and .y are read only. Instead use setter to update
     get origin() {
@@ -914,10 +916,22 @@ class Game extends EventSystem {
             return
         if (this.globalPhysicsEnabled) {
             this.PhysicsTickUpdate();
-
         }
+
+        this.HandleCursorDisplay()
         // fire on tick event
         this.FireListener("tick");
+    }
+
+    // changes what cursor is displayed
+    HandleCursorDisplay() {
+        // at least 1 wanting to displaying pointer
+        if (this.pointerCursorRequests > 0) {
+            game.pixiApplication.canvas.style.cursor = "pointer"
+        } else {
+            // default
+            game.pixiApplication.canvas.style.cursor = ""
+        }
     }
 
     // Updates game physics on tick
@@ -2199,10 +2213,15 @@ class GameObject extends GameNode {
      */
     ContainsPoint(pointToCheck, includeDescendants = true) {
         let bounds;
-        if(includeDescendants)
+        if (includeDescendants)
             bounds = this.GetTotalBoundingRect(false);
         else
             bounds = this.GetBoundingRect()
+
+        if(!bounds) {
+            console.warn("Tried to check if point exists under object with no bounds")
+            return;
+        }
 
         return (
             // in between x bounds
@@ -2938,6 +2957,7 @@ class TextContainer extends GameObject {
  */
 class Button extends TextContainer {
     isPointerDown = false; // whether pointer is down on button
+    requestedPointer = false; // whether requested screen to display pointer cursor
     /**
          * Create a new button, the graphics are created for you (not added to game), you just need to set the different appearance options manually.
          * @param {Game} game 
@@ -2952,10 +2972,29 @@ class Button extends TextContainer {
 
         // Just add interactivity
         this.backgroundGraphics.addEventListener("pointerdown", this._HandlePointerDown);
-        this.game.AddEventListener("pointerUp", this._HandlePointerUp);
+        this.game.AddEventListener("pointerUp", this._HandlePointerUp, this);
+        this.game.AddEventListener("pointerMove", this._HandlePointerMove, this)
         // the others are automatically destroyed through the third poarameter
         this.eventsToDestroy.push([this.backgroundGraphics, "pointerdown", this._HandlePointerDown])
         // this.eventsToDestroy.push([this.backgroundGraphics, "pointerup", this.HandlePointerUp])
+    }
+
+    _HandlePointerMove = (pointerEvent) => {
+        // if moving over button
+        if (this.isVisible && this.ContainsPoint(this.game.pointerPos, false) ) {
+            if (!this.requestedPointer) {
+                this.requestedPointer = true
+                this.game.pointerCursorRequests++
+            }
+            this.FireListener("pointerMove", pointerEvent)
+
+        } // not moving over mouse button and is displaying cursor
+        else if (this.requestedPointer) {
+            this.requestedPointer = false
+            this.game.pointerCursorRequests--
+
+        }
+
     }
 
     _HandlePointerDown = (pointerEvent) => {
@@ -2966,10 +3005,10 @@ class Button extends TextContainer {
     // handles pointer up on canvas
     _HandlePointerUp = (pointerEvent) => {
         // if pointer is down on button, then now it is released on button (don't do anything if mouse up was not on button) 
-        if(this.isPointerDown && this.ContainsPoint(this.game.pointerPos)){
+        if (this.isPointerDown && this.ContainsPoint(this.game.pointerPos, false)) {
             this.isPointerDown = false
             this.FireListener("pointerUp", pointerEvent);
-        }else{
+        } else {
             // pointer up was released elsewhere on screen
             this.isPointerDown = false
         }
@@ -3600,7 +3639,7 @@ class Slider extends UIElement {
         // console.log("this.max",this.max)
 
         // Then you times that deimcal by width to get the distance in pixels and then introduce the x back into it so it's not just relative to origin of x
-        this.slidingBall.x = factor * this.width - this.slidingBall.width/2
+        this.slidingBall.x = factor * this.width - this.slidingBall.width / 2
         // this.slidingBall.x = this.x + factor * this.width
 
         // console.log(factor)
@@ -3782,8 +3821,8 @@ class LayoutExpander extends Button {
         this.expanderIcon.static = true
         this.expanderIcon.zIndex = this.zIndex + 1
         // make the pivot at the center of the object so it rotates around center
-        this.expanderIcon.bottomLeftOffset = new RelPoint(0,0-.5,0,0.5)
-        this.expanderIcon.pivot = new RelPoint(0,0.5,0,0.5)
+        this.expanderIcon.bottomLeftOffset = new RelPoint(0, 0 - .5, 0, 0.5)
+        this.expanderIcon.pivot = new RelPoint(0, 0.5, 0, 0.5)
 
         this.UpdateIconSize();
 
@@ -4412,7 +4451,7 @@ class GameObjectLayout extends GameObject {
     }
 
 
-    
+
 
     // Redraw the background graphic
     RedrawBackground() {
