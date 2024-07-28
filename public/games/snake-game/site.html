@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en-us">
+
+<head>
+    <title>Snake game</title>
+    <!-- metadata -->
+    <meta charset="UTF-8">
+    <meta name="description" content="snake game">
+    <meta name="keywords" content="Website, can-of-worms">
+    <meta name="author" content="Emilio">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- Main stuff -->
+    <link rel="stylesheet" href="/main/main-style.css">
+    <!-- Site specific stuff -->
+    <link rel="stylesheet" href="style.css">
+
+    <!-- Modules -->
+
+    <script src="/graphics/game/pixi.js"></script> <!-- Graphics library -->
+    <script src="/graphics/game/game-release.js"></script>
+</head>
+
+<body class="hide-scrollbar">
+    <!-- Top bar -->
+    <div>
+        <!-- Server uses id attribute to find element and fill it in with nav stuff -->
+        <nav class="top-bar" id="top-nav-bar">
+        </nav>
+    </div>
+
+    <!-- Main page content n that -->
+    <main>
+        <div class="inner-content" id="main-inner-content">
+            <h2>Snake game</h2>
+            <p>This is the snake game. I made a not so good version in python and I thought I should retry making it in javascript and adding it to the website</p>
+        </div>
+        <div id="graphics-container" tabindex="-1" class="graphics-container">
+
+        </div>
+    </main>
+
+    <footer>
+    </footer>
+</body>
+
+<!-- Main js -->
+<script src="/main/main-script.js"></script>
+<!-- Site specific js -->
+<script src="script.js"></script>
+
+</html>
