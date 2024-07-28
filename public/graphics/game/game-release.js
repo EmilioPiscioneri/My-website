@@ -2982,8 +2982,8 @@ class Button extends TextContainer {
     }
 
     _HandlePointerMove = (pointerEvent) => {
-        // if moving over button
-        if (this.isVisible && this.ContainsPoint(this.game.pointerPos, false) ) {
+        // is visible, scene is displayed and if moving over button
+        if (this.isVisible && this.currentScene == this.game.activeScene && this.ContainsPoint(this.game.pointerPos, false) ) {
             if (!this.requestedPointer) {
                 this.requestedPointer = true
                 this.game.pointerCursorRequests++
@@ -2994,7 +2994,6 @@ class Button extends TextContainer {
         else if (this.requestedPointer) {
             this.requestedPointer = false
             this.game.pointerCursorRequests--
-
         }
 
     }
