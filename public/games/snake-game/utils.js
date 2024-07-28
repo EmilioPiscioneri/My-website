@@ -32,7 +32,17 @@ export function GetPointerPosFromCanvasPos(position) {
 
 //https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Math/random
 
-// Returns a random number between the specified values. The returned value is no lower than (and may possibly equal) min, and is less than (and not equal) max.
+/**  Returns a random number between range. Min inclusive, max exclusive
+ */
 export function GetRandomRange(min, max) {
     return Math.random() * (max - min) + min;
 }
+
+export function GetRandomIntInclusive(min, max) {
+    // floor and ceil
+    min = Math.floor(min)
+    max = Math.ceil(max)
+    // E.g. if min, max is 5,10 then 5 is range and .random() is 0 to 1 exclusive of 1 meaning max range can be 4.999 so you do + 1 so max is 5.9999 and then you floor it so
+    // it becomes inclsuive. Then you add back minimum 
+    return Math.floor(Math.random() * (max - min + 1) + min); // The maximum is inclusive and the minimum is inclusive
+  }

@@ -4,6 +4,7 @@
 
 import { Script } from "./scriptLoader.js";
 import globals from "./globals.js";
+import { GetRandomIntInclusive } from "./Utils.js";
 var Point = PIXI.Point
 
 // scene to put the snake game on, is initialised later
@@ -17,6 +18,7 @@ class Snake {
     gameMap;
     lastMoveTimestamp = Date.now(); //unix timestap, last time the snake was moved, start as current time because it shouldn't immediately move
     moveInterval = 100; // how many ms to wait between moving the snake
+    canMove = false; // whetehr the snake is legally allowed to move
     // direction that the snake is travelling in
     get direction() {
         // just return the direction of the most recent tile
@@ -36,6 +38,7 @@ class Snake {
      */
     constructor(gameMap, startPos, startDirection = Direction.UP) {
         this.gameMap = gameMap
+        gameMap.snake = this
 
         // now let's start by creating our first tile at the start pos
         startPos = startPos || new Point(Math.floor(gameMap.tileQuantities.x / 2), Math.floor(gameMap.tileQuantities.y / 2)) // use start pos or default to middle of map
@@ -64,6 +67,8 @@ class Snake {
 
     // moves the snake once in the current direciotn it is facing
     Move() {
+        if (!this.canMove)
+            return
         // get the new position that the tile will be when added to front
 
         // do the current pos of front tile + direction as unit vector
@@ -77,16 +82,78 @@ class Snake {
         this.AddTileToFront(tile)
 
         // setup next time
-        this.lastMoveTimestamp = Date.now()
+        this.lastMoveTimestamp = Date.now();
+
+        // new FruitController(this.gameMap).GenerateFruit(1)
+    }
+
+    // Returns boolean
+    IsOutOfBounds() {
+        // Check if out of bounds
+        let frontTile = this.tiles[0]
+        return (// x-axis
+            frontTile.position.x < 0 || frontTile.position.x > this.gameMap.tileQuantities.x ||
+            // y-axis
+            frontTile.position.y < 0 || frontTile.position.y > this.gameMap.tileQuantities.y)
+
+
     }
 
     // moves the snake and processes anything else
     Update() {
+        if (this.gameMap.gameEnded)
+            return
+
+
+
+
         // if enough time has passed for the next move
-        if(Date.now() - this.lastMoveTimestamp >= this.moveInterval)
+        if (Date.now() - this.lastMoveTimestamp >= this.moveInterval)
             this.Move(); // do it
 
+        // if out of bounds 
+        if (this.IsOutOfBounds()) {
+            this.gameMap.EndGame("out of bounds")
+            return
+            // console.warn("snake out of bounds")
+            // new front tile is touching itself, scnd param is exclude front
+        } else if (this.ContainsTile(this.tiles[0].position, true)) {
+            this.gameMap.EndGame("touching itself")
 
+        }
+
+        // fruit has been eated
+        for (const fruit of this.gameMap.fruitController.fruits) {
+            let frontTile = this.tiles[0]
+            if (frontTile.position.x == fruit.position.x && frontTile.position.y == fruit.position.y) {
+                let backTile = this.tiles[this.tiles.length - 1]
+                // go one back from back tile
+                let newTilePos = VecMath.AddVecs(backTile.position, Direction.ToVector(Direction.GetOppositeDirection(backTile.direction)))
+
+                // create tile, inherit the same direction as current
+                let tile = new SnakeTile(this.gameMap, newTilePos, backTile.direction)
+
+                this.AddTileToBack(tile)
+
+                // remove fruit and gen new one
+                this.gameMap.fruitController.RemoveFruit(fruit)
+                this.gameMap.fruitController.GenerateFruit()
+            }
+        }
+
+
+
+
+
+    }
+
+    // Whether the snake has a tile with given position
+    ContainsTile(tilePosition, excludeFront = false) {
+        for (let snakeTile of this.tiles) {
+            if ((snakeTile.position.x == tilePosition.x && snakeTile.position.y == tilePosition.y) && !(excludeFront == true && snakeTile == this.tiles[0]))
+                return true
+        }
+        return false
     }
 }
 
@@ -109,13 +176,18 @@ class GameMap {
     // the game obj for everything
     game;
 
+    // these add to this when created
+    fruitController;
+    snake;
+
     // gets updated whenever the quantiies changes
     _tileSize;
     // Read-only, it is the size of each tile in game units
     get tileSize() {
         return this._tileSize
-
     }
+
+    gameEnded = false
 
 
     /**
@@ -132,11 +204,20 @@ class GameMap {
         this.tileQuantities = new Point(
             horizontalTiles,
             verticalTiles)
+        // controller adds itself one creation
+        // this.fruitController = fruitController
     }
 
     // converts a map tile pos to scene pos that is in game units
     GetScenePosition(tilePosition) {
         return new Point(tilePosition.x * this._tileSize.x, tilePosition.y * this._tileSize.y)
+    }
+
+    // ends the game
+    EndGame(reason) {
+        this.gameEnded = true
+        this.snake.canMove = false
+        console.warn("GAME ENDED", reason)
     }
 }
 
@@ -159,22 +240,23 @@ class SnakeTile {
 
 
         // create a gameObject and add to scene
-        let tileGameObj = new GameObject(gameMap.game,
+        let gameObj = new GameObject(gameMap.game,
             new PIXI.Graphics()
                 .rect(0, 0, gameMap.tileSize.x, gameMap.tileSize.y)
                 .fill("white"))
 
         // position the tile 
-        tileGameObj.position = gameMap.GetScenePosition(position)
+        gameObj.position = gameMap.GetScenePosition(position)
+        gameObj.physicsEnabled = false
 
 
 
         // add to scene
-        snakeScene.AddChild(tileGameObj)
-        
+        snakeScene.AddChild(gameObj)
+
         // intialise this vars
 
-        this.gameObject = tileGameObj
+        this.gameObject = gameObj
         this.direction = direction
         this.position = position
     }
@@ -188,12 +270,157 @@ class SnakeTile {
 
 }
 
-class FruitController{
-    
+class FruitController {
+    fruits = []; // all fruits in scene
+    gameMap;
+    constructor(gameMap) {
+        if (!gameMap)
+            throw new Error("smh my head no param")
+        this.gameMap = gameMap
+        // add controller to map
+        gameMap.fruitController = this;
+    }
+
+    // generates a fruit and puts in scene
+    GenerateFruit() {
+        // okay so how this is gonna work is iterate each row and then iterate each tile in that row, see if the snake is taking up that space.
+        // Basically you record an array of ranges (array with [min,max]) which are inclusive and are the areas that the fruit can generate in
+
+        let rowRanges = {};
+
+        // populate the ranges. Note it is done from bottom row to top row (0 to max y)
+
+        for (let rowIndex = 0; rowIndex < this.gameMap.tileQuantities.y; rowIndex++) {
+            let lastColumnIntersect; // don't initialise
+            let hasFreeColumn = false; // if the row has a free column
+            let finalArray = [];
+
+            for (let columnIndex = 0; columnIndex < this.gameMap.tileQuantities.x; columnIndex++) {
+                let tile = new Point(columnIndex, rowIndex)
+
+                // if intersect was found 
+                if (snake.ContainsTile(tile)) {
+                    // previous tile wasn't intersecting (using last column intersect) 
+
+                    // skip if intersection at start
+                    // If the last found intersection + 1 (1 to the right) is the iterated column then there has been no gap since the last recorded intersection, no range found
+                    // so, only go through if it isn't the case
+                    // if intersect doesn't exist (intersect+1 == NaN) make it 0 so range is correct
+                    if (columnIndex != 0 && (lastColumnIntersect + 1 || 0) != columnIndex) {
+                        // go from last available spot to the current one - 1 because this iterated one is intersecting so go back 1 to when it wasn't intersecting
+                        finalArray.push([(lastColumnIntersect + 1 || 0), columnIndex - 1])
+                        hasFreeColumn = true
+                    }
+
+                    // just recorded an intersection
+                    lastColumnIntersect = columnIndex
+                } else if (columnIndex == this.gameMap.tileQuantities.x - 1) {
+                    if (lastColumnIntersect == undefined)
+                        finalArray.push([0, columnIndex])
+                    else
+                        finalArray.push([lastColumnIntersect + 1, columnIndex])
+                    hasFreeColumn = true
+                }
+            }
+
+            if(hasFreeColumn){
+                rowRanges[rowIndex] = finalArray;
+            }
+
+        }
+
+        // if has no available spots
+        let rowRangesKeys = Object.keys(rowRanges)
+        if(rowRangesKeys.length == 0){
+            this.gameMap.EndGame("FINISHED THE GAME")
+            return
+        }
+
+        // choose a random row (from ranges obj which isn't ordered and may not have some arrays), then range, the column in range
+        let rowIndex = GetRandomIntInclusive(0, this.gameMap.tileQuantities.y - 1)
+        let rangeArrays = Object.values(rowRanges)[rowIndex] //rowRanges[rowIndex]
+        let rangeIndex = GetRandomIntInclusive(0, rangeArrays.length - 1)
+        let range = rangeArrays[rangeIndex]
+        let columnIndex = GetRandomIntInclusive(range[0], rowRangesKeys[rowIndex])
+
+        let newPosition = new Point(columnIndex, rowIndex)
+
+        // create fruit
+        let fruit = new Fruit(this.gameMap, newPosition)
+        this.AddFruit(fruit)
+
+        // console.log(rowRanges)
+
+    }
+
+    // Adds fruit to the array 
+    AddFruit(fruitToAdd) {
+        this.fruits.push(fruitToAdd)
+    }
+
+    // Removes a fruit
+    RemoveFruit(fruitToRemove) {
+        // remove 
+        this.fruits.splice(this.fruits.indexOf(fruitToRemove), 1)
+        // prepare for GC
+        fruitToRemove.Destruct()
+    }
+
+    Destruct() {
+        for (const fruit of this.fruits) {
+            fruit.Destruct()
+        }
+        this.fruits = []
+    }
+
+}
+
+// fruit that the snake will consume
+class Fruit {
+    position //= new Point(0, 0)
+    gameMap;
+    // game obj of the fruit in scene
+    gameObject;
+    /**
+     * 
+     * @param {GameMap} gameMap 
+     * @param {Point} position the position of the fruit in map units  
+     */
+    constructor(gameMap, position = new Point(0, 0)) {
+        this.gameMap = gameMap
+
+
+        // create a gameObject and add to scene
+        let gameObj = new GameObject(gameMap.game,
+            new PIXI.Graphics()
+                .rect(0, 0, gameMap.tileSize.x, gameMap.tileSize.y)
+                .fill("red"))
+
+        gameObj.physicsEnabled = false
+        // position the tile 
+        gameObj.position = gameMap.GetScenePosition(position)
+
+
+
+        // add to scene
+        snakeScene.AddChild(gameObj)
+
+        // intialise this vars
+
+        this.gameObject = gameObj
+        this.position = position
+    }
+
+    // prepare for GC
+    Destruct() {
+        snakeScene.RemoveChild(this.gameObject)
+        this.gameObject.Destruct()
+    }
 }
 
 // the snake for the game
-let snake; 
+let snake;
+let firstKeyPressed = false; // whether a movement key has been pressed, this starts the game
 
 // setup for a new scene to be done
 function SetupSnakeScene(game) {
@@ -203,8 +430,12 @@ function SetupSnakeScene(game) {
 
     // create a map
     let map = new GameMap(game, Math.floor(canvasSize.x * 2), Math.floor(canvasSize.y * 2))
+    let fruitController = new FruitController(map)
     // create a snake
     snake = new Snake(map)
+    // create first fruit
+    fruitController.GenerateFruit()
+    // let fruit = new Fruit(map, new Point(4, 4))
 
 }
 
@@ -229,8 +460,10 @@ function LoadSnakeGame(game) {
 
 }
 
-function HandleKeyDown(keyEvent){
-    console.log(keyEvent)
+
+
+function HandleKeyDown(keyEvent) {
+    // console.log(keyEvent)
     let code = keyEvent.code
 
     // just change direction and the snake will update itself 
@@ -239,28 +472,35 @@ function HandleKeyDown(keyEvent){
     let directionToMove;
 
     // up
-    if(code == "KeyW" || code == "ArrowUp"){
+    if (code == "KeyW" || code == "ArrowUp") {
         directionToMove = Direction.UP
     }
     // down
-    else if(code == "KeyS" || code == "ArrowDown"){
+    else if (code == "KeyS" || code == "ArrowDown") {
         directionToMove = Direction.DOWN
-        
+
     }
     // left
-    else if(code == "KeyA" || code == "ArrowLeft"){
+    else if (code == "KeyA" || code == "ArrowLeft") {
         directionToMove = Direction.LEFT
-        
+
     }
     // right
-    else if(code == "KeyD" || code == "ArrowRight"){
-        directionToMove = Direction.RIGHT   
+    else if (code == "KeyD" || code == "ArrowRight") {
+        directionToMove = Direction.RIGHT
     }
 
-    // if mvmnt key was pressed and it wasn't the inverse of the current direction of snake
-    if(directionToMove && directionToMove != Direction.GetOppositeDirection(snake.direction)){
-        // set it
-        snake.direction = directionToMove
+    // if mvmnt key was pressed 
+    if (directionToMove) {
+        if (!firstKeyPressed) {
+            firstKeyPressed = true
+            snake.canMove = true
+        }
+
+        // if key direction isn't the inverse of the current direction of snake
+        if (directionToMove != Direction.GetOppositeDirection(snake.direction))
+            // set it
+            snake.direction = directionToMove
     }
 }
 
