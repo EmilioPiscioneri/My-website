@@ -533,6 +533,34 @@ class Direction {
     static RIGHT = 2;
     static DOWN = 3;
     static UP = 4;
+
+    static GetOppositeDirection(direction){
+        if(direction == this.LEFT)
+            return this.RIGHT
+        else if(direction == this.RIGHT)
+            return this.LEFT
+        else if(direction == this.DOWN)
+            return this.UP
+        else if(direction == this.UP)
+            return this.DOWN
+        
+    }
+
+    /**
+     * Converts a direction to a unit vector that represents the direction
+     * @param {Direction} direction 
+     * @returns {Point}
+     */
+    static ToVector(direction){
+        if(direction == this.LEFT)
+            return new Point(-1,0)
+        else if(direction == this.RIGHT)
+            return new Point(1,0)
+        else if(direction == this.DOWN)
+            return new Point(0,-1)
+        else if(direction == this.UP)
+            return new Point(0,1)
+    }
 }
 
 /**
