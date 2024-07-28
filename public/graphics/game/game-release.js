@@ -1253,6 +1253,8 @@ class Scene extends GameNode {
 
     constructor(game) {
         super();
+        if(!game)
+            throw new Error("Didn't initialise scene with game object")
         this.game = game;
         this.label = "Scene"
     }

@@ -871,7 +871,7 @@ class Game extends EventSystem {
      * @param {PIXI.Point} oldPos In GAME UNITS, the old position that you want to convert to 
      */
     ConvertToCartesian(oldPos) {
-        let canvasHeight = game.pixiApplication.canvas.height / this.pixelsPerUnit.y; // convert from pixels to units
+        let canvasHeight = this.pixiApplication.canvas.height / this.pixelsPerUnit.y; // convert from pixels to units
 
         return new Point(oldPos.x, oldPos.y * -1 + canvasHeight)
     }
@@ -881,7 +881,7 @@ class Game extends EventSystem {
      * @param {PIXI.Point} oldPos In PIXELS, the old position that you want to convert to 
      */
     ConvertPixelsToNonCartesian(oldPos) {
-        let canvasHeight = game.pixiApplication.canvas.height;
+        let canvasHeight = this.pixiApplication.canvas.height;
 
         return new Point(oldPos.x, -oldPos.y + canvasHeight)
     }
@@ -891,20 +891,20 @@ class Game extends EventSystem {
      */
     GetCanvasSize() {
         return {
-            width: game.pixiApplication.canvas.width,
-            x: game.pixiApplication.canvas.width,
-            height: game.pixiApplication.canvas.height,
-            y: game.pixiApplication.canvas.height,
+            width: this.pixiApplication.canvas.width,
+            x: this.pixiApplication.canvas.width,
+            height: this.pixiApplication.canvas.height,
+            y: this.pixiApplication.canvas.height,
         }
     }
 
     GetCanvasSizeInUnits() {
         // convert to pixels per unit
         return {
-            width: game.pixiApplication.canvas.width / game.pixelsPerUnit.x,
-            x: game.pixiApplication.canvas.width / game.pixelsPerUnit.x,
-            height: game.pixiApplication.canvas.height / game.pixelsPerUnit.y,
-            y: game.pixiApplication.canvas.height / game.pixelsPerUnit.y,
+            width: this.pixiApplication.canvas.width / this.pixelsPerUnit.x,
+            x: this.pixiApplication.canvas.width / this.pixelsPerUnit.x,
+            height: this.pixiApplication.canvas.height / this.pixelsPerUnit.y,
+            y: this.pixiApplication.canvas.height / this.pixelsPerUnit.y,
         }
     }
 
@@ -927,10 +927,10 @@ class Game extends EventSystem {
     HandleCursorDisplay() {
         // at least 1 wanting to displaying pointer
         if (this.pointerCursorRequests > 0) {
-            game.pixiApplication.canvas.style.cursor = "pointer"
+            this.pixiApplication.canvas.style.cursor = "pointer"
         } else {
             // default
-            game.pixiApplication.canvas.style.cursor = ""
+            this.pixiApplication.canvas.style.cursor = ""
         }
     }
 
@@ -1253,6 +1253,8 @@ class Scene extends GameNode {
 
     constructor(game) {
         super();
+        if(!game)
+            throw new Error("Didn't initialise scene with game object")
         this.game = game;
         this.label = "Scene"
     }
@@ -1711,17 +1713,17 @@ class GameObject extends GameNode {
     set position(newPosition) {
         let normBottomLeftOffset = RelPoint.ToNormalPoint(this.bottomLeftOffset, this.width, this.height); // blOffset as a normal PIXI point 
         // if (this.label == "testRect" || Number.isNaN(newPosition.x) || Number.isNaN(newPosition.y)) {
-        //     // if (this.isACircle || this.label == "testRect" ){
-        //     console.log("---------")
-        //     console.log("Setting pos for", this.label, "to", newPosition)
-        //     console.log("pre-pos", this.position)
-        //     console.log("pre-stage-pos", this.stageObject.position.clone())
-        //     // console.log("this.sharePosition", this.sharePosition)
-        //     console.log("this.bottomLeftOffset", this.bottomLeftOffset)
-        //     console.log("normBottomLeftOffset", normBottomLeftOffset)
-        //     console.log("norm new",RelPoint.ToNormalPoint(newPosition,0,0))
-        //     console.log("newPos-normBLO",VecMath.SubtractVecs(RelPoint.ToNormalPoint(newPosition,0,0), normBottomLeftOffset))
-        // }
+            if (this.isACircle || this.label == "testRect" ){
+            console.log("---------")
+            console.log("Setting pos for", this.label, "to", newPosition)
+            console.log("pre-pos", this.position)
+            console.log("pre-stage-pos", this.stageObject.position.clone())
+            console.log("this.sharePosition", this.sharePosition)
+            console.log("this.bottomLeftOffset", this.bottomLeftOffset)
+            console.log("normBottomLeftOffset", normBottomLeftOffset)
+            console.log("norm new",RelPoint.ToNormalPoint(newPosition,0,0))
+            console.log("newPos-normBLO",VecMath.SubtractVecs(RelPoint.ToNormalPoint(newPosition,0,0), normBottomLeftOffset))
+        }
 
         /// true position (prob not bottom-left if u have offset instead it's position that renderer uses)
         // this._position = VecMath.SubtractVecs(this._GetNormalPosition(), normBottomLeftOffset)
@@ -3212,7 +3214,7 @@ class TextInput extends TextContainer {
     }
 
     HandlePointerDownOnCanvas = (pointerEvent) => {
-        let pointerPos = game.pointerPos; // easier to just access this property
+        let pointerPos = this.game.pointerPos; // easier to just access this property
 
         // check if the input was hit 
         let testPos = pointerPos
