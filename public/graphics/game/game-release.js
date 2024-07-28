@@ -987,6 +987,15 @@ class Game extends EventSystem {
         let stageObjectsTotal = activeScene.stageObjects.length;
 
 
+        // the last element in the stage objects array won't have physics accounted for so do that
+        if(stageObjectsTotal != 0){
+            let stageObj = activeScene.stageObjects[stageObjectsTotal-1]
+            let firstGameObj = stageObj.parentGameObject; // get game obj from stage obj
+            this.CalculateNewVelocityAndPos(firstGameObj); // do tha velocity
+        }
+        
+
+        
 
         for (let firstGameObjIndex = 0; firstGameObjIndex < stageObjectsTotal - 1; firstGameObjIndex++) {
             let stageObj1 = activeScene.stageObjects[firstGameObjIndex]
