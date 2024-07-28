@@ -1,0 +1,2 @@
+For this time round I'm going to try and experiment with using modules but the issue I have is that they aren't fully supported so I'll need other things ot make it work like babel or other compiling tools with NODE js but at a later date.  
+I would use modules for game.js but I'm going to do that at a later date
