@@ -871,7 +871,7 @@ class Game extends EventSystem {
      * @param {PIXI.Point} oldPos In GAME UNITS, the old position that you want to convert to 
      */
     ConvertToCartesian(oldPos) {
-        let canvasHeight = game.pixiApplication.canvas.height / this.pixelsPerUnit.y; // convert from pixels to units
+        let canvasHeight = this.pixiApplication.canvas.height / this.pixelsPerUnit.y; // convert from pixels to units
 
         return new Point(oldPos.x, oldPos.y * -1 + canvasHeight)
     }
@@ -881,7 +881,7 @@ class Game extends EventSystem {
      * @param {PIXI.Point} oldPos In PIXELS, the old position that you want to convert to 
      */
     ConvertPixelsToNonCartesian(oldPos) {
-        let canvasHeight = game.pixiApplication.canvas.height;
+        let canvasHeight = this.pixiApplication.canvas.height;
 
         return new Point(oldPos.x, -oldPos.y + canvasHeight)
     }
@@ -891,20 +891,20 @@ class Game extends EventSystem {
      */
     GetCanvasSize() {
         return {
-            width: game.pixiApplication.canvas.width,
-            x: game.pixiApplication.canvas.width,
-            height: game.pixiApplication.canvas.height,
-            y: game.pixiApplication.canvas.height,
+            width: this.pixiApplication.canvas.width,
+            x: this.pixiApplication.canvas.width,
+            height: this.pixiApplication.canvas.height,
+            y: this.pixiApplication.canvas.height,
         }
     }
 
     GetCanvasSizeInUnits() {
         // convert to pixels per unit
         return {
-            width: game.pixiApplication.canvas.width / game.pixelsPerUnit.x,
-            x: game.pixiApplication.canvas.width / game.pixelsPerUnit.x,
-            height: game.pixiApplication.canvas.height / game.pixelsPerUnit.y,
-            y: game.pixiApplication.canvas.height / game.pixelsPerUnit.y,
+            width: this.pixiApplication.canvas.width / this.pixelsPerUnit.x,
+            x: this.pixiApplication.canvas.width / this.pixelsPerUnit.x,
+            height: this.pixiApplication.canvas.height / this.pixelsPerUnit.y,
+            y: this.pixiApplication.canvas.height / this.pixelsPerUnit.y,
         }
     }
 
@@ -3212,7 +3212,7 @@ class TextInput extends TextContainer {
     }
 
     HandlePointerDownOnCanvas = (pointerEvent) => {
-        let pointerPos = game.pointerPos; // easier to just access this property
+        let pointerPos = this.game.pointerPos; // easier to just access this property
 
         // check if the input was hit 
         let testPos = pointerPos

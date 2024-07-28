@@ -67,8 +67,6 @@ export class Script {
      * @param {Function} [unloadFunction] This function is called when the script should be unloaded. Game is passed into first parameter 
      */
     constructor(game, loadFunction, onTickFunction, unloadFunction) {
-        super();
-
         if (typeof (loadFunction) != "function")
             throw new Error("Tried to create a Loader but passed load function isn't a function")
 

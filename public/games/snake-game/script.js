@@ -3,7 +3,7 @@
 // --------------------
 
 // libraries/class/object setup
-import ScriptLoader, { Script } from "./ScriptLoader";
+import ScriptLoader, { Script } from "./scriptLoader.js";
 
 // shared game class for everything
 const game = new Game();
