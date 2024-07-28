@@ -3,10 +3,13 @@
 // --------------------
 
 // libraries/class/object setup
+import globals from "./globals.js";
 import ScriptLoader, { Script } from "./scriptLoader.js";
+import { GetSnakeGameScript } from "./snakeGameScript.js";
 
 // shared game class for everything
 const game = new Game();
+globals.game = game;
 
 // end of setup
 
@@ -23,5 +26,7 @@ game.Initialise(graphicsContainer)
     })
 
 function main() {
-
+    let loader = new ScriptLoader(game)
+    // load snake game
+    loader.AddLoader(GetSnakeGameScript())
 }

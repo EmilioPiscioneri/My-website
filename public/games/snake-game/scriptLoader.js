@@ -9,6 +9,8 @@ export default class ScriptLoader {
      * @param {Game} game The game to attach the on tick handler to
      */
     constructor(game) {
+        if(!game)
+            throw new Error("Didn't initialise script loader with a game object")
         game.AddEventListener("tick", this._TickCallback);
     }
 
@@ -41,7 +43,7 @@ export default class ScriptLoader {
     }
 
     // callback to attach to just a games tick function
-    _TickCallback() {
+    _TickCallback = ()=> {
         for (const script of this.scripts) {
             script.OnTick(); // call on tick function
         }

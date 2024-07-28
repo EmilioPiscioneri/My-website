@@ -2,7 +2,7 @@
 
 // Gets canvas position on HTML page (includes scrolling) 
 export function GetCanvasRealPosition() {
-    const rect = game.pixiApplication.canvas.getBoundingClientRect();
+    const rect = globals.game.pixiApplication.canvas.getBoundingClientRect();
     return {
         x: rect.left + window.scrollX,
         y: rect.top + window.scrollY
@@ -11,7 +11,7 @@ export function GetCanvasRealPosition() {
 
 // Gets canvas position on current screen (excludes scrolling)
 export function GetCanvasScreenPosition() {
-    const rect = game.pixiApplication.canvas.getBoundingClientRect();
+    const rect = globals.game.pixiApplication.canvas.getBoundingClientRect();
     return {
         x: rect.x,
         y: rect.y
