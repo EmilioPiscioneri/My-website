@@ -927,10 +927,10 @@ class Game extends EventSystem {
     HandleCursorDisplay() {
         // at least 1 wanting to displaying pointer
         if (this.pointerCursorRequests > 0) {
-            game.pixiApplication.canvas.style.cursor = "pointer"
+            this.pixiApplication.canvas.style.cursor = "pointer"
         } else {
             // default
-            game.pixiApplication.canvas.style.cursor = ""
+            this.pixiApplication.canvas.style.cursor = ""
         }
     }
 
