@@ -1,4 +1,5 @@
 var Point = PIXI.Point;
+var Graphics = PIXI.Graphics
 let near0 = 0.00048828125; // a value that is near 0, it's a power of 2 which computers like
 let PIdiv2 = Math.PI / 2
 
@@ -1722,7 +1723,7 @@ class GameObject extends GameNode {
             parentWidth = 0;
             parentHeight = 0;
         }
-        else if (this.parent.isScene) {
+        else if (this.parent.isScene || this.positionMethod == PositionMethod.Absolute) {
             let canvasSize = this.game.GetCanvasSizeInUnits()
             parentWidth = canvasSize.width;
             parentHeight = canvasSize.height
@@ -3050,6 +3051,16 @@ class Button extends TextContainer {
             // pointer up was released elsewhere on screen
             this.isPointerDown = false
         }
+    }
+
+    Destruct(){
+        // dont display cursor
+        if (this.requestedPointer) {
+            this.requestedPointer = false
+            this.game.pointerCursorRequests--
+        }
+        // cal inherited destruct
+        super.Destruct();
     }
 
 
