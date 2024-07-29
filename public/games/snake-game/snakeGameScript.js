@@ -19,6 +19,7 @@ class Snake {
     lastMoveTimestamp = Date.now(); //unix timestap, last time the snake was moved, start as current time because it shouldn't immediately move
     moveInterval = 100; // how many ms to wait between moving the snake
     canMove = false; // whetehr the snake is legally allowed to move
+    tilesPerFruit = 5; // how many tiles/length the snake gains when it eats a fruit
     // direction that the snake is travelling in
     get direction() {
         // just return the direction of the most recent tile
@@ -45,17 +46,31 @@ class Snake {
 
         let tile = new SnakeTile(gameMap, startPos, startDirection)
 
-        this.AddTileToFront(tile)
+        this.UnshiftTile(tile)
     }
 
     // Adds tile to the start of the _tiles array 
-    AddTileToFront(tileToAdd) {
+    UnshiftTile(tileToAdd) {
         this.tiles.unshift(tileToAdd)
     }
 
-    // add to back of _tiles
-    AddTileToBack(tileToAdd) {
+    // add a tile to end of _tiles array
+    PushTile(tileToAdd) {
         this.tiles.push(tileToAdd)
+    }
+
+    // adds a new tile to the back of the snake
+    AddTileToBack() {
+        let backTile = this.tiles[this.tiles.length - 1]
+        // go one back from back tile
+        let newTilePos = VecMath.AddVecs(backTile.position, Direction.ToVector(Direction.GetOppositeDirection(backTile.direction)))
+
+        // create tile, inherit the same direction as current
+        let tile = new SnakeTile(this.gameMap, newTilePos, backTile.direction)
+
+        this.PushTile(tile)
+
+
     }
 
     // Removes the last tile in the tiles array
@@ -79,7 +94,7 @@ class Snake {
 
         // remove last tile and add the new front one
         this.PopTile()
-        this.AddTileToFront(tile)
+        this.UnshiftTile(tile)
 
         // setup next time
         this.lastMoveTimestamp = Date.now();
@@ -119,22 +134,19 @@ class Snake {
             // new front tile is touching itself, scnd param is exclude front
         } else if (this.ContainsTile(this.tiles[0].position, true)) {
             this.gameMap.EndGame("touching itself")
-
+            return
         }
 
         // fruit has been eated
         for (const fruit of this.gameMap.fruitController.fruits) {
             let frontTile = this.tiles[0]
+            // if front tile is in pos of fruit (colliding)
             if (frontTile.position.x == fruit.position.x && frontTile.position.y == fruit.position.y) {
-                let backTile = this.tiles[this.tiles.length - 1]
-                // go one back from back tile
-                let newTilePos = VecMath.AddVecs(backTile.position, Direction.ToVector(Direction.GetOppositeDirection(backTile.direction)))
+                // loop tiles per fruit times and add that many tiles for this eaten fruit 
+                for (let _ = 0; _ < this.tilesPerFruit; _++) {
+                    this.AddTileToBack();
 
-                // create tile, inherit the same direction as current
-                let tile = new SnakeTile(this.gameMap, newTilePos, backTile.direction)
-
-                this.AddTileToBack(tile)
-
+                }
                 // remove fruit and gen new one
                 this.gameMap.fruitController.RemoveFruit(fruit)
                 this.gameMap.fruitController.GenerateFruit()
@@ -154,6 +166,13 @@ class Snake {
                 return true
         }
         return false
+    }
+
+    Destruct(){
+        for (const tile of this.tiles) {
+            tile.Destruct()
+        }
+        this.tiles = [];
     }
 }
 
@@ -217,7 +236,15 @@ class GameMap {
     EndGame(reason) {
         this.gameEnded = true
         this.snake.canMove = false
-        console.warn("GAME ENDED", reason)
+        ShowGameOver(this.game, reason)
+        // console.warn("GAME ENDED", reason)
+    }
+
+    Destruct(){
+        if(this.snake)
+            this.snake.Destruct()
+        if(this.fruitController)
+            this.fruitController.Destruct()
     }
 }
 
@@ -323,7 +350,7 @@ class FruitController {
                 }
             }
 
-            if(hasFreeColumn){
+            if (hasFreeColumn) {
                 rowRanges[rowIndex] = finalArray;
             }
 
@@ -331,7 +358,7 @@ class FruitController {
 
         // if has no available spots
         let rowRangesKeys = Object.keys(rowRanges)
-        if(rowRangesKeys.length == 0){
+        if (rowRangesKeys.length == 0) {
             this.gameMap.EndGame("FINISHED THE GAME")
             return
         }
@@ -420,7 +447,10 @@ class Fruit {
 
 // the snake for the game
 let snake;
+let map;
 let firstKeyPressed = false; // whether a movement key has been pressed, this starts the game
+// whenever ui is generated it is put under a folder, first check if this is null or not
+let gameOverUIFolder
 
 // setup for a new scene to be done
 function SetupSnakeScene(game) {
@@ -429,7 +459,7 @@ function SetupSnakeScene(game) {
     let canvasSize = game.GetCanvasSizeInUnits()
 
     // create a map
-    let map = new GameMap(game, Math.floor(canvasSize.x * 2), Math.floor(canvasSize.y * 2))
+    map = new GameMap(game, Math.floor(canvasSize.x * 2), Math.floor(canvasSize.y * 2))
     let fruitController = new FruitController(map)
     // create a snake
     snake = new Snake(map)
@@ -441,7 +471,92 @@ function SetupSnakeScene(game) {
 
 // Removes the old snake scene stuff
 function CleanupSnakeScene(game) {
+    if(map)
+        map.Destruct()
+    firstKeyPressed = false
+    snake = null
+    if(gameOverUIFolder){
+        snakeScene.RemoveChild(gameOverUIFolder)
+        gameOverUIFolder.Destruct()
+    }
+    gameOverUIFolder = null
+    
+}
 
+
+
+// reason is string for why the game ended
+function GenerateGameOverUI(game, reason) {
+    gameOverUIFolder = new Folder(game)
+
+    let heading = new TextLabel(game, "GAME OVER")
+    // heading.stageObject.style.fill = "yellow";
+    heading.stageObject.style.fontWeight = "bold";
+    // heading.stageObject.style.stroke = "black";
+    heading.fontSize = 1;
+    heading.bottomLeftOffset = new RelPoint(0,0.5,0,0.5) // make the positionr represent the centre point of text
+    heading.positionMethod = PositionMethod.Absolute
+    let subHeading = new TextLabel(game,reason)
+    // subHeading.stageObject.style.fill = "yellow";
+    // heading.stageObject.style.stroke = "black";
+    subHeading.fontSize = 0.75;
+    subHeading.bottomLeftOffset = new RelPoint(0,0.5,0,0.5) // make the positionr represent the centre point of text
+    subHeading.positionMethod = PositionMethod.Absolute
+    // position properly
+    let padding = 0.2;
+
+    let restartButton = new Button(game,"Restart")
+    // restartButton.bottomLeftOffset = new RelPoint(0,0.5,0,0.5) // make the positionr represent the centre point of text
+    // restartButton.textLabelObject.stageObject.tint = "#854b00"
+    // restartButton.backgroundFill = "yellow"
+    // restartButton.backgroundStroke = {
+    //     "color":"#ffd24d",
+    //     width:2
+    // }
+    restartButton.backgroundStroke = {
+        color: "rgb(29 30 30)",
+        width: 2
+    }
+    restartButton.fontSize = 0.5
+    restartButton.positionMethod = PositionMethod.Absolute
+    
+    
+
+    // position heading at screen centre + height/2 + padding/2
+    heading.position = new RelPoint(0,0.5, heading.height/2+padding/2,0.5) 
+    // below heading
+    subHeading.position = new RelPoint(0,0.5, (-subHeading.height/2)-padding/2,0.5) 
+
+    restartButton.position = new RelPoint(-restartButton.width/2,0.5,-subHeading.height-padding*1.5-restartButton.height,0.5)
+
+    restartButton.AddEventListener("pointerDown", ()=>{RestartBtnCallback(game)}, restartButton)
+
+    // debugging
+    globalThis.heading = heading
+    globalThis.restartButton = restartButton
+
+    gameOverUIFolder.AddChild(heading);
+    gameOverUIFolder.AddChild(subHeading);
+    gameOverUIFolder.AddChild(restartButton);
+    // add folder to scene
+    snakeScene.AddChild(gameOverUIFolder)
+}
+
+function RestartBtnCallback(game){
+    // CleanupSnakeScene()
+    SetupSnakeScene(game)
+}
+
+function ShowGameOver(game, reason) {
+    if (gameOverUIFolder) {
+        gameOverUIFolder.isVisible = true
+    } else {
+        GenerateGameOverUI(game, reason)
+    }
+}
+
+function HideGameOver() {
+    gameOverUIFolder.isVisible = false;
 }
 
 
@@ -492,22 +607,24 @@ function HandleKeyDown(keyEvent) {
 
     // if mvmnt key was pressed 
     if (directionToMove) {
+        
+
+        // if key direction isn't the inverse of the current direction of snake unless first direction hasnt been chosen
+        if (directionToMove != Direction.GetOppositeDirection(snake.direction) || !firstKeyPressed)
+            // set it
+            snake.direction = directionToMove
+
         if (!firstKeyPressed) {
             firstKeyPressed = true
             snake.canMove = true
         }
-
-        // if key direction isn't the inverse of the current direction of snake
-        if (directionToMove != Direction.GetOppositeDirection(snake.direction))
-            // set it
-            snake.direction = directionToMove
     }
 }
 
 
 function OnTick(game) {
     // then update current snake
-    snake.Update()
+    if(snake)snake.Update()
 
 
 
