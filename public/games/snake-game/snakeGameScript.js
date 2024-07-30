@@ -18,8 +18,10 @@ class Snake {
     gameMap;
     lastMoveTimestamp = Date.now(); //unix timestap, last time the snake was moved, start as current time because it shouldn't immediately move
     moveInterval = 100; // how many ms to wait between moving the snake
+    invincibilityInterval = 50; // how many ms extra to wait before move when the snake is abt to die
     canMove = false; // whetehr the snake is legally allowed to move
     tilesPerFruit = 5; // how many tiles/length the snake gains when it eats a fruit
+    
     // direction that the snake is travelling in
     get direction() {
         // just return the direction of the most recent tile
@@ -102,7 +104,7 @@ class Snake {
         // new FruitController(this.gameMap).GenerateFruit(1)
     }
 
-    // Returns boolean
+    // Returns boolean whether front tile is out of game map bounda
     IsOutOfBounds() {
         // Check if out of bounds
         let frontTile = this.tiles[0]
@@ -113,6 +115,20 @@ class Snake {
 
 
     }
+    
+    //returns boolean whether front tile is at the edge of the map and the current direction will lead snake to game over
+    IsAboutToDie(){
+        let frontTile = this.tiles[0]
+        return (
+            // left edge and heading left
+            (frontTile.position.x == 0 && frontTile.direction == Direction.LEFT) || 
+            // or right edge and hesding right
+            (frontTile.position.x == this.gameMap.tileQuantities.x && frontTile.direction == Direction.RIGHT) ||
+            // or bottom edge and heading down
+            (frontTile.position.y == 0 && frontTile.direction == Direction.DOWN) || 
+            // or top edge and heading up
+            (frontTile.position.y == this.gameMap.tileQuantities.y && frontTile.direction == Direction.UP)
+    }
 
     // moves the snake and processes anything else
     Update() {
@@ -122,8 +138,11 @@ class Snake {
 
 
 
-        // if enough time has passed for the next move
-        if (Date.now() - this.lastMoveTimestamp >= this.moveInterval)
+        // if enough time has passed for the next move,
+        // However if snake abt to die on next move you get extra time before you move
+        let isAboutToDie = this.IsAboutToDie()
+        if ((isAboutToDie && Date.now() - this.lastMoveTimestamp >= this.moveInterval + this.invincibilityInterval) ||
+            (!isAboutToDie && Date.now() - this.lastMoveTimestamp >= this.moveInterval))
             this.Move(); // do it
 
         // if out of bounds 
