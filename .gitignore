@@ -5,3 +5,4 @@ public/.DS_Store
 .env
 /cache/secret/
 *.svg
+public/games/snake-game/bug.png
