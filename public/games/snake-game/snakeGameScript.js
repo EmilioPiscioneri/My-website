@@ -9,6 +9,9 @@ var Point = PIXI.Point
 
 // scene to put the snake game on, is initialised later
 let snakeScene;
+// UI text element
+let snakeLengthText;
+let snakeLengthTextPrefix = "Snake length: ";
 
 
 // I'm just gonna keep the snake classes in this file just cos its easier 
@@ -20,7 +23,8 @@ class Snake {
     moveInterval = 100; // how many ms to wait between moving the snake
     invincibilityInterval = 50; // how many ms extra to wait before move when the snake is abt to die
     canMove = false; // whetehr the snake is legally allowed to move
-    tilesPerFruit = 5; // how many tiles/length the snake gains when it eats a fruit
+    tilesPerFruit = 1; // how many tiles/length the snake gains when it eats a fruit
+    tilesReadyToAdd = 0; // how many tiles are ready to be added to the back of snake. One tiles is added per each snake move
 
     // direction that the snake is travelling in
     get direction() {
@@ -28,9 +32,12 @@ class Snake {
         return this.tiles[0].direction
     }
     set direction(newDirection) {
+        let oldDirection = this.direction;
         // just set the direction of the most recent tile, then force an update
         this.tiles[0].direction = newDirection
-        this.Move();
+        // if there has been a change in direction
+        if(oldDirection != newDirection)
+            this.Move(); // force move snake, it makes the game run a lot better
     }
 
     /**
@@ -61,19 +68,20 @@ class Snake {
         this.tiles.push(tileToAdd)
     }
 
-    // adds a new tile to the back of the snake
-    AddTileToBack() {
-        let backTile = this.tiles[this.tiles.length - 1]
-        // go one back from back tile
-        let newTilePos = VecMath.AddVecs(backTile.position, Direction.ToVector(Direction.GetOppositeDirection(backTile.direction)))
+    // redundant, I just don't remove back tile when I add the new one which still has the same functionality.
+    // This is cos the tiles are added whenevr there is a move, so instead of adding it back just don't remove it and add more to get functionality like its growing from one point
 
-        // create tile, inherit the same direction as current
-        let tile = new SnakeTile(this.gameMap, newTilePos, backTile.direction)
+    // // adds a new tile to the back of the snake. Param is optional direction to set the new tile to
+    // AddTileToBack(direction) {
+    //     let backTile = this.tiles[this.tiles.length - 1]
+    //             // go one back from back tile
+    //     let newTilePos = VecMath.AddVecs(backTile.position, Direction.ToVector(Direction.GetOppositeDirection(backTile.direction)))
 
-        this.PushTile(tile)
+    //     // create tile, use direction param or inherit the same direction as current back tile
+    //     let tile = new SnakeTile(this.gameMap, newTilePos, direction || backTile.direction)
 
-
-    }
+    //     this.PushTile(tile)
+    // }
 
     // Removes the last tile in the tiles array
     PopTile() {
@@ -94,9 +102,26 @@ class Snake {
         // create tile, inherit the same direction as current
         let tile = new SnakeTile(this.gameMap, newTilePos, this.direction)
 
-        // remove last tile and add the new front one
-        this.PopTile()
+
+        // let lastTileDirection = this.tiles[this.tiles.length-1].direction;
+
+        // 
+        // first add new front tile
         this.UnshiftTile(tile)
+
+        // then remove last tile (unless you need to add a tile, as you would just replace it anyway. Basically you'd be doing -1 back tile +1 back tile which is redundant)
+        
+        // if there is more than one tile to be added, don't remove
+        if (this.tilesReadyToAdd != 0) {
+            // decrement
+            this.tilesReadyToAdd--;
+            // added tile, update length
+            this.UpdateLengthText()
+        } else { // else, no tiles to add so
+            this.PopTile()
+        }
+
+        
 
         // setup next time
         this.lastMoveTimestamp = Date.now();
@@ -162,11 +187,9 @@ class Snake {
             let frontTile = this.tiles[0]
             // if front tile is in pos of fruit (colliding)
             if (frontTile.position.x == fruit.position.x && frontTile.position.y == fruit.position.y) {
-                // loop tiles per fruit times and add that many tiles for this eaten fruit 
-                for (let _ = 0; _ < this.tilesPerFruit; _++) {
-                    this.AddTileToBack();
-
-                }
+                // add x amnt of tiles per fruit to ready integer, the tiles will be added on subsequent moves. 
+                // This makes sure that tiles aren't added all at once which will lead to some clipping and other issues
+                this.tilesReadyToAdd += this.tilesPerFruit; 
                 // remove fruit and gen new one
                 this.gameMap.fruitController.RemoveFruit(fruit)
                 this.gameMap.fruitController.GenerateFruit()
@@ -194,9 +217,9 @@ class Snake {
                 (excludeFront == true && snakeTile != frontTile)
             )
                 return true
-            else if (snakeTile.position.equals(tilePosition)) {
-                console.log(snakeTile.position, tilePosition, frontTile.position)
-            }
+            // else if (snakeTile.position.equals(tilePosition)) {
+            //     console.log(snakeTile.position, tilePosition, frontTile.position)
+            // }
         }
         return false
     }
@@ -206,6 +229,10 @@ class Snake {
             tile.Destruct()
         }
         this.tiles = [];
+    }
+
+    UpdateLengthText(){
+        snakeLengthText.text = snakeLengthTextPrefix + this.tiles.length
     }
 }
 
@@ -493,8 +520,12 @@ class Fruit {
 let snake;
 let map;
 let firstKeyPressed = false; // whether a movement key has been pressed, this starts the game
+// put in folders so it's easier to load or unload, its jsut grouping them
+
 // whenever ui is generated it is put under a folder, first check if this is null or not
 let gameOverUIFolder
+// UI for all stuff in game
+let gameUIFolder;
 
 // setup for a new scene to be done
 function SetupSnakeScene(game) {
@@ -510,6 +541,11 @@ function SetupSnakeScene(game) {
     // create first fruit
     fruitController.GenerateFruit()
     // let fruit = new Fruit(map, new Point(4, 4))
+
+    // game ui
+    ShowGameUI(game)
+    // update text
+    snake.UpdateLengthText()
 
 }
 
@@ -586,9 +622,27 @@ function GenerateGameOverUI(game, reason) {
     snakeScene.AddChild(gameOverUIFolder)
 }
 
+function GenerateGameUI(game){
+    gameUIFolder = new Folder(game);
+
+    // snake should be intialised by this point
+    snakeLengthText = new TextLabel(game, snakeLengthTextPrefix + snake.tiles.length)
+    snakeLengthText.fontSize = 0.4;
+    // position with some padding from left wall and then the y should be height of scene (1 relY) - height of text - padding
+    let padding = 0.1
+    snakeLengthText.position = new RelPoint(padding, 0, -snakeLengthText.height-padding, 1)
+    snakeLengthText.positionMethod = PositionMethod.Absolute
+
+    // add text to folder
+    gameUIFolder.AddChild(snakeLengthText)
+    snakeScene.AddChild(gameUIFolder);
+}
+
 function RestartBtnCallback(game) {
     // CleanupSnakeScene()
     SetupSnakeScene(game)
+
+    
 }
 
 function ShowGameOver(game, reason) {
@@ -600,7 +654,19 @@ function ShowGameOver(game, reason) {
 }
 
 function HideGameOver() {
-    gameOverUIFolder.isVisible = false;
+    gameUIFolder.isVisible = false;
+}
+
+function ShowGameUI(game) {
+    if (gameUIFolder) {
+        gameUIFolder.isVisible = true
+    } else {
+        GenerateGameUI(game)
+    }
+}
+
+function HideGameUI() {
+    gameUIFolder.isVisible = false;
 }
 
 

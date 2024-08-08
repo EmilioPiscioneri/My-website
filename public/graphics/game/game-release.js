@@ -1743,6 +1743,7 @@ class GameObject extends GameNode {
     }
 
     // Object's local position as a normal PIXI point. Either a PIXI point or RelPoint. POSITION X AND Y ARE READONLY, see GameObject.x and .y
+    // -- FOR POSITION REL POINTS, THE relX and relY REPRESENT A SCALE OF PARENT'S WIDTH AND HEIGHT (unless absolute position method) --
     get position() {
         // return true pos + blOffset
         return VecMath.AddVecs(this._GetNormalPosition(), RelPoint.ToNormalPoint(this.bottomLeftOffset, this.width, this.height))
