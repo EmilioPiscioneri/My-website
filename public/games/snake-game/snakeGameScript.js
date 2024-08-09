@@ -12,7 +12,9 @@ let snakeScene;
 // UI text element
 let snakeLengthText;
 let snakeLengthTextPrefix = "Snake length: ";
-
+// pre load my crappy apple texture
+let appleTexture = await PIXI.Assets.load("./apple.svg")
+globalThis.appleTexture = appleTexture
 // -- CONFIG --
 // this is for when the map is a square (you may get weird visuals otherwise)
 // it defines how many tiles there are on the horizontal and vertical axes
@@ -539,11 +541,26 @@ class Fruit {
         this.gameMap = gameMap
 
 
+        // create stage object for fruit
+        
+        // let stageObj = new PIXI.Graphics()
+        // .rect(0, 0, gameMap.tileSize.x, gameMap.tileSize.y)
+        // .fill("red")
+
+        // use crappy apple texture I made
+
+        let stageObj = new PIXI.Sprite({
+            texture: appleTexture,
+            roundPixels: false
+        })
+        stageObj.width = gameMap.tileSize.x
+        stageObj.height = gameMap.tileSize.y
+
+        globalThis.apple = stageObj
+
         // create a gameObject and add to scene
         let gameObj = new GameObject(gameMap.game,
-            new PIXI.Graphics()
-                .rect(0, 0, gameMap.tileSize.x, gameMap.tileSize.y)
-                .fill("red"))
+            stageObj)
 
         gameObj.physicsEnabled = false
         // position the tile 
