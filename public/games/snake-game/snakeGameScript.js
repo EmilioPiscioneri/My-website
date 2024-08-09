@@ -13,6 +13,17 @@ let snakeScene;
 let snakeLengthText;
 let snakeLengthTextPrefix = "Snake length: ";
 
+// -- CONFIG --
+// this is for when the map is a square (you may get weird visuals otherwise)
+// it defines how many tiles there are on the horizontal and vertical axes
+let tilePerAxis = 25; 
+let invincibilityInterval = 50; // how many ms extra to wait before move when the snake is abt to die
+let tilesPerFruit = 1; // how many tiles/length the snake gains when it eats a fruit
+
+// config options for debugging
+// invincibilityInterval = 10**999; 
+// tilePerAxis = 5; 
+
 
 // I'm just gonna keep the snake classes in this file just cos its easier 
 class Snake {
@@ -20,10 +31,8 @@ class Snake {
     tiles = [];
     gameMap;
     lastMoveTimestamp = Date.now(); //unix timestap, last time the snake was moved, start as current time because it shouldn't immediately move
-    moveInterval = 100; // how many ms to wait between moving the snake
-    invincibilityInterval = 50; // how many ms extra to wait before move when the snake is abt to die
-    canMove = false; // whetehr the snake is legally allowed to move
-    tilesPerFruit = 1; // how many tiles/length the snake gains when it eats a fruit
+    moveInterval = 125; // how many ms to wait between moving the snake
+    canMove = false; // whether the snake is legally allowed to move. (So you can like stop the snake on game over e.g.)
     tilesReadyToAdd = 0; // how many tiles are ready to be added to the back of snake. One tiles is added per each snake move
 
     // direction that the snake is travelling in
@@ -160,15 +169,17 @@ class Snake {
         if (this.gameMap.gameEnded)
             return
 
-
-
-
-        // if enough time has passed for the next move,
-        // However if snake abt to die on next move you get extra time before you move
+        // -- Determine if snake can move, if so then move it --
         let isAboutToDie = this.IsAboutToDie()
-        if ((isAboutToDie && Date.now() - this.lastMoveTimestamp >= this.moveInterval + this.invincibilityInterval) ||
+
+            // if snake abt to die and enough time has passed (inclusive of invincibility interval)
+        if ((isAboutToDie && Date.now() - this.lastMoveTimestamp >= this.moveInterval + invincibilityInterval) ||
+            // else if (or) snake isn't about to die and enought time has passed (exclusive of invincibility interval)
             (!isAboutToDie && Date.now() - this.lastMoveTimestamp >= this.moveInterval))
-            this.Move(); // do it
+
+            // Snake can move, now move the snake
+            this.Move(); 
+
 
         // if out of bounds 
         if (this.IsOutOfBounds()) {
@@ -189,7 +200,7 @@ class Snake {
             if (frontTile.position.x == fruit.position.x && frontTile.position.y == fruit.position.y) {
                 // add x amnt of tiles per fruit to ready integer, the tiles will be added on subsequent moves. 
                 // This makes sure that tiles aren't added all at once which will lead to some clipping and other issues
-                this.tilesReadyToAdd += this.tilesPerFruit; 
+                this.tilesReadyToAdd += tilesPerFruit; 
                 // remove fruit and gen new one
                 this.gameMap.fruitController.RemoveFruit(fruit)
                 this.gameMap.fruitController.GenerateFruit()
@@ -213,8 +224,8 @@ class Snake {
             if (
                 // if tile to test exists in snake
                 (snakeTile.position.equals(tilePosition)) &&
-                // and (if excluding the front tile, and the iterated tile is not the front tile)
-                (excludeFront == true && snakeTile != frontTile)
+                // and ((if excluding the front tile, and the iterated tile is not the front tile) else if not excluding front tile just go thru )
+                ((excludeFront == true && snakeTile != frontTile) || excludeFront == false)
             )
                 return true
             // else if (snakeTile.position.equals(tilePosition)) {
@@ -325,25 +336,43 @@ class SnakeTile {
     constructor(gameMap, position = new Point(0, 0), direction = Direction.UP) {
         this.gameMap = gameMap
 
+        // Scale of how much padding is between inner and outer tile. This number is a scale of outer tile width/height.
+        // The higher this value, the more pronounced the difference between inner and outer tile will be
+        let innerTilePadding = 0.075;
 
-        // create a gameObject and add to scene
-        let gameObj = new GameObject(gameMap.game,
-            new PIXI.Graphics()
-                .rect(0, 0, gameMap.tileSize.x, gameMap.tileSize.y)
-                .fill("white"))
+        // in order for the tile to have an inner stroke just do a workaround where it has outer stroke as first game obj and the inner fill as child obj
+        let outerTileGraphics = new PIXI.Graphics()
+        .rect(0, 0, gameMap.tileSize.x, gameMap.tileSize.y)
+        .fill("#cbcbcb")
+
+        let innerTileGraphics = new PIXI.Graphics()
+        .rect(0, 0, gameMap.tileSize.x * (1-innerTilePadding), gameMap.tileSize.y * (1-innerTilePadding))
+        .fill("white")
+
+        // create inner tile and outer tile gameObjects and add to scene
+        let outerGameObj = new GameObject(gameMap.game,
+            outerTileGraphics)
 
         // position the tile 
-        gameObj.position = gameMap.GetScenePosition(position)
-        gameObj.physicsEnabled = false
+        outerGameObj.position = gameMap.GetScenePosition(position)
+        outerGameObj.physicsEnabled = false
+
+        let innerGameObj = new GameObject(gameMap.game,
+            innerTileGraphics)
+
+        // position the tile by centering the x and y. Do so by moving to centre of parent and then back by half of width/height 
+        innerGameObj.position = new RelPoint(-innerGameObj.width/2, 0.5, -innerGameObj.height/2, 0.5)
+        innerGameObj.physicsEnabled = false
 
 
+        outerGameObj.AddChild(innerGameObj)
 
         // add to scene
-        snakeScene.AddChild(gameObj)
+        snakeScene.AddChild(outerGameObj)
 
         // intialise this vars
 
-        this.gameObject = gameObj
+        this.gameObject = outerGameObj
         this.direction = direction
         this.position = position
     }
@@ -377,24 +406,34 @@ class FruitController {
 
         // populate the ranges. Note it is done from bottom row to top row (0 to max y)
 
+        // first loop rows
         for (let rowIndex = 0; rowIndex < this.gameMap.tileQuantities.y; rowIndex++) {
-            let lastColumnIntersect; // don't initialise
+            let lastColumnIntersect; // Represents the last column for the current row which an intersection has occurred between snake tile and column position
             let hasFreeColumn = false; // if the row has a free column
-            let finalArray = [];
+            let finalArray = []; // final array of ranges which don't include any intersections with snake tiles
 
+            // then loop columns
             for (let columnIndex = 0; columnIndex < this.gameMap.tileQuantities.x; columnIndex++) {
                 let tile = new Point(columnIndex, rowIndex)
+                let oldlastColumnIntersect = lastColumnIntersect
 
                 // if intersect was found 
                 if (snake.ContainsTile(tile)) {
-                    // previous tile wasn't intersecting (using last column intersect) 
+                    // Now that an intersection was found, check if it is appropriate and record the space between last intersection and the new intersection
+                    // as that will now be free space. Unless ofc there has been no difference from last intersection to this one 
 
-                    // skip if intersection at start
-                    // If the last found intersection + 1 (1 to the right) is the iterated column then there has been no gap since the last recorded intersection, no range found
-                    // so, only go through if it isn't the case
-                    // if intersect doesn't exist (intersect+1 == NaN) make it 0 so range is correct
-                    if (columnIndex != 0 && (lastColumnIntersect + 1 || 0) != columnIndex) {
-                        // go from last available spot to the current one - 1 because this iterated one is intersecting so go back 1 to when it wasn't intersecting
+                    // Check if:
+                    // intersecting column isn't at start of row (no difference in space has occured, we just started)
+                    // and
+                    // difference between the current intersecting column and last found intersection is greater than 1 (1 means there was no gap)
+                    // then there has been a gap of non-intersecting tiles so record it. 
+                    // However the lastColumnIntersect may be undefined, in that case still record it as there has been a gap.
+                    
+                    // Reasoning: This is because all intersects lead to lastColumnIntersect being defined, and if nothing has been defined up until this point 
+                    // (and the current tile isn't at start) then there has guaranteed been at least 1 free space
+                    if (columnIndex != 0 && (columnIndex - lastColumnIntersect > 1 || lastColumnIntersect == undefined) ) {
+                        // go from last available spot (last intersect + 1 or 0 if undefined) to the current one - 1 because this iterated one 
+                        // is intersecting so go back 1 to when it wasn't intersecting
                         finalArray.push([(lastColumnIntersect + 1 || 0), columnIndex - 1])
                         hasFreeColumn = true
                     }
@@ -403,7 +442,7 @@ class FruitController {
                     lastColumnIntersect = columnIndex
                     // console.log("----------")
                     // console.log("tile",tile,"exists")
-                } else if (columnIndex == this.gameMap.tileQuantities.x - 1) {
+                } else if (columnIndex == this.gameMap.tileQuantities.x - 1) { // else if column is last one for tile
                     if (lastColumnIntersect == undefined)
                         finalArray.push([0, columnIndex])
                     else
@@ -411,6 +450,10 @@ class FruitController {
                     hasFreeColumn = true
                     // console.log("found free tile")
                 }
+                // let addedRange = finalArray[finalArray.length-1]
+                // if(addedRange && addedRange[0] > addedRange[1]){
+                //     console.error("??")
+                // }
             }
 
             if (hasFreeColumn) {
@@ -435,11 +478,11 @@ class FruitController {
         }
 
         // choose a random row (from ranges obj which isn't ordered and may not have some arrays), then range, the column in range
-        let rowIndex = GetRandomIntInclusive(0, rowRangesKeys.length - 1)
-        let rangeArrays = Object.values(rowRanges)[rowIndex] //rowRanges[rowIndex]
+        let rowIndex = rowRangesKeys[GetRandomIntInclusive(0, rowRangesKeys.length - 1)] // this will be a 
+        let rangeArrays = rowRanges[rowIndex] //rowRanges[rowIndex]
         let rangeIndex = GetRandomIntInclusive(0, rangeArrays.length - 1)
         let range = rangeArrays[rangeIndex]
-        let columnIndex = GetRandomIntInclusive(range[0], rowRangesKeys[rowIndex])
+        let columnIndex = GetRandomIntInclusive(range[0], range[1])
 
         let newPosition = new Point(columnIndex, rowIndex)
 
@@ -447,7 +490,15 @@ class FruitController {
         let fruit = new Fruit(this.gameMap, newPosition)
         this.AddFruit(fruit)
 
-        // console.log(rowRanges)
+        // -- debugging
+        // console.log("------------------")
+        // console.log("rowRanges",rowRanges)
+        // console.log("newPosition",newPosition)
+        // console.log("fruit",fruit)
+        // snake.canMove = false
+        // setTimeout(() => {
+        //     snake.canMove = true
+        // }, 100);
 
     }
 
@@ -531,10 +582,11 @@ let gameUIFolder;
 function SetupSnakeScene(game) {
     // first cleanup the old stuff
     CleanupSnakeScene(game);
-    let canvasSize = game.GetCanvasSizeInUnits()
+    // let canvasSize = game.GetCanvasSizeInUnits()
 
     // create a map
-    map = new GameMap(game, Math.floor(canvasSize.x * 2), Math.floor(canvasSize.y * 2))
+    // map = new GameMap(game, Math.floor(canvasSize.x*1.5), Math.floor(canvasSize.y*1.5))
+    map = new GameMap(game, tilePerAxis, tilePerAxis)
     let fruitController = new FruitController(map)
     // create a snake
     snake = new Snake(map)
@@ -584,6 +636,18 @@ function GenerateGameOverUI(game, reason) {
     subHeading.positionMethod = PositionMethod.Absolute
     // position properly
     let padding = 0.2;
+    // globalThis.heading = heading
+
+    heading.style.stroke = {
+        color: "#575757",
+        width: 4,
+        join: "round"
+    }
+    subHeading.style.stroke = {
+        color: "#575757",
+        width: 4,
+        join: "round"
+    }
 
     let restartButton = new Button(game, "Restart")
     // restartButton.bottomLeftOffset = new RelPoint(0,0.5,0,0.5) // make the positionr represent the centre point of text
@@ -627,11 +691,22 @@ function GenerateGameUI(game){
 
     // snake should be intialised by this point
     snakeLengthText = new TextLabel(game, snakeLengthTextPrefix + snake.tiles.length)
+    // snakeLengthText.fontSize = 0.4;
+    snakeLengthText.fontSize = 1;
     snakeLengthText.fontSize = 0.4;
     // position with some padding from left wall and then the y should be height of scene (1 relY) - height of text - padding
     let padding = 0.1
     snakeLengthText.position = new RelPoint(padding, 0, -snakeLengthText.height-padding, 1)
     snakeLengthText.positionMethod = PositionMethod.Absolute
+    snakeLengthText.zIndex = 9
+
+    // globalThis.snakeLengthText = snakeLengthText
+
+    snakeLengthText.style.stroke = {
+        color: "black",
+        width: 2,
+        join: "round"
+    }
 
     // add text to folder
     gameUIFolder.AddChild(snakeLengthText)

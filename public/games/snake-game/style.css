@@ -1,8 +1,8 @@
 /* Site specific stylesheet */
 
 div.graphics-container {
-    width: 60vw;
+    width: 90vh;
     margin: 0 auto 0 auto;
-    height: 45vw;
+    height: 90vh;
     outline: none;
 }
