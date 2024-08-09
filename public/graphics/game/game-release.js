@@ -2497,6 +2497,15 @@ class TextLabel extends UIElement {
         this.FireListener("fontSizeChanged")
     }
 
+    // references the text object's style
+    get style(){
+        return this.textObject.style;
+    }
+    
+    set style(newStyle){
+        this.textObject.style = newStyle
+    }
+
     get position() { return super.position }
     set position(newPos) {
         // if(this.text == "Layout 0"){
@@ -2648,6 +2657,15 @@ class TextContainer extends GameObject {
         this.FitBackground();
         this.AlignInnerContent();
         this.FireListener("textChanged")
+    }
+
+    // references the text object's style
+    get textStyle(){
+        return this.textLabelObject.style;
+    }
+    
+    set textStyle(newStyle){
+        this.textLabelObject.style = newStyle
     }
 
     get backgroundGraphics() { return this.stageObject }
