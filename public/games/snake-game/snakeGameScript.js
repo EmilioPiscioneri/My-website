@@ -13,12 +13,13 @@ let snakeScene;
 let snakeLengthText;
 let snakeLengthTextPrefix = "Snake length: ";
 // pre load my crappy apple texture
+let useFruitTexture = false // it loosk kinda ugly
 let appleTexture = await PIXI.Assets.load("./apple.svg")
 globalThis.appleTexture = appleTexture
 // -- CONFIG --
 // this is for when the map is a square (you may get weird visuals otherwise)
 // it defines how many tiles there are on the horizontal and vertical axes
-let tilePerAxis = 25; 
+let tilePerAxis = 25;
 let invincibilityInterval = 50; // how many ms extra to wait before move when the snake is abt to die
 let tilesPerFruit = 1; // how many tiles/length the snake gains when it eats a fruit
 
@@ -47,7 +48,7 @@ class Snake {
         // just set the direction of the most recent tile, then force an update
         this.tiles[0].direction = newDirection
         // if there has been a change in direction
-        if(oldDirection != newDirection)
+        if (oldDirection != newDirection)
             this.Move(); // force move snake, it makes the game run a lot better
     }
 
@@ -121,7 +122,7 @@ class Snake {
         this.UnshiftTile(tile)
 
         // then remove last tile (unless you need to add a tile, as you would just replace it anyway. Basically you'd be doing -1 back tile +1 back tile which is redundant)
-        
+
         // if there is more than one tile to be added, don't remove
         if (this.tilesReadyToAdd != 0) {
             // decrement
@@ -132,7 +133,7 @@ class Snake {
             this.PopTile()
         }
 
-        
+
 
         // setup next time
         this.lastMoveTimestamp = Date.now();
@@ -174,13 +175,13 @@ class Snake {
         // -- Determine if snake can move, if so then move it --
         let isAboutToDie = this.IsAboutToDie()
 
-            // if snake abt to die and enough time has passed (inclusive of invincibility interval)
+        // if snake abt to die and enough time has passed (inclusive of invincibility interval)
         if ((isAboutToDie && Date.now() - this.lastMoveTimestamp >= this.moveInterval + invincibilityInterval) ||
             // else if (or) snake isn't about to die and enought time has passed (exclusive of invincibility interval)
             (!isAboutToDie && Date.now() - this.lastMoveTimestamp >= this.moveInterval))
 
             // Snake can move, now move the snake
-            this.Move(); 
+            this.Move();
 
 
         // if out of bounds 
@@ -202,7 +203,7 @@ class Snake {
             if (frontTile.position.x == fruit.position.x && frontTile.position.y == fruit.position.y) {
                 // add x amnt of tiles per fruit to ready integer, the tiles will be added on subsequent moves. 
                 // This makes sure that tiles aren't added all at once which will lead to some clipping and other issues
-                this.tilesReadyToAdd += tilesPerFruit; 
+                this.tilesReadyToAdd += tilesPerFruit;
                 // remove fruit and gen new one
                 this.gameMap.fruitController.RemoveFruit(fruit)
                 this.gameMap.fruitController.GenerateFruit()
@@ -244,7 +245,7 @@ class Snake {
         this.tiles = [];
     }
 
-    UpdateLengthText(){
+    UpdateLengthText() {
         snakeLengthText.text = snakeLengthTextPrefix + this.tiles.length
     }
 }
@@ -344,12 +345,12 @@ class SnakeTile {
 
         // in order for the tile to have an inner stroke just do a workaround where it has outer stroke as first game obj and the inner fill as child obj
         let outerTileGraphics = new PIXI.Graphics()
-        .rect(0, 0, gameMap.tileSize.x, gameMap.tileSize.y)
-        .fill("#cbcbcb")
+            .rect(0, 0, gameMap.tileSize.x, gameMap.tileSize.y)
+            .fill("#cbcbcb")
 
         let innerTileGraphics = new PIXI.Graphics()
-        .rect(0, 0, gameMap.tileSize.x * (1-innerTilePadding), gameMap.tileSize.y * (1-innerTilePadding))
-        .fill("white")
+            .rect(0, 0, gameMap.tileSize.x * (1 - innerTilePadding), gameMap.tileSize.y * (1 - innerTilePadding))
+            .fill("white")
 
         // create inner tile and outer tile gameObjects and add to scene
         let outerGameObj = new GameObject(gameMap.game,
@@ -363,7 +364,7 @@ class SnakeTile {
             innerTileGraphics)
 
         // position the tile by centering the x and y. Do so by moving to centre of parent and then back by half of width/height 
-        innerGameObj.position = new RelPoint(-innerGameObj.width/2, 0.5, -innerGameObj.height/2, 0.5)
+        innerGameObj.position = new RelPoint(-innerGameObj.width / 2, 0.5, -innerGameObj.height / 2, 0.5)
         innerGameObj.physicsEnabled = false
 
 
@@ -430,10 +431,10 @@ class FruitController {
                     // difference between the current intersecting column and last found intersection is greater than 1 (1 means there was no gap)
                     // then there has been a gap of non-intersecting tiles so record it. 
                     // However the lastColumnIntersect may be undefined, in that case still record it as there has been a gap.
-                    
+
                     // Reasoning: This is because all intersects lead to lastColumnIntersect being defined, and if nothing has been defined up until this point 
                     // (and the current tile isn't at start) then there has guaranteed been at least 1 free space
-                    if (columnIndex != 0 && (columnIndex - lastColumnIntersect > 1 || lastColumnIntersect == undefined) ) {
+                    if (columnIndex != 0 && (columnIndex - lastColumnIntersect > 1 || lastColumnIntersect == undefined)) {
                         // go from last available spot (last intersect + 1 or 0 if undefined) to the current one - 1 because this iterated one 
                         // is intersecting so go back 1 to when it wasn't intersecting
                         finalArray.push([(lastColumnIntersect + 1 || 0), columnIndex - 1])
@@ -542,17 +543,18 @@ class Fruit {
 
 
         // create stage object for fruit
-        
-        // let stageObj = new PIXI.Graphics()
-        // .rect(0, 0, gameMap.tileSize.x, gameMap.tileSize.y)
-        // .fill("red")
+        let stageObj;
+        if (!useFruitTexture)
+            stageObj = new PIXI.Graphics()
+                .rect(0, 0, gameMap.tileSize.x, gameMap.tileSize.y)
+                .fill("red")
 
         // use crappy apple texture I made
-
-        let stageObj = new PIXI.Sprite({
-            texture: appleTexture,
-            roundPixels: false
-        })
+        else
+            stageObj = new PIXI.Sprite({
+                texture: appleTexture,
+                roundPixels: false
+            })
         stageObj.width = gameMap.tileSize.x
         stageObj.height = gameMap.tileSize.y
 
@@ -703,7 +705,7 @@ function GenerateGameOverUI(game, reason) {
     snakeScene.AddChild(gameOverUIFolder)
 }
 
-function GenerateGameUI(game){
+function GenerateGameUI(game) {
     gameUIFolder = new Folder(game);
 
     // snake should be intialised by this point
@@ -713,7 +715,7 @@ function GenerateGameUI(game){
     snakeLengthText.fontSize = 0.4;
     // position with some padding from left wall and then the y should be height of scene (1 relY) - height of text - padding
     let padding = 0.1
-    snakeLengthText.position = new RelPoint(padding, 0, -snakeLengthText.height-padding, 1)
+    snakeLengthText.position = new RelPoint(padding, 0, -snakeLengthText.height - padding, 1)
     snakeLengthText.positionMethod = PositionMethod.Absolute
     snakeLengthText.zIndex = 9
 
@@ -734,7 +736,7 @@ function RestartBtnCallback(game) {
     // CleanupSnakeScene()
     SetupSnakeScene(game)
 
-    
+
 }
 
 function ShowGameOver(game, reason) {
